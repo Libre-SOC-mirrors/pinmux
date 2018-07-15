@@ -1,7 +1,7 @@
 import os
 import sys
 from parse import Parse
-from myhdlgen.pins import IO
+from myhdlgen.pins import IO, muxgen, Mux
 from ifacebase import InterfacesBase
 try:
     from string import maketrans
@@ -22,6 +22,19 @@ def transfn(temp):
         temp[0] = temp[0].translate(digits)
         temp[0] = temp[0] .replace(' ', '')
     return '_'.join(temp)
+
+
+
+class IfPin(object):
+    """ pin interface declaration.
+        * name is the name of the pin
+        * ready, enabled and io all create a (* .... *) prefix
+        * action changes it to an "in" if true
+    """
+
+    def __init__(self, typ, name):
+        self.typ = typ
+        self.name = name
 
 
 class Interface(object):
@@ -47,8 +60,8 @@ class Interface(object):
         for p in pinspecs:
             _p = {}
             _p['name'] = self.pname(p['name'])
-            _p['typ'] = self.pname(p['type'])
-            self.pins.append(IO(**_p))
+            _p['typ'] = p['type']
+            self.pins.append(IfPin(**_p))
 
     def getifacetype(self, name):
         for p in self.pinspecs:
@@ -81,6 +94,16 @@ class Interfaces(InterfacesBase):
     def __init__(self, pth=None):
         InterfacesBase.__init__(self, Interface, pth)
 
+class MyHdlIface(object):
+    def __init__(self, iface):
+        self.pnames = []
+        for p in iface.pins:
+            print "typ", p.typ, p.name
+            io = IO(p.typ, p.name)
+            setattr(self, p.name, io)
+            self.pnames.append(p.name)
+        print dir(self)
+
 
 def create_module(p, ifaces):
     x = """\
@@ -92,16 +115,24 @@ def pinmux(muxfn, clk, p, ifaces, {0}):
 """
 
     args = []
+    p.muxers = []
+    p.muxsel = []
     for cell in p.muxed_cells:
         args.append("sel%d" % int(cell[0]))
         args.append("io%d" % int(cell[0]))
+        pin = IO("inout", "name%d" % int(cell[0]))
+        p.muxers.append(pin)
+        m = Mux(p.cell_bitwidth)
+        p.muxsel.append(m)
     print args
-    kl = sorted(ifaces.keys())
+    p.myhdlifaces = []
     for k, count in ifaces.ifacecount:
         i = ifaces[k]
         for c in range(count):
             print k
             args.append("%s%d" % (k, c))
+            p.myhdlifaces.append(MyHdlIface(ifaces[k]))
+
     args = ',\n\t\t'.join(args)
     x = x.format(args)
     path = os.path.abspath(__file__)
@@ -136,4 +167,5 @@ def pinmuxgen(pth=None, verify=True):
     print (p, dir(p))
     ifaces = Interfaces(pth)
     init(p, ifaces)
-    create_module(p, ifaces)
+    fn = create_module(p, ifaces)
+    muxgen(fn, p, ifaces)
