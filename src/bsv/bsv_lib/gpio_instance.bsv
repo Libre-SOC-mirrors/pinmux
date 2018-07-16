@@ -32,8 +32,7 @@ package gpio_instance;
 		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) bankA_slave;
     interface GPIO_config#(15) bankB_config;
 		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) bankB_slave;
-	endinterface
-	interface MUX_real;
+
     interface MUX_config#(32) muxbankA_config;
 		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) muxbankA_slave;
     interface MUX_config#(15) muxbankB_config;
@@ -43,15 +42,12 @@ package gpio_instance;
   module mkgpio_real(GPIO_real);
     GPIO#(32) mygpioA <- mkgpio();
     GPIO#(15) mygpioB <- mkgpio();
+    MUX#(32)  mymuxA <- mkmux();
+    MUX#(15)  mymuxB <- mkmux();
     interface bankA_config=mygpioA.pad_config;
     interface bankB_config=mygpioB.pad_config;
     interface bankA_slave=mygpioA.axi_slave;
     interface bankB_slave=mygpioB.axi_slave;
-  endmodule
-  (*synthesize*)
-  module mkmux_real(MUX_real);
-    MUX#(32)  mymuxA <- mkmux();
-    MUX#(15)  mymuxB <- mkmux();
     interface muxbankA_config=mymuxA.mux_config;
     interface muxbankB_config=mymuxB.mux_config;
     interface muxbankA_slave=mymuxA.axi_slave;
