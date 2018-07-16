@@ -19,11 +19,14 @@ package gpio;
 	import ConfigReg			::*;
 	/*============================ */
 	/*===== Project Imports ===== */
-	`include "defined_parameters.bsv"
 	import Semi_FIFOF        :: *;
 	import AXI4_Lite_Types   :: *;
-	import AXI4_Lite_Fabric  :: *;
 	/*============================ */
+  `define ADDR 32
+  `define DATA 64
+  `define USER 0
+  `define IONum 32
+  `define GPIO_MUX
 
 	interface GPIO;
 		(*always_ready,always_enabled*)
@@ -43,7 +46,7 @@ package gpio;
 	    `ifdef GPIO_MUX
 		method Vector#(`IONum,Bit#(2))   gpio_MUX;
 	    `endif
-		interface AXI4_Lite_Slave_IFC#(`PADDR,`Reg_width,`USERSPACE) axi_slave;
+		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USER) axi_slave;
 	endinterface
 
 	(*synthesize*)
@@ -65,7 +68,7 @@ package gpio;
 		  Vector#(`IONum,ConfigReg#(Bit#(2))) muxer_reg 				<-replicateM(mkConfigReg(0));
 	  `endif
 		
-		AXI4_Lite_Slave_Xactor_IFC #(`PADDR, `Reg_width, `USERSPACE)  s_xactor <- mkAXI4_Lite_Slave_Xactor;
+		AXI4_Lite_Slave_Xactor_IFC #(`ADDR, `DATA, `USER)  s_xactor <- mkAXI4_Lite_Slave_Xactor;
     let ionum=valueOf(`IONum);
 		rule capture_interrupt;
 			for(Integer i=0;i<`IONum;i=i+1)
@@ -129,7 +132,7 @@ package gpio;
 		rule rl_rd_respond;
 			let ar<- pop_o(s_xactor.o_rd_addr);
 			Bit#(32) temp=0;
-			AXI4_Lite_Rd_Data#(`Reg_width,`USERSPACE) r = AXI4_Lite_Rd_Data {rresp: AXI4_LITE_OKAY, rdata: ?, ruser: 0};
+			AXI4_Lite_Rd_Data#(`DATA,`USER) r = AXI4_Lite_Rd_Data {rresp: AXI4_LITE_OKAY, rdata: ?, ruser: 0};
 			if(ar.araddr[5:0]=='h0)begin
 				for(Integer i=0;i<`IONum;i=i+1)
 					temp[i]=pack(direction_reg[i]);
