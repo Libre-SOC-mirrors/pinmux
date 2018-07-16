@@ -1,42 +1,40 @@
 
 axi4_lite = '''
-package bus;
+// this file is auto-generated, please do not edit
+package gpio_instance;
+    /*==== Package imports ==== */
+    import TriState          ::*;
+    import Vector                ::*;
+    import BUtils::*;
+    import ConfigReg            ::*;
+    /*============================ */
+    /*===== Project Imports ===== */
+    import Semi_FIFOF        :: *;
+    import AXI4_Lite_Types   :: *;
+    import gpio   :: *;
+    import mux   :: *;
+    import pinmux   :: *;
+    /*============================ */
 
-  /*=== Project imports ===*/
-  import AXI4_Lite_Types::*;
-  import PinTop::*;
-  import pinmux::*;
-  import Semi_FIFOF::*;
-  /*======================*/
-
-  interface Ifc_bus;
-    interface AXI4_Lite_Slave_IFC #({0}, {1}, 0) axi_side;
+  // instantiation template
+    interface GPIO_real;
     interface PeripheralSide peripheral_side;
-  endinterface
+    interface GPIO_config#(32) bankA_config;
+        interface AXI4_Lite_Slave_IFC#({0},{1},{2}) bankA_slave;
+    interface GPIO_config#(15) bankB_config;
+        interface AXI4_Lite_Slave_IFC#({0},{1},{2}) bankB_slave;
 
-  module mkbus(Ifc_bus);
-    Ifc_PintTop pintop <-mkPinTop;
-    AXI4_Lite_Slave_Xactor_IFC#({0}, {1}, 0) slave_xactor <-
-                                                    mkAXI4_Lite_Slave_Xactor();
-    rule read_transaction;
-      let req<-pop_o(slave_xactor.o_rd_addr);
-      let {{err,data}}=pintop.read(req.araddr);
-      AXI4_Lite_Rd_Data#({0}, 0) r = AXI4_Lite_Rd_Data {{
-                                  rresp: err?AXI4_LITE_SLVERR:AXI4_LITE_OKAY,
-                                  rdata: zeroExtend(data) , ruser: 0}};
-      slave_xactor.i_rd_data.enq(r);
-    endrule
-
-    rule write_transaction;
-      let addr_req<-pop_o(slave_xactor.o_wr_addr);
-      let data_req<-pop_o(slave_xactor.o_wr_data);
-      let err<-pintop.write(addr_req.awaddr, data_req.wdata);
-      let b = AXI4_Lite_Wr_Resp {{bresp: err?AXI4_LITE_SLVERR:AXI4_LITE_OKAY,
-                                buser: ?}};
-      slave_xactor.i_wr_resp.enq (b);
-    endrule
-    interface axi_side= slave_xactor.axi_side;
-    interface peripheral_side=pintop.peripheral_side;
+    interface MUX_config#(32) muxbankA_config;
+        interface AXI4_Lite_Slave_IFC#({0},{1},{2}) muxbankA_slave;
+    interface MUX_config#(15) muxbankB_config;
+        interface AXI4_Lite_Slave_IFC#({0},{1},{2}) muxbankB_slave;
+    endinterface
+  (*synthesize*)
+  module mkgpio_real(GPIO_real);
+    Ifc_pinmux pinmux <-mkpinmux;
+    // gpio/mux declarations
+{3}
+    interface peripheral_side=pinmux.peripheral_side;
   endmodule
 endpackage
 '''

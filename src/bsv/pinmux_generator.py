@@ -304,5 +304,8 @@ endpackage
 def write_bvp(bvp, p, ifaces):
     # ######## Generate bus transactors ################
     with open(bvp, 'w') as bsv_file:
-        bsv_file.write(axi4_lite.format(p.ADDR_WIDTH, p.DATA_WIDTH))
+        gpiodecl = '// TODO'
+        bsv_file.write(axi4_lite.format(p.ADDR_WIDTH, p.DATA_WIDTH,
+                                        0, # USERSPACE
+                                        gpiodecl))
     # ##################################################
