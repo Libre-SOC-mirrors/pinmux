@@ -72,7 +72,8 @@ def pinmuxgen(pth=None, verify=True):
     shutil.copyfile(os.path.join(cwd, 'Makefile.template'),
                     os.path.join(bp, 'Makefile'))
     cwd = os.path.join(cwd, 'bsv_lib')
-    for fname in ['AXI4_Lite_Types.bsv', 'Semi_FIFOF.bsv']:
+    for fname in ['AXI4_Lite_Types.bsv', 'Semi_FIFOF.bsv', 
+                  'gpio.bsv',  'mux.bsv']:
         shutil.copyfile(os.path.join(cwd, fname),
                         os.path.join(bl, fname))
 
@@ -303,13 +304,13 @@ endpackage
 
 def write_bvp(bvp, p, ifaces):
     # ######## Generate bus transactors ################
-    gpiocfg = '\t\tinterface GPIO_config#({4}) bank{3}_config\n;' \
+    gpiocfg = '\t\tinterface GPIO_config#({4}) bank{3}_config;\n' \
               '\t\tinterface AXI4_Lite_Slave_IFC#({0},{1},{2}) bank{3}_slave;'
     muxcfg = '\t\tinterface MUX_config#({4}) muxb{3}_config;\n' \
         '\t\tinterface AXI4_Lite_Slave_IFC#({0},{1},{2}) muxb{3}_slave;'
 
-    gpiodec = '\tGPIO#({0} mygpio{1} <- mkgpio();'
-    muxdec = '\tMUX#({0} mymux{1} <- mkgpio();'
+    gpiodec = '\tGPIO#({0}) mygpio{1} <- mkgpio();'
+    muxdec = '\tMUX#({0}) mymux{1} <- mkgpio();'
     gpioifc = '\tinterface bank{0}_config=mygpio{0}.pad_config;\n' \
               '\tinterface bank{0}A_slave=mygpio{0}.axi_slave;'
     muxifc = '\tinterface muxb{0}_config=mymux{0}.pad_config;\n' \
