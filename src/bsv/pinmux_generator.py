@@ -303,9 +303,45 @@ endpackage
 
 def write_bvp(bvp, p, ifaces):
     # ######## Generate bus transactors ################
+    gpiocfg = '\t\tinterface GPIO_config#({4}) bank{3}_config\n;' \
+              '\t\tinterface AXI4_Lite_Slave_IFC#({0},{1},{2}) bank{3}_slave;'
+    muxcfg  = '\t\tinterface MUX_config#({4}) muxb{3}_config;\n' \
+              '\t\tinterface AXI4_Lite_Slave_IFC#({0},{1},{2}) muxb{3}_slave;'
+
+    gpiodec = '\tGPIO#({0} mygpio{1} <- mkgpio();'
+    muxdec  = '\tMUX#({0} mymux{1} <- mkgpio();'
+    gpioifc = '\tinterface bank{0}_config=mygpio{0}.pad_config;\n' \
+              '\tinterface bank{0}A_slave=mygpio{0}.axi_slave;'
+    muxifc  = '\tinterface muxb{0}_config=mymux{0}.pad_config;\n' \
+              '\tinterface muxb{0}A_slave=mymux{0}.axi_slave;'
     with open(bvp, 'w') as bsv_file:
-        gpiodecl = '// TODO'
-        bsv_file.write(axi4_lite.format(p.ADDR_WIDTH, p.DATA_WIDTH,
+        # assume here that all muxes have a 1:1 gpio
+        cfg = []
+        decl = []
+        idec = []
+        iks = ifaces.keys()
+        iks.sort()
+        for iname in iks:
+            if not iname.startswith('gpio'): # TODO: declare other interfaces
+                continue
+            bank = iname[4:]
+            ifc = ifaces[iname]
+            npins = len(ifc.pinspecs)
+            cfg.append(gpiocfg.format(p.ADDR_WIDTH, p.DATA_WIDTH,
                                         0, # USERSPACE
-                                        gpiodecl))
+                                        bank, npins))
+            cfg.append(muxcfg.format(p.ADDR_WIDTH, p.DATA_WIDTH,
+                                        0, # USERSPACE
+                                        bank, npins))
+            decl.append(gpiodec.format(npins, bank))
+            decl.append(muxdec .format(npins, bank))
+            idec.append(gpioifc.format(bank))
+            idec.append(muxifc.format(bank))
+        print dir(ifaces)
+        print ifaces.items()
+        print dir(ifaces['gpioa'])
+        print ifaces['gpioa'].pinspecs
+        gpiodecl = '\n'.join(decl) + '\n' + '\n'.join(idec)
+        gpiocfg = '\n'.join(cfg) 
+        bsv_file.write(axi4_lite.format(gpiodecl, gpiocfg))
     # ##################################################
