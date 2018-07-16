@@ -1,7 +1,7 @@
 
 axi4_lite = '''
 // this file is auto-generated, please do not edit
-package gpio_instance;
+package bus;
     /*==== Package imports ==== */
     import TriState          ::*;
     import Vector                ::*;
@@ -17,16 +17,18 @@ package gpio_instance;
     /*============================ */
 
   // instantiation template
-    interface GPIO_real;
+    interface BUS;
         interface PeripheralSide peripheral_side;
+        interface IOCellSide iocell_side;
 {1}
     endinterface
   (*synthesize*)
-  module mkgpio_real(GPIO_real);
+  module mkbus(BUS);
     Ifc_pinmux pinmux <-mkpinmux;
     // gpio/mux declarations
 {0}
     interface peripheral_side=pinmux.peripheral_side;
+    interface iocell_side=pinmux.iocell_side;
   endmodule
 endpackage
 '''

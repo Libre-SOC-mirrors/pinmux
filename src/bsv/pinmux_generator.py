@@ -81,11 +81,13 @@ def pinmuxgen(pth=None, verify=True):
     pmp = os.path.join(bp, 'pinmux.bsv')
     ptp = os.path.join(bp, 'PinTop.bsv')
     bvp = os.path.join(bp, 'bus.bsv')
+    idef = os.path.join(bp, 'instance_defines.bsv')
 
     write_pmp(pmp, p, ifaces, iocells)
     write_ptp(ptp, p, ifaces)
     write_bvp(bvp, p, ifaces)
     write_bus(bus, p, ifaces)
+    write_instances(idef, p, ifaces)
 
 
 def write_bus(bus, p, ifaces):
@@ -310,11 +312,11 @@ def write_bvp(bvp, p, ifaces):
         '\t\tinterface AXI4_Lite_Slave_IFC#({0},{1},{2}) muxb{3}_slave;'
 
     gpiodec = '\tGPIO#({0}) mygpio{1} <- mkgpio();'
-    muxdec = '\tMUX#({0}) mymux{1} <- mkgpio();'
+    muxdec = '\tMUX#({0}) mymux{1} <- mkmux();'
     gpioifc = '\tinterface bank{0}_config=mygpio{0}.pad_config;\n' \
-              '\tinterface bank{0}A_slave=mygpio{0}.axi_slave;'
-    muxifc = '\tinterface muxb{0}_config=mymux{0}.pad_config;\n' \
-        '\tinterface muxb{0}A_slave=mymux{0}.axi_slave;'
+              '\tinterface bank{0}_slave=mygpio{0}.axi_slave;'
+    muxifc = '\tinterface muxb{0}_config=mymux{0}.mux_config;\n' \
+        '\tinterface muxb{0}_slave=mymux{0}.axi_slave;'
     with open(bvp, 'w') as bsv_file:
         # assume here that all muxes have a 1:1 gpio
         cfg = []
@@ -345,3 +347,12 @@ def write_bvp(bvp, p, ifaces):
         gpiocfg = '\n'.join(cfg)
         bsv_file.write(axi4_lite.format(gpiodecl, gpiocfg))
     # ##################################################
+
+def write_instances(idef,  p, ifaces):
+    with open(idef, 'w') as bsv_file:
+        txt = '''\
+    `define ADDR {0}
+    `define DATA {1}
+    `define USERSPACE 0
+'''
+        bsv_file.write(txt.format(p.ADDR_WIDTH, p.DATA_WIDTH))
