@@ -1,7 +1,7 @@
 ### Makefile for the srio
 
 TOP_MODULE:=mkgpio_real
-TOP_FILE:=gpio.bsv
+TOP_FILE:=gpio_instance.bsv
 HOMEDIR:=./
 TOP_DIR:=./
 BSVBUILDDIR:=./build/
