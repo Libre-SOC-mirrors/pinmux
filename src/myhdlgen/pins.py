@@ -62,7 +62,7 @@ def test(testfn, clk, fncls, num_pins, num_fns, {0}):
     for pnum in range(npins):
         args.append("sel%d" % pnum)
         args.append("pin%d" % pnum)
-    #for pnum in range(nfns):
+    # for pnum in range(nfns):
     #    args.append("fn%d" % pnum)
     args = ','.join(args)
     x = x.format(args)
@@ -86,6 +86,7 @@ def proxy(func):
         return func(args[0], args[1], args[2], args[3])
     return wrapper
 
+
 class FnCls(object):
     def __init__(self):
         self.attrs = ['uart', 'i2c', 'spi', 'gpio']
@@ -95,6 +96,7 @@ class FnCls(object):
 
     def getfn(self, idx):
         return getattr(self, self.attrs[idx])
+
 
 @block
 def muxer(clk, p, ifaces, args):
@@ -145,8 +147,8 @@ def test2(clk, fncls, num_pins, num_fns, args):
     inputs.append(fncls.i2c.out)
     inputs.append(fncls.spi.out)
     inputs.append(fncls.gpio.out)
-    #for i in range(4):
-        #inputs.append(fncls.getfn(i).out)
+    # for i in range(4):
+    # inputs.append(fncls.getfn(i).out)
 
     for i in range(len(muxes)):
         mux = muxes[i]
@@ -264,8 +266,6 @@ def muxgen(fn, p, ifaces):
 
     mux_inst = fn(muxer, clk, p, ifaces, *args)
     mux_inst.convert(hdl="Verilog", initial_values=True, testbench=False)
-
-
 
 
 if __name__ == '__main__':

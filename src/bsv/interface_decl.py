@@ -124,7 +124,7 @@ class Interface(object):
         for p in pinspecs:
             _p = {}
             _p.update(p)
-            if _p.has_key('type'):
+            if 'type' in _p:
                 del _p['type']
             if p.get('outen') is True:  # special case, generate 3 pins
                 del _p['outen']

@@ -24,7 +24,6 @@ def transfn(temp):
     return '_'.join(temp)
 
 
-
 class IfPin(object):
     """ pin interface declaration.
         * name is the name of the pin
@@ -93,6 +92,7 @@ class Interfaces(InterfacesBase):
 
     def __init__(self, pth=None):
         InterfacesBase.__init__(self, Interface, pth)
+
 
 class MyHdlIface(object):
     def __init__(self, iface):
