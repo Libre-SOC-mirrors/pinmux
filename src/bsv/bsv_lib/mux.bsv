@@ -22,23 +22,23 @@ package mux;
 	import Semi_FIFOF        :: *;
 	import AXI4_Lite_Types   :: *;
 	/*============================ */
-  `define ADDR 32
-  `define DATA 64
-  `define USER 0
-  `define IONum 32
-  `define GPIO_MUX
+    `include "instance_defines.bsv"
 
-	interface MUX#(numeric type ionum);
+    interface MUX_config#(numeric type ionum);
 		(*always_ready,always_enabled*)
 		method Vector#(ionum,Bit#(2))   mux;
-		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USER) axi_slave;
+    endinterface
+
+	interface MUX#(numeric type ionum);
+        interface MUX_config#(ionum) mux_config;
+            interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) axi_slave;
 	endinterface
 
 //	(*synthesize*)
 	module mkmux(MUX#(ionum_));
 	  Vector#(ionum_,ConfigReg#(Bit#(2))) muxer_reg 				<-replicateM(mkConfigReg(0));
 		
-		AXI4_Lite_Slave_Xactor_IFC #(`ADDR, `DATA, `USER)  s_xactor <- mkAXI4_Lite_Slave_Xactor;
+		AXI4_Lite_Slave_Xactor_IFC #(`ADDR, `DATA, `USERSPACE)  s_xactor <- mkAXI4_Lite_Slave_Xactor;
     let ionum=valueOf(ionum_);
 		rule rl_wr_respond;
 			// Get the wr request
@@ -61,7 +61,7 @@ package mux;
 		rule rl_rd_respond;
 			let ar<- pop_o(s_xactor.o_rd_addr);
 			Bit#(32) temp=0;
-			AXI4_Lite_Rd_Data#(`DATA,`USER) r = AXI4_Lite_Rd_Data {rresp: AXI4_LITE_OKAY, rdata: ?, ruser: 0};
+			AXI4_Lite_Rd_Data#(`DATA,`USERSPACE) r = AXI4_Lite_Rd_Data {rresp: AXI4_LITE_OKAY, rdata: ?, ruser: 0};
 		  if(ar.araddr[5:0]=='h2c)begin
 		  	for(Integer i=0;i<min(ionum, 16);i=i+1) begin
           temp[i*2+ 1:i*2]=muxer_reg[i];
@@ -80,26 +80,15 @@ package mux;
 		endrule
 
 		interface axi_slave= s_xactor.axi_side;
+    interface mux_config=interface MUX_config
 		method Vector#(ionum,Bit#(2))   mux;
 			Vector#(ionum,Bit#(2)) temp;
 			for(Integer i=0;i<ionum;i=i+1)
 				temp[i]=pack(muxer_reg[i]);
 			return temp;
 		endmethod
+    endinterface;
 	endmodule
 
-
-  // instantiation template
-	interface MUX_real;
-		(*always_ready,always_enabled*)
-		method Vector#(32,Bit#(2))   mux;
-		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USER) axi_slave;
-	endinterface
-  (*synthesize*)
-  module mkmux_real(MUX_real);
-    MUX#(32) mymux <-mkmux();
-    method mux=mymux.mux;
-    interface axi_slave=mymux.axi_slave;
-  endmodule
 endpackage
 
