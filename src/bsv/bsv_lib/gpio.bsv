@@ -24,20 +24,34 @@ package gpio;
 	/*============================ */
 	`include "instance_defines.bsv"
 
-	interface GPIO#(numeric type ionum);
+	interface GPIO_config#(numeric type ionum);
 		(*always_ready,always_enabled*)
 		method Action gpio_in (Vector#(ionum,Bit#(1)) inp);
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_out;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_out_en;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_DRV0;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_DRV1;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_DRV2;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_PD;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_PPEN;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_PRG_SLEW;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_PUQ;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_PWRUPZHL;
+		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_PWRUP_PULL_EN;
+  endinterface
+  interface GPIO#(numeric type ionum);
+    interface GPIO_config#(ionum) pad_config;
 		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) axi_slave;
 	endinterface
 
@@ -167,76 +181,78 @@ package gpio;
 		endrule
 
 		interface axi_slave= s_xactor.axi_side;
-		method Action gpio_in (Vector#(ionum,Bit#(1)) inp);
-			for(Integer i=0;i<ionum;i=i+1)
-				datain_register[i]<=inp[i];
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_out;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=dataout_register[i];
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_out_en;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(direction_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_DRV0;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(drv0_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_DRV1;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(drv1_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_DRV2;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(drv2_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_PD;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(pd_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_PPEN;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(ppen_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_PRG_SLEW;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(prg_slew_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_PUQ;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(puq_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_PWRUPZHL;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(pwrupzhl_reg[i]);
-			return temp;
-		endmethod
-		method Vector#(ionum,Bit#(1))   gpio_PWRUP_PULL_EN;
-			Vector#(ionum,Bit#(1)) temp;
-			for(Integer i=0;i<ionum;i=i+1)
-				temp[i]=pack(pwrup_pull_en_reg[i]);
-			return temp;
-		endmethod
+    interface pad_config=interface GPIO_config
+    	method Action gpio_in (Vector#(ionum,Bit#(1)) inp);
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			datain_register[i]<=inp[i];
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_out;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=dataout_register[i];
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_out_en;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(direction_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_DRV0;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(drv0_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_DRV1;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(drv1_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_DRV2;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(drv2_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_PD;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(pd_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_PPEN;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(ppen_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_PRG_SLEW;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(prg_slew_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_PUQ;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(puq_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_PWRUPZHL;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(pwrupzhl_reg[i]);
+	  		return temp;
+	  	endmethod
+	  	method Vector#(ionum,Bit#(1))   gpio_PWRUP_PULL_EN;
+	  		Vector#(ionum,Bit#(1)) temp;
+	  		for(Integer i=0;i<ionum;i=i+1)
+	  			temp[i]=pack(pwrup_pull_en_reg[i]);
+	  		return temp;
+	  	endmethod
+    endinterface;
 	endmodule
 
 endpackage

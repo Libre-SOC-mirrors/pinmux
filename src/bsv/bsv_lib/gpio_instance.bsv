@@ -27,38 +27,19 @@ package gpio_instance;
 
   // instantiation template
 	interface GPIO_real;
-		method Action gpio_in (Vector#(32,Bit#(1)) inp);
-		method Vector#(32,Bit#(1))   gpio_out;
-		method Vector#(32,Bit#(1))   gpio_out_en;
-		method Vector#(32,Bit#(1))   gpio_DRV0;
-		method Vector#(32,Bit#(1))   gpio_DRV1;
-		method Vector#(32,Bit#(1))   gpio_DRV2;
-		method Vector#(32,Bit#(1))   gpio_PD;
-		method Vector#(32,Bit#(1))   gpio_PPEN;
-		method Vector#(32,Bit#(1))   gpio_PRG_SLEW;
-		method Vector#(32,Bit#(1))   gpio_PUQ;
-		method Vector#(32,Bit#(1))   gpio_PWRUPZHL;
-		method Vector#(32,Bit#(1))   gpio_PWRUP_PULL_EN;
-		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) axi_slave;
+    interface GPIO_config#(32) bankA_config;
+		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) bankA_slave;
+    interface GPIO_config#(15) bankB_config;
+		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) bankB_slave;
 	endinterface
   (*synthesize*)
   module mkgpio_real(GPIO_real);
-    GPIO#(32) mygpioA <-mkgpio();
-    method  gpio_out              =mygpioA.gpio_out ;
-    method  gpio_out_en           =mygpioA.gpio_out_en;
-    method  gpio_DRV0             =mygpioA.gpio_DRV0;
-    method  gpio_DRV1             =mygpioA.gpio_DRV1;
-    method  gpio_DRV2             =mygpioA.gpio_DRV2;
-    method  gpio_PD               =mygpioA.gpio_PD;
-    method  gpio_PPEN             =mygpioA.gpio_PPEN;
-    method  gpio_PRG_SLEW         =mygpioA.gpio_PRG_SLEW;
-    method  gpio_PUQ              =mygpioA.gpio_PUQ;
-    method  gpio_PWRUPZHL         =mygpioA.gpio_PWRUPZHL;
-    method  gpio_PWRUP_PULL_EN    =mygpioA.gpio_PWRUP_PULL_EN;
-		method Action gpio_in (Vector#(32,Bit#(1)) inp);
-      mygpioA.gpio_in(inp);
-    endmethod
-    interface axi_slave=mygpioA.axi_slave;
+    GPIO#(32) mygpioA <- mkgpio();
+    GPIO#(15) mygpioB <- mkgpio();
+    interface bankA_config=mygpioA.pad_config;
+    interface bankB_config=mygpioB.pad_config;
+    interface bankA_slave=mygpioA.axi_slave;
+    interface bankB_slave=mygpioB.axi_slave;
   endmodule
 endpackage
 
