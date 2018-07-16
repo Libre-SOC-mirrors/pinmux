@@ -1,7 +1,10 @@
 # mux.py
-
-from myhdl import *
-from myhdl._block import _Block
+try:
+    from myhdl import *
+    from myhdl._block import _Block
+except ImportError:
+    def block(*args):
+        pass
 from mux import mux4
 from functools import wraps, partial
 import inspect

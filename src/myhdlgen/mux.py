@@ -1,7 +1,11 @@
 # mux.py
 
 from math import log
-from myhdl import *
+try:
+    from myhdl import *
+except ImportError:
+    def block(*args):
+        pass
 
 period = 20  # clk frequency = 50 MHz
 
