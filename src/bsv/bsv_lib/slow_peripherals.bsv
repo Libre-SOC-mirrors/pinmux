@@ -284,9 +284,15 @@ package slow_peripherals;
       pinmux.peripheral_side.twi_scl_out(i2c0.out.scl_out);
       pinmux.peripheral_side.twi_scl_outen(pack(i2c0.out.scl_out_en));
     endrule
+    rule connect_i2c0_scl_in;
+      i2c0.out.scl_in(pinmux.peripheral_side.twi_scl_in);
+    endrule
     rule connect_i2c0_sda;
       pinmux.peripheral_side.twi_sda_out(i2c0.out.sda_out);
       pinmux.peripheral_side.twi_sda_outen(pack(i2c0.out.sda_out_en));
+    endrule
+    rule connect_i2c0_sda_in;
+      i2c0.out.sda_in(pinmux.peripheral_side.twi_sda_in);
     endrule
     rule connect_uart1tx;
       pinmux.peripheral_side.uart_tx(uart1.coe_rs232.sout);
