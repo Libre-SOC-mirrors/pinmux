@@ -32,7 +32,6 @@ Code inpired by the pwm module at: https://github.com/freecores/pwm
 
 */
 package pwm;
-  `define PWMWIDTH 32
   /*=== Project imports ==*/
   import Clocks::*;
   /*======================*/
