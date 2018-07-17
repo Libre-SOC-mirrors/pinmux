@@ -116,7 +116,8 @@ package pwm;
     // clock divider needs to operate on the
     // external clock. In this case, the divisor value
     // should also come from the same clock domain.
-    Reg#(Bit#(pwmnum_)) clock_divisor_sync <- mkSyncRegFromCC(0, clock_selection.clock_out);
+    Reg#(Bit#(pwmnum_)) clock_divisor_sync <- mkSyncRegFromCC(0, 
+                                        clock_selection.clock_out);
     rule transfer_data_from_clock_domains;
       clock_divisor_sync <= clock_divisor;
     endrule
@@ -128,7 +129,8 @@ package pwm;
     // clock domain of the external clock or bus_clock,
     // the divisor (which operates on the bus_clock
     // will have to be synchronized and sent to the divider
-    Ifc_ClockDiv#(pwmnum_) clock_divider <- mkClockDiv(clocked_by clock_selection.clock_out,
+    Ifc_ClockDiv#(pwmnum_) clock_divider <- mkClockDiv(
+                                        clocked_by clock_selection.clock_out,
                                          reset_by async_reset);
     let downclock = clock_divider.slowclock;
     Reset downreset <- mkAsyncReset(0,overall_reset,downclock);
@@ -137,8 +139,10 @@ package pwm;
     endrule
 
     // ======= Actual Counter and PWM signal generation ======== //
-    Reg#(Bit#(1)) pwm_output <- mkReg(0,clocked_by downclock,reset_by downreset);
-    Reg#(Bit#(pwmnum_)) rg_counter <-mkReg(0,clocked_by downclock,reset_by downreset);
+    Reg#(Bit#(1)) pwm_output <- mkReg(0,clocked_by downclock,
+                                        reset_by downreset);
+    Reg#(Bit#(pwmnum_)) rg_counter <-mkReg(0,clocked_by downclock,
+                                        reset_by downreset);
 
     // create synchronizers for clock domain crossing.
     Reg#(Bit#(1)) sync_pwm_output <- mkSyncRegToCC(0,downclock,downreset);
@@ -261,18 +265,21 @@ package pwm;
     // AXI4Lite interface to the PWM module
     interface Ifc_PWM_bus;
       interface PWMIO pwm_io;
-	    interface AXI4_Lite_Slave_IFC#(`PADDR, `Reg_width,`USERSPACE) axi4_slave;
+	    interface AXI4_Lite_Slave_IFC#(`PADDR, `Reg_width,
+                                        `USERSPACE) axi4_slave;
     endinterface
 
     (*synthesize*)
     module mkPWM_bus#(Clock ext_clock)(Ifc_PWM_bus);
       PWM pwm <-mkPWM(ext_clock);
-	  	AXI4_Lite_Slave_Xactor_IFC#(`PADDR,`Reg_width,`USERSPACE) s_xactor<-mkAXI4_Lite_Slave_Xactor();
+	  	AXI4_Lite_Slave_Xactor_IFC#(`PADDR,`Reg_width,
+                                        `USERSPACE) s_xactor<-mkAXI4_Lite_Slave_Xactor();
 
       rule read_request;
 	  		let req <- pop_o (s_xactor.o_rd_addr);
         let {err,data} = pwm.user.read(req.araddr);
-	  		let resp= AXI4_Lite_Rd_Data {rresp:err?AXI4_LITE_SLVERR:AXI4_LITE_OKAY,
+	  		let resp= AXI4_Lite_Rd_Data {rresp:err?
+                                        AXI4_LITE_SLVERR:AXI4_LITE_OKAY,
                                      rdata:data, ruser: ?};
 	  		s_xactor.i_rd_data.enq(resp);
       endrule
@@ -281,7 +288,8 @@ package pwm;
         let addreq <- pop_o(s_xactor.o_wr_addr);
         let datareq <- pop_o(s_xactor.o_wr_data);
         let err <- pwm.user.write(addreq.awaddr, datareq.wdata);
-        let resp = AXI4_Lite_Wr_Resp {bresp: err?AXI4_LITE_SLVERR:AXI4_LITE_OKAY, buser: ?};
+        let resp = AXI4_Lite_Wr_Resp {bresp: err?
+                                        AXI4_LITE_SLVERR:AXI4_LITE_OKAY, buser: ?};
         s_xactor.i_wr_resp.enq(resp);
       endrule
 
@@ -300,7 +308,8 @@ package pwm;
     (*synthesize*)
     module mkPWM_bus#(Clock ext_clock)(Ifc_PWM_bus);
       PWM pwm <-mkPWM(ext_clock);
-	  	AXI4_Slave_Xactor_IFC#(`PADDR,`Reg_width,`USERSPACE) s_xactor<-mkAXI4_Slave_Xactor();
+	  	AXI4_Slave_Xactor_IFC#(`PADDR,`Reg_width,
+                                        `USERSPACE) s_xactor<-mkAXI4_Slave_Xactor();
 
       rule read_request;
 	  		let req <- pop_o (s_xactor.o_rd_addr);
@@ -308,7 +317,8 @@ package pwm;
         if(!(req.arsize == 2 && req.arlen == 0))
           err = True;
 	  		let resp= AXI4_Rd_Data {rresp:err?AXI4_SLVERR:AXI4_OKAY,
-                                     rdata:data, ruser: ?, rid:req.arid, rlast: True};
+                                     rdata:data, ruser: 
+                                        ?, rid:req.arid, rlast: True};
 	  		s_xactor.i_rd_data.enq(resp);
       endrule
 
