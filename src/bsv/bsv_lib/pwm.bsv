@@ -270,8 +270,8 @@ package pwm;
     endinterface
 
     //(*synthesize*)
-    module mkPWM_bus#(Clock ext_clock, numeric type pwmnum)(Ifc_PWM_bus);
-      PWM pwm <-mkPWM(ext_clock, pwmnum);
+    module mkPWM_bus#(Clock ext_clock)(Ifc_PWM_bus);
+      PWM pwm <-mkPWM(ext_clock);
 	  	AXI4_Lite_Slave_Xactor_IFC#(`PADDR,`Reg_width, `USERSPACE)
                                     s_xactor<-mkAXI4_Lite_Slave_Xactor();
 
@@ -307,8 +307,8 @@ package pwm;
     endinterface
 
     (*synthesize*)
-    module mkPWM_bus#(Clock ext_clock, numeric type pwmnum)(Ifc_PWM_bus);
-      PWM pwm <-mkPWM(ext_clock, pwmnum);
+    module mkPWM_bus#(Clock ext_clock)(Ifc_PWM_bus);
+      PWM pwm <-mkPWM(ext_clock);
 	  	AXI4_Slave_Xactor_IFC#(`PADDR,`Reg_width,
                                 `USERSPACE) s_xactor<-mkAXI4_Slave_Xactor();
 
