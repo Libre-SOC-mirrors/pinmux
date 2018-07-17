@@ -65,10 +65,8 @@ package pwm;
     interface PWMIO io;
   endinterface
 
-  //(*synthesize*)
+  (*synthesize*)
   module mkPWM#(Clock ext_clock)(PWM);
-
-    //let pwmnum = valueOf(pwmnum_);
 
     let bus_clock <- exposeCurrentClock;
     let bus_reset <- exposeCurrentReset;
@@ -269,7 +267,7 @@ package pwm;
                                         `USERSPACE) axi4_slave;
     endinterface
 
-    //(*synthesize*)
+    (*synthesize*)
     module mkPWM_bus#(Clock ext_clock)(Ifc_PWM_bus);
       PWM pwm <-mkPWM(ext_clock);
 	  	AXI4_Lite_Slave_Xactor_IFC#(`PADDR,`Reg_width, `USERSPACE)
@@ -295,6 +293,7 @@ package pwm;
       endrule
 
       interface pwm_io = pwm.io;
+      interface axi4_slave = s_xactor.axi_side;
     endmodule
   `endif
 
