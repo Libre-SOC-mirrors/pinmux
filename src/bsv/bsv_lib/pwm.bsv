@@ -36,8 +36,8 @@ package pwm;
   import Clocks::*;
   /*======================*/
   /*== Package imports ==*/
-  import defined_types::*;
-  `include "defined_parameters.bsv"
+  //import defined_types::*;
+  `include "instance_defines.bsv"
   import ClockDiv::*;
   import ConcatReg::*;
 	import Semi_FIFOF::*;
@@ -64,8 +64,8 @@ package pwm;
     interface PWMIO io;
   endinterface
 
-  (*synthesize*)
-  module mkPWM#(Clock ext_clock, numeric type pwmnum)(PWM);
+  //(*synthesize*)
+  module mkPWM#(Clock ext_clock, numeric pwmnum_)(PWM);
 
     let pwmnum = valueOf(pwmnum_);
 
@@ -268,8 +268,8 @@ package pwm;
                                         `USERSPACE) axi4_slave;
     endinterface
 
-    (*synthesize*)
-    module mkPWM_bus#(Clock ext_clock, numeric type pwmnum)(Ifc_PWM_bus);
+    //(*synthesize*)
+    module mkPWM_bus#(Clock ext_clock, numeric pwmnum)(Ifc_PWM_bus);
       PWM pwm <-mkPWM(ext_clock, pwmnum);
 	  	AXI4_Lite_Slave_Xactor_IFC#(`PADDR,`Reg_width, `USERSPACE)
                                     s_xactor<-mkAXI4_Lite_Slave_Xactor();
@@ -336,6 +336,7 @@ package pwm;
       interface pwm_io = pwm.io;
     endmodule
   `endif
+  `ifdef PWM_TEST
   (*synthesize*)
   module mkTb(Empty);
     let clk <- exposeCurrentClock;
@@ -359,4 +360,5 @@ package pwm;
       let x <- pwm.user.write(8,'b0001_0110);
     endrule
   endmodule
+  `endif
 endpackage
