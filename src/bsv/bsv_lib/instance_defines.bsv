@@ -5,13 +5,13 @@
 `define Reg_width 64
 `define PRFDEPTH 6
 `define VADDR 39
-`define UART1 enable
 `define DCACHE_BLOCK_SIZE 4
 `define DCACHE_WORD_SIZE 8
 `define PERFMONITORS                            64
 `define DCACHE_WAYS 4
 `define DCACHE_TAG_BITS 20      // tag_bits = 52
 
+`define UART1 enable
     `define UART1Base       'h00011300
     `define UART1End        'h000113FF // 2 32-bit registers
 
@@ -19,6 +19,10 @@
 `ifdef simulate
   `define BAUD_RATE 5 //130 //
 `endif
+
+`define I2C0 enable
+    `define I2C0Base        'h00011400
+    `define I2C0End     'h000114FF // 8 32-bit registers
 
 
 //`define PWM_AXI4Lite enable

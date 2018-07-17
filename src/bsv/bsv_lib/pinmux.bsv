@@ -97,7 +97,12 @@ package pinmux;
       interface IOCellSide iocell_side;
    endinterface
    (*synthesize*)
+//(*no_default_reset*)
+//(*no_default_clock*) 
    module mkpinmux(Ifc_pinmux);
+
+       //no_reset;   
+       //default_clock no_clock; 
 
       // the followins wires capture the pin-mux selection
       // values for each mux assigned to a CELL

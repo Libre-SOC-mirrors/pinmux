@@ -182,7 +182,8 @@ package slow_peripherals;
 			Uart16550_AXI4_Lite_Ifc uart0 <- mkUart16550(clocked_by uart_clock, reset_by uart_reset, sp_clock, sp_reset);
 		`endif
 		`ifdef UART1
-			Ifc_Uart_bs uart1 <- mkUart_bs(clocked_by uart_clock, reset_by uart_reset,sp_clock, sp_reset);
+			//Ifc_Uart_bs uart1 <- mkUart_bs(clocked_by uart_clock, reset_by uart_reset,sp_clock, sp_reset);
+			Ifc_Uart_bs uart1 <- mkUart_bs(clocked_by sp_clock, reset_by sp_reset,sp_clock, sp_reset);
 		`endif
 		`ifdef CLINT
 			Ifc_clint				clint				<- mkclint();
@@ -279,6 +280,14 @@ package slow_peripherals;
       pinmux.mux_lines.cell1_mux(muxa.mux_config.mux[1]);  
       pinmux.mux_lines.cell2_mux(muxa.mux_config.mux[2]);  
     endrule
+    rule connect_i2c0_scl;
+      pinmux.peripheral_side.twi_scl_out(i2c0.out.scl_out);
+      pinmux.peripheral_side.twi_scl_outen(pack(i2c0.out.scl_out_en));
+    endrule
+    rule connect_i2c0_sda;
+      pinmux.peripheral_side.twi_sda_out(i2c0.out.sda_out);
+      pinmux.peripheral_side.twi_sda_outen(pack(i2c0.out.sda_out_en));
+    endrule
     rule connect_uart1tx;
       pinmux.peripheral_side.uart_tx(uart1.coe_rs232.sout);
     endrule
@@ -288,6 +297,10 @@ package slow_peripherals;
     rule connect_gpioa;
       pinmux.peripheral_side.gpioa_a0_out(gpioa.func.gpio_out[0]);
       pinmux.peripheral_side.gpioa_a0_outen(gpioa.func.gpio_out_en[0]);
+      pinmux.peripheral_side.gpioa_a1_out(gpioa.func.gpio_out[1]);
+      pinmux.peripheral_side.gpioa_a1_outen(gpioa.func.gpio_out_en[1]);
+      pinmux.peripheral_side.gpioa_a2_out(gpioa.func.gpio_out[2]);
+      pinmux.peripheral_side.gpioa_a2_outen(gpioa.func.gpio_out_en[2]);
 	  	Vector#(3,Bit#(1)) temp;
 	  	temp[0]=pinmux.peripheral_side.gpioa_a0_in;
 	  	temp[1]=pinmux.peripheral_side.gpioa_a1_in;
