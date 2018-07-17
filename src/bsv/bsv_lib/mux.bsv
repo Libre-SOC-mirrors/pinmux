@@ -46,11 +46,11 @@ package mux;
       let aw <- pop_o (s_xactor.o_wr_addr);
       let w  <- pop_o (s_xactor.o_wr_data);
 	   	let b = AXI4_Lite_Wr_Resp {bresp: AXI4_LITE_OKAY, buser: aw.awuser};
-		  if(aw.awaddr[5:0]=='h2c)
+		  if(aw.awaddr[5:0]=='h0)
 		    for(Integer i=0;i<min(ionum, 16);i=i+1) begin
           muxer_reg[i]<= w.wdata[i*2+1:i*2];
 		  	end
-		  else if(aw.awaddr[5:0]=='h30 && ionum>=16)
+		  else if(aw.awaddr[5:0]=='h4 && ionum>=16)
 		  	for(Integer i=0;i<ionum-16;i=i+1) begin
           muxer_reg[i+16]<= w.wdata[i*2+1:i*2];
 		  	end
@@ -65,13 +65,13 @@ package mux;
 			let ar<- pop_o(s_xactor.o_rd_addr);
 			Bit#(32) temp=0;
 			AXI4_Lite_Rd_Data#(`DATA,`USERSPACE) r = AXI4_Lite_Rd_Data {rresp: AXI4_LITE_OKAY, rdata: ?, ruser: 0};
-		  if(ar.araddr[5:0]=='h2c)begin
+		  if(ar.araddr[5:0]=='h0)begin
 		  	for(Integer i=0;i<min(ionum, 16);i=i+1) begin
           temp[i*2+ 1:i*2]=muxer_reg[i];
 		  	end
         r.rdata=duplicate(temp);
       end
-		  else if(ar.araddr[5:0]=='h30 && ionum>=16)begin
+		  else if(ar.araddr[5:0]=='h4 && ionum>=16)begin
 		  	for(Integer i=0;i<ionum-16;i=i+1) begin
           temp[i*2+ 1:i*2]=muxer_reg[i+ 16];
 		  	end
