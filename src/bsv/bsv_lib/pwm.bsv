@@ -272,8 +272,8 @@ package pwm;
     (*synthesize*)
     module mkPWM_bus#(Clock ext_clock, numeric type pwmnum)(Ifc_PWM_bus);
       PWM pwm <-mkPWM(ext_clock, pwmnum);
-	  	AXI4_Lite_Slave_Xactor_IFC#(`PADDR,`Reg_width,
-                                        `USERSPACE) s_xactor<-mkAXI4_Lite_Slave_Xactor();
+	  	AXI4_Lite_Slave_Xactor_IFC#(`PADDR,`Reg_width, `USERSPACE)
+                                    s_xactor<-mkAXI4_Lite_Slave_Xactor();
 
       rule read_request;
 	  		let req <- pop_o (s_xactor.o_rd_addr);
@@ -289,7 +289,8 @@ package pwm;
         let datareq <- pop_o(s_xactor.o_wr_data);
         let err <- pwm.user.write(addreq.awaddr, datareq.wdata);
         let resp = AXI4_Lite_Wr_Resp {bresp: err?
-                                        AXI4_LITE_SLVERR:AXI4_LITE_OKAY, buser: ?};
+                                        AXI4_LITE_SLVERR:AXI4_LITE_OKAY,
+                                    buser: ?};
         s_xactor.i_wr_resp.enq(resp);
       endrule
 
@@ -309,7 +310,7 @@ package pwm;
     module mkPWM_bus#(Clock ext_clock, numeric type pwmnum)(Ifc_PWM_bus);
       PWM pwm <-mkPWM(ext_clock, pwmnum);
 	  	AXI4_Slave_Xactor_IFC#(`PADDR,`Reg_width,
-                                        `USERSPACE) s_xactor<-mkAXI4_Slave_Xactor();
+                                `USERSPACE) s_xactor<-mkAXI4_Slave_Xactor();
 
       rule read_request;
 	  		let req <- pop_o (s_xactor.o_rd_addr);
