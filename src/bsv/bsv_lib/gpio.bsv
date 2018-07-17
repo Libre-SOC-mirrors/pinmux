@@ -24,13 +24,15 @@ package gpio;
 	/*============================ */
 	`include "instance_defines.bsv"
 
-	interface GPIO_config#(numeric type ionum);
+	interface GPIO_func#(numeric type ionum);
 		(*always_ready,always_enabled*)
 		method Action gpio_in (Vector#(ionum,Bit#(1)) inp);
 		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_out;
 		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_out_en;
+  endinterface
+	interface GPIO_config#(numeric type ionum);
 		(*always_ready*)
 		method Vector#(ionum,Bit#(1))   gpio_DRV0;
 		(*always_ready*)
@@ -52,6 +54,7 @@ package gpio;
   endinterface
   interface GPIO#(numeric type ionum);
     interface GPIO_config#(ionum) pad_config;
+    interface GPIO_func#(ionum) func;
 		interface AXI4_Lite_Slave_IFC#(`ADDR,`DATA,`USERSPACE) axi_slave;
 	endinterface
 
@@ -181,7 +184,7 @@ package gpio;
 		endrule
 
 		interface axi_slave= s_xactor.axi_side;
-    interface pad_config=interface GPIO_config
+    interface func=interface GPIO_func
     	method Action gpio_in (Vector#(ionum,Bit#(1)) inp);
 	  		for(Integer i=0;i<ionum;i=i+1)
 	  			datain_register[i]<=inp[i];
@@ -198,6 +201,8 @@ package gpio;
 	  			temp[i]=pack(direction_reg[i]);
 	  		return temp;
 	  	endmethod
+    endinterface
+    interface pad_config=interface GPIO_config
 	  	method Vector#(ionum,Bit#(1))   gpio_DRV0;
 	  		Vector#(ionum,Bit#(1)) temp;
 	  		for(Integer i=0;i<ionum;i=i+1)

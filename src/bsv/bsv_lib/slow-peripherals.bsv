@@ -44,6 +44,9 @@ package slow_peripherals;
   `ifdef PWM_AXI4Lite 
     import pwm::*;
   `endif
+  // NEEL EDIT
+  import pinmux::*;
+  import mux::*;
 	/*=====================================*/
 	
 	/*===== interface declaration =====*/
@@ -96,6 +99,10 @@ package slow_peripherals;
 		`ifdef QSPI0 method Bit#(1) qspi0_isint; `endif
 		`ifdef QSPI1 method Bit#(1) qspi1_isint; `endif
 		`ifdef UART0 method Bit#(1) uart0_intr; `endif
+    // NEEL EDIT
+    interface IOCellSide iocell_side; // mandatory interface
+    interface GPIO_config#(3) pad_configa; // depends on the number of banks
+    // NEEL EDIT OVER
 	endinterface
 	/*================================*/
 
@@ -156,6 +163,11 @@ package slow_peripherals;
         return tuple2(True,fromInteger(valueOf(Pwm_slave_num)));
       else
     `endif
+
+    // NEEL EDIT 
+      // give slave number and adress map to whatever peripherals you instantiate on the AXI4_Lite
+      // slave.
+    // NEEL EDIT OVER
 		return tuple2(False,?);
 	endfunction
 
@@ -199,6 +211,11 @@ package slow_peripherals;
     `ifdef PWM_AXI4Lite
       Ifc_PWM_bus pwm_bus <- mkPWM_bus(ext_pwm_clock);
     `endif
+    // NEEL EDIT
+    Ifc_pinmux pinmux <- mkpinmux; // mandatory
+    MUX#(3) mymux <- mkmux(); // mandatory. number depends on the number of instances required.
+    GPIO#(3) mygpioa <- mkgpio(); // optional. depends the number of IO pins declared before.
+    // NEEL EDIT OVER
 		/*=======================================================*/
 
    	AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `PADDR, `Reg_width,`USERSPACE)	slow_fabric <- 
@@ -249,6 +266,31 @@ package slow_peripherals;
       mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Pwm_slave_num))],
                     pwm_bus.axi4_slave);
     `endif
+
+    // NEEL EDIT
+    mkConnection (slow_fabric.v_from_masters[/* mux slave number*/], mymux.axi_slave);
+    mkConnection (slow_fabric.v_from_masters[/* gpioslave number*/], gpioa.axi_slave);
+    rule connect_select_lines_pinmux;// mandatory
+      pinmux.cell0_mux(mymux.mux_config[0]);  
+      pinmux.cell1_mux(mymux.mux_config[1]);  
+      pinmux.cell2_mux(mymux.mux_config[2]);  
+    endrule
+    rule connect_uart1tx;
+      pinmux.peripheral_side.uart_tx(uart1.coe_rs232.rs232.sout);
+    endrule
+    rule connect_uart1rx;
+      uart1.coe_rs232.rs232.sin(pinmux.peripheral_side.uart_rx);
+    endrule
+    rule connect_gpioa
+      pinmux.peripheral_side.gpioa_a0_out(gpio.func.gpio_out[0]);
+      pinmux.peripheral_side.gpioa_a0_outen(gpio.func.gpio_out_en[0]);
+	  	Vector#(3,Bit#(1)) temp;
+	  	temp[0]=pinmux.peripheral_side.gpioa_a0_in;
+	  	temp[1]=pinmux.peripheral_side.gpioa_a1_in;
+	  	temp[2]=pinmux.peripheral_side.gpioa_a2_in;
+      gpio.pad_config.gpio_in(temp);
+    endrule
+    // NEEL EDIT OVER
 		/*=======================================================*/
 		/*=================== PLIC Connections ==================== */
 		`ifdef PLIC
@@ -457,6 +499,10 @@ package slow_peripherals;
         interface pwm_o = pwm_bus.pwm_io;
       `endif
 		endinterface
+    // NEEL EDIT
+    interface iocell_side=pinmux.iocell_side;
+    interface pad_configa= gpioa.pad_config;
+    // NEEL EDIT OVER
 		/*===================================*/
 	endmodule
 endpackage
