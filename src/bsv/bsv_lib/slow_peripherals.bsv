@@ -269,10 +269,10 @@ package slow_peripherals;
 
     // NEEL EDIT
     mkConnection (slow_fabric.
-                  v_from_masters[fromInteger(valueOf(Muxa_slave_num))], 
+                  v_to_slaves[fromInteger(valueOf(Muxa_slave_num))], 
                   muxa.axi_slave);
     mkConnection (slow_fabric.
-                  v_from_masters[fromInteger(valueOf(Gpioa_slave_num))], 
+                  v_to_slaves[fromInteger(valueOf(Gpioa_slave_num))], 
                   gpioa.axi_slave);
     rule connect_select_lines_pinmux;// mandatory
       pinmux.cell0_mux(muxa.mux_config[0]);  
@@ -286,13 +286,13 @@ package slow_peripherals;
       uart1.coe_rs232.rs232.sin(pinmux.peripheral_side.uart_rx);
     endrule
     rule connect_gpioa;
-      pinmux.peripheral_side.gpioa_a0_out(gpio.func.gpio_out[0]);
-      pinmux.peripheral_side.gpioa_a0_outen(gpio.func.gpio_out_en[0]);
+      pinmux.peripheral_side.gpioa_a0_out(gpioa.func.gpio_out[0]);
+      pinmux.peripheral_side.gpioa_a0_outen(gpioa.func.gpio_out_en[0]);
 	  	Vector#(3,Bit#(1)) temp;
 	  	temp[0]=pinmux.peripheral_side.gpioa_a0_in;
 	  	temp[1]=pinmux.peripheral_side.gpioa_a1_in;
 	  	temp[2]=pinmux.peripheral_side.gpioa_a2_in;
-      gpio.pad_config.gpio_in(temp);
+      gpioa.pad_config.gpio_in(temp);
     endrule
     // NEEL EDIT OVER
 		/*=======================================================*/
