@@ -322,6 +322,11 @@ package slow_peripherals;
         end
       endrule
     end
+    /* for connectin inputs from pinmux as itnerrupts
+      rule connect_pinmux_eint;
+        wr_interrupt<= pinmux.peripheral_side.eint_input;
+      endrule
+    */
     // NEEL EDIT OVER
 		/*=======================================================*/
 		/*=================== PLIC Connections ==================== */
