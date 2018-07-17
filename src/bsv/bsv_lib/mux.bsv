@@ -42,6 +42,7 @@ package mux;
     let ionum=valueOf(ionum_);
 		rule rl_wr_respond;
 			// Get the wr request
+            //aw is write address, w is write data
       let aw <- pop_o (s_xactor.o_wr_addr);
       let w  <- pop_o (s_xactor.o_wr_data);
 	   	let b = AXI4_Lite_Wr_Resp {bresp: AXI4_LITE_OKAY, buser: aw.awuser};
@@ -59,6 +60,8 @@ package mux;
 		endrule
 
 		rule rl_rd_respond;
+            // Get the read request
+            //ar is read address, r is read data
 			let ar<- pop_o(s_xactor.o_rd_addr);
 			Bit#(32) temp=0;
 			AXI4_Lite_Rd_Data#(`DATA,`USERSPACE) r = AXI4_Lite_Rd_Data {rresp: AXI4_LITE_OKAY, rdata: ?, ruser: 0};
