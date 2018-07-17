@@ -270,8 +270,8 @@ package pwm;
     endinterface
 
     (*synthesize*)
-    module mkPWM_bus#(Clock ext_clock)(Ifc_PWM_bus);
-      PWM pwm <-mkPWM(ext_clock);
+    module mkPWM_bus#(Clock ext_clock, numeric type pwmnum)(Ifc_PWM_bus);
+      PWM pwm <-mkPWM(ext_clock, pwmnum);
 	  	AXI4_Lite_Slave_Xactor_IFC#(`PADDR,`Reg_width,
                                         `USERSPACE) s_xactor<-mkAXI4_Lite_Slave_Xactor();
 
@@ -306,8 +306,8 @@ package pwm;
     endinterface
 
     (*synthesize*)
-    module mkPWM_bus#(Clock ext_clock)(Ifc_PWM_bus);
-      PWM pwm <-mkPWM(ext_clock);
+    module mkPWM_bus#(Clock ext_clock, numeric type pwmnum)(Ifc_PWM_bus);
+      PWM pwm <-mkPWM(ext_clock, pwmnum);
 	  	AXI4_Slave_Xactor_IFC#(`PADDR,`Reg_width,
                                         `USERSPACE) s_xactor<-mkAXI4_Slave_Xactor();
 
@@ -339,7 +339,7 @@ package pwm;
   (*synthesize*)
   module mkTb(Empty);
     let clk <- exposeCurrentClock;
-    PWM pwm <- mkPWM(clk);
+    PWM pwm <- mkPWM(clk, 32);
     Reg#(Bit#(5)) rg_state <- mkReg(0);
 
     rule state1(rg_state==0);
