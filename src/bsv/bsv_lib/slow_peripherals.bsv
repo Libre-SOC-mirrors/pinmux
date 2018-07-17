@@ -7,7 +7,7 @@ package slow_peripherals;
 	import AXI4_Types::*;
 	import Semi_FIFOF::*;
 	import AXI4Lite_AXI4_Bridge::*;
-	`include "defined_parameters.bsv"
+	`include "instance_defines.bsv"
 	/*===========================*/
 	/*=== package imports ===*/
 	import Clocks::*;
@@ -29,7 +29,6 @@ package slow_peripherals;
 		import clint::*;
 	`endif
 	`ifdef PLIC
-		import gpio				::*;
 		import plic				::*;
 	`endif
 	`ifdef I2C0
@@ -47,6 +46,7 @@ package slow_peripherals;
   // NEEL EDIT
   import pinmux::*;
   import mux::*;
+  import gpio::*;
 	/*=====================================*/
 	
 	/*===== interface declaration =====*/
@@ -268,8 +268,8 @@ package slow_peripherals;
     `endif
 
     // NEEL EDIT
-    mkConnection (slow_fabric.v_from_masters[/* mux slave number*/], mymux.axi_slave);
-    mkConnection (slow_fabric.v_from_masters[/* gpioslave number*/], gpioa.axi_slave);
+    mkConnection (slow_fabric.v_from_masters[fromInteger(valueOf(Muxa_slave_num))], mymux.axi_slave);
+    mkConnection (slow_fabric.v_from_masters[fromInteger(valueOf(Gpioa_slave_num))], gpioa.axi_slave);
     rule connect_select_lines_pinmux;// mandatory
       pinmux.cell0_mux(mymux.mux_config[0]);  
       pinmux.cell1_mux(mymux.mux_config[1]);  
@@ -281,7 +281,7 @@ package slow_peripherals;
     rule connect_uart1rx;
       uart1.coe_rs232.rs232.sin(pinmux.peripheral_side.uart_rx);
     endrule
-    rule connect_gpioa
+    rule connect_gpioa;
       pinmux.peripheral_side.gpioa_a0_out(gpio.func.gpio_out[0]);
       pinmux.peripheral_side.gpioa_a0_outen(gpio.func.gpio_out_en[0]);
 	  	Vector#(3,Bit#(1)) temp;
