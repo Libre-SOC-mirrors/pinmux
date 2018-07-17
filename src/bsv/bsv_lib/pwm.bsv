@@ -61,14 +61,16 @@ package pwm;
   endinterface
 
   (*synthesize*)
-  module mkPWM#(Clock ext_clock)(PWM);
+  module mkPWM#(Clock ext_clock, numeric type pwmnum)(PWM);
+
+    let pwmnum = valueOf(pwmnum_);
 
     let bus_clock <- exposeCurrentClock;
     let bus_reset <- exposeCurrentReset;
 
-    Reg#(Bit#(`PWMWIDTH)) period <- mkReg(0);
-    Reg#(Bit#(`PWMWIDTH)) duty_cycle <- mkReg(0);
-    Reg#(Bit#(`PWMWIDTH)) clock_divisor <- mkReg(0);
+    Reg#(Bit#(pwmnum_)) period <- mkReg(0);
+    Reg#(Bit#(pwmnum_)) duty_cycle <- mkReg(0);
+    Reg#(Bit#(pwmnum_)) clock_divisor <- mkReg(0);
     // =========== Control registers ================== //
     Reg#(Bit#(1)) clock_selector <- mkReg(0);     // bit-0
     Reg#(Bit#(1)) pwm_enable <- mkReg(0);         // bit-1
@@ -102,7 +104,7 @@ package pwm;
     // The following register is required to transfer the divisor value from bus_clock to 
     // external clock domain. This is necessary if the clock divider needs to operate on the
     // external clock. In this case, the divisor value should also come from the same clock domain.
-    Reg#(Bit#(`PWMWIDTH)) clock_divisor_sync <- mkSyncRegFromCC(0, clock_selection.clock_out); 
+    Reg#(Bit#(pwmnum_)) clock_divisor_sync <- mkSyncRegFromCC(0, clock_selection.clock_out); 
     rule transfer_data_from_clock_domains;
       clock_divisor_sync <= clock_divisor;
     endrule
@@ -111,7 +113,7 @@ package pwm;
     // clock based on the value given in register divisor. Since the clock_divider works on a muxed
     // clock domain of the external clock or bus_clock, the divisor (which operates on the bus_clock
     // will have to be synchronized and sent to the divider
-    Ifc_ClockDiv#(`PWMWIDTH) clock_divider <- mkClockDiv(clocked_by clock_selection.clock_out, 
+    Ifc_ClockDiv#(pwmnum_) clock_divider <- mkClockDiv(clocked_by clock_selection.clock_out, 
                                          reset_by async_reset);
     let downclock = clock_divider.slowclock; 
     Reset downreset <- mkAsyncReset(0,overall_reset,downclock);
@@ -121,14 +123,14 @@ package pwm;
 
     // ======= Actual Counter and PWM signal generation ======== //
     Reg#(Bit#(1)) pwm_output <- mkReg(0,clocked_by downclock,reset_by downreset);
-    Reg#(Bit#(`PWMWIDTH)) rg_counter <-mkReg(0,clocked_by downclock,reset_by downreset); 
+    Reg#(Bit#(pwmnum_)) rg_counter <-mkReg(0,clocked_by downclock,reset_by downreset); 
     
     // create synchronizers for clock domain crossing.
     Reg#(Bit#(1)) sync_pwm_output <- mkSyncRegToCC(0,downclock,downreset);
     ReadOnly#(Bit#(1)) pwm_signal <- mkNullCrossingWire(bus_clock, pwm_output);
     Reg#(Bit#(1)) sync_continous_once <- mkSyncRegFromCC(0,downclock);
-    Reg#(Bit#(`PWMWIDTH)) sync_duty_cycle <- mkSyncRegFromCC(0,downclock);
-    Reg#(Bit#(`PWMWIDTH)) sync_period <- mkSyncRegFromCC(0,downclock);
+    Reg#(Bit#(pwmnum_)) sync_duty_cycle <- mkSyncRegFromCC(0,downclock);
+    Reg#(Bit#(pwmnum_)) sync_period <- mkSyncRegFromCC(0,downclock);
     Reg#(Bit#(1)) sync_pwm_enable <- mkSyncRegFromCC(0,downclock);
     Reg#(Bit#(1)) sync_pwm_start <- mkSyncRegFromCC(0,downclock);
     rule sync_pwm_output_to_default_clock;
