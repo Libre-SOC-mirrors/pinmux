@@ -10,6 +10,10 @@
 `define PERFMONITORS                            64
 `define DCACHE_WAYS 4
 `define DCACHE_TAG_BITS 20      // tag_bits = 52
+`define PLIC
+	`define PLICBase		'h0c000000
+	`define PLICEnd		'h10000000
+`define INTERRUPT_PINS 64
 
 `define UART1 enable
     `define UART1Base       'h00011300

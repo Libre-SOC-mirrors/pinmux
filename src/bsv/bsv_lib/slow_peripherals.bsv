@@ -57,14 +57,6 @@ package slow_peripherals;
 		`ifdef UART1
 			interface RS232 uart1_coe;
 		`endif
-		`ifdef PLIC
-			(*always_ready,always_enabled*)
-			method Action gpio_in (Vector#(`IONum,Bit#(1)) inp);
-			(*always_ready,always_enabled*)
-			method Vector#(`IONum,Bit#(1))   gpio_out;
-			(*always_ready,always_enabled*)
-			method Vector#(`IONum,Bit#(1))   gpio_out_en;
-		`endif
 		`ifdef I2C0
 			interface I2C_out i2c0_out;
 		`endif
@@ -88,6 +80,7 @@ package slow_peripherals;
 	interface Ifc_slow_peripherals;
 		interface AXI4_Slave_IFC#(`PADDR,`Reg_width,`USERSPACE) axi_slave;
 		interface SP_ios slow_ios;
+    method Action external_int(Bit#(32) in);
 		`ifdef CLINT
 			method Bit#(1) msip_int;
 			method Bit#(1) mtip_int;
@@ -125,8 +118,6 @@ package slow_peripherals;
 		`ifdef PLIC
 			if(addr>=`PLICBase && addr<=`PLICEnd)
 				return tuple2(True,fromInteger(valueOf(Plic_slave_num)));
-			else if(addr>=`GPIOBase && addr<=`GPIOEnd)
-				return tuple2(True,fromInteger(valueOf(GPIO_slave_num)));
 			else
 		`endif
 		`ifdef I2C0
@@ -191,8 +182,7 @@ package slow_peripherals;
 		`ifdef PLIC
 			Ifc_PLIC_AXI	plic <- mkplicperipheral();
          Wire#(Bit#(TLog#(`INTERRUPT_PINS))) interrupt_id <- mkWire();
-			Vector#(`INTERRUPT_PINS, FIFO#(bit)) ff_gateway_queue <- replicateM(mkFIFO);
-			GPIO						gpio				<- mkgpio;
+			  Vector#(32, FIFO#(bit)) ff_gateway_queue <- replicateM(mkFIFO);
 		`endif
 		`ifdef I2C0 
 			I2C_IFC					i2c0				<- mkI2CController();
@@ -216,6 +206,7 @@ package slow_peripherals;
     Ifc_pinmux pinmux <- mkpinmux; // mandatory
     MUX#(3) muxa <- mkmux(); // mandatory. number depends on the number of instances required.
     GPIO#(3) gpioa <- mkgpio(); // optional. depends the number of IO pins declared before.
+    Wire#(Bit#(32)) wr_interrupt <- mkWire();
     // NEEL EDIT OVER
 		/*=======================================================*/
 
@@ -240,8 +231,6 @@ package slow_peripherals;
 		`ifdef PLIC
 			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Plic_slave_num))],	
                     plic.axi4_slave_plic); //
-			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(GPIO_slave_num))],	
-                    gpio.axi_slave); //
 		`endif
 		`ifdef I2C0
    		mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(I2c0_slave_num))],	
@@ -313,10 +302,30 @@ package slow_peripherals;
 	  	temp[2]=pinmux.peripheral_side.gpioa_a2_in;
       gpioa.func.gpio_in(temp);
     endrule
+    for(Integer i=0;i<32;i=i+ 1)begin
+      rule connect_int_to_plic(wr_interrupt[i]==1);
+				ff_gateway_queue[i].enq(1);
+				plic.ifc_external_irq[i].irq_frm_gateway(True);
+      endrule
+    end
+    rule rl_completion_msg_from_plic;
+		  let id <- plic.intrpt_completion;
+      interrupt_id <= id;
+      `ifdef verbose $display("Dequeing the FIFO -- PLIC Interrupt Serviced id: %d",id); `endif
+		endrule
+
+    for(Integer i=0; i <32; i=i+1) begin
+	    rule deq_gateway_queue;
+		    if(interrupt_id==fromInteger(i)) begin
+			    ff_gateway_queue[i].deq;
+          `ifdef $display($time,"Dequeing the Interrupt request for ID: %d",i); `endif
+        end
+      endrule
+    end
     // NEEL EDIT OVER
 		/*=======================================================*/
 		/*=================== PLIC Connections ==================== */
-		`ifdef PLIC
+		`ifdef PLIC_main
 			/*TODO DMA interrupt need to be connected to the plic
 			for(Integer i=1; i<8; i=i+1) begin
          `ifdef DMA
@@ -497,11 +506,6 @@ package slow_peripherals;
 			`ifdef UART1
 				interface uart1_coe=uart1.coe_rs232;
 			`endif
-			`ifdef PLIC
-				method Action gpio_in (Vector#(`IONum,Bit#(1)) inp)=gpio.gpio_in(inp);
-				method Vector#(`IONum,Bit#(1))   gpio_out=gpio.gpio_out;
-				method Vector#(`IONum,Bit#(1))   gpio_out_en=gpio.gpio_out_en;
-			`endif
 			`ifdef I2C0
 				interface i2c0_out=i2c0.out;
 			`endif
@@ -525,6 +529,9 @@ package slow_peripherals;
     // NEEL EDIT
     interface iocell_side=pinmux.iocell_side;
     interface pad_configa= gpioa.pad_config;
+    method Action external_int(Bit#(32) in);
+      wr_interrupt<= in;
+    endmethod
     // NEEL EDIT OVER
 		/*===================================*/
 	endmodule
