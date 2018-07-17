@@ -2,25 +2,25 @@
 Copyright (c) 2013, IIT Madras
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted 
+Redistribution and use in source and binary forms, with or without modification, are permitted
 provided that the following conditions are met:
 
-*  Redistributions of source code must retain the above copyright notice, this list of conditions 
+*  Redistributions of source code must retain the above copyright notice, this list of conditions
    and the following disclaimer.
-*  Redistributions in binary form must reproduce the above copyright notice, this list of 
-   conditions and the following disclaimer in the documentation and/or other materials provided 
+*  Redistributions in binary form must reproduce the above copyright notice, this list of
+   conditions and the following disclaimer in the documentation and/or other materials provided
    with the distribution.
-*  Neither the name of IIT Madras  nor the names of its contributors may be used to endorse or 
+*  Neither the name of IIT Madras  nor the names of its contributors may be used to endorse or
    promote products derived from this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR 
-IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER 
-IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT 
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -------------------------------------------------------------------------------------------------
 
 Code inpired by the pwm module at: https://github.com/freecores/pwm
@@ -79,8 +79,8 @@ package pwm;
     Reg#(Bit#(1)) pwm_output_enable <- mkReg(0);  // bit-4
     Reg#(Bit#(1)) interrupt <- mkReg(0);          // bit-5
     Reg#(Bit#(1)) reset_counter <- mkReg(0);      // bit-7
-    Reg#(Bit#(8)) control = concatReg8(reset_counter, readOnlyReg(0), readOnlyReg(interrupt), 
-                                       pwm_output_enable, continous_once, pwm_start, pwm_enable, 
+    Reg#(Bit#(8)) control = concatReg8(reset_counter, readOnlyReg(0), readOnlyReg(interrupt),
+                                       pwm_output_enable, continous_once, pwm_start, pwm_enable,
                                        clock_selector);
     // ================================================ //
 
@@ -94,28 +94,28 @@ package pwm;
     endrule
     Reset overall_reset <- mkResetEither(bus_reset,control_reset.new_rst);
 
-    // Select between bus clock or external clock 
+    // Select between bus clock or external clock
     MuxClkIfc clock_selection <- mkUngatedClockMux(ext_clock,bus_clock);
     Reset async_reset <- mkAsyncResetFromCR(0,clock_selection.clock_out);
     rule select_busclk_extclk;
       clock_selection.select(clock_selector==1);
     endrule
 
-    // The following register is required to transfer the divisor value from bus_clock to 
+    // The following register is required to transfer the divisor value from bus_clock to
     // external clock domain. This is necessary if the clock divider needs to operate on the
     // external clock. In this case, the divisor value should also come from the same clock domain.
-    Reg#(Bit#(pwmnum_)) clock_divisor_sync <- mkSyncRegFromCC(0, clock_selection.clock_out); 
+    Reg#(Bit#(pwmnum_)) clock_divisor_sync <- mkSyncRegFromCC(0, clock_selection.clock_out);
     rule transfer_data_from_clock_domains;
       clock_divisor_sync <= clock_divisor;
     endrule
-    
+
     // The PWM can operate on a slowed-down clock. The following module generates a slowed-down
     // clock based on the value given in register divisor. Since the clock_divider works on a muxed
     // clock domain of the external clock or bus_clock, the divisor (which operates on the bus_clock
     // will have to be synchronized and sent to the divider
-    Ifc_ClockDiv#(pwmnum_) clock_divider <- mkClockDiv(clocked_by clock_selection.clock_out, 
+    Ifc_ClockDiv#(pwmnum_) clock_divider <- mkClockDiv(clocked_by clock_selection.clock_out,
                                          reset_by async_reset);
-    let downclock = clock_divider.slowclock; 
+    let downclock = clock_divider.slowclock;
     Reset downreset <- mkAsyncReset(0,overall_reset,downclock);
     rule generate_slow_clock;
       clock_divider.divisor(clock_divisor_sync);
@@ -123,8 +123,8 @@ package pwm;
 
     // ======= Actual Counter and PWM signal generation ======== //
     Reg#(Bit#(1)) pwm_output <- mkReg(0,clocked_by downclock,reset_by downreset);
-    Reg#(Bit#(pwmnum_)) rg_counter <-mkReg(0,clocked_by downclock,reset_by downreset); 
-    
+    Reg#(Bit#(pwmnum_)) rg_counter <-mkReg(0,clocked_by downclock,reset_by downreset);
+
     // create synchronizers for clock domain crossing.
     Reg#(Bit#(1)) sync_pwm_output <- mkSyncRegToCC(0,downclock,downreset);
     ReadOnly#(Bit#(1)) pwm_signal <- mkNullCrossingWire(bus_clock, pwm_output);
@@ -161,7 +161,7 @@ package pwm;
 
     // This rule performs the actual pwm and the timer functionality. if pwm_enable is 1 then the
     // PWM mode is selected. Every time the counter value equals/crosses the period value it is
-    // reset and the output pwm_output signal is toggled. 
+    // reset and the output pwm_output signal is toggled.
     // The timer mode is selected when pwm_enable is 0. Here again 2 more modes are possible. if the
     // continous_once bit is 0 then the timer is in one time. In this case once the counter reaches
     // the period value it raises an interrupt and stops the counter. In the continuous mode
@@ -173,7 +173,7 @@ package pwm;
       if(sync_pwm_enable==1)begin // PWM mode enabled
         if(rg_counter >= temp)
           rg_counter <= 0;
-        else 
+        else
           rg_counter <= cntr;
         if(rg_counter < sync_duty_cycle)
           pwm_output <= 1;
@@ -247,7 +247,7 @@ package pwm;
       rule read_request;
 	  		let req <- pop_o (s_xactor.o_rd_addr);
         let {err,data} = pwm.user.read(req.araddr);
-	  		let resp= AXI4_Lite_Rd_Data {rresp:err?AXI4_LITE_SLVERR:AXI4_LITE_OKAY, 
+	  		let resp= AXI4_Lite_Rd_Data {rresp:err?AXI4_LITE_SLVERR:AXI4_LITE_OKAY,
                                      rdata:data, ruser: ?};
 	  		s_xactor.i_rd_data.enq(resp);
       endrule
@@ -281,7 +281,7 @@ package pwm;
         let {err,data} = pwm.user.read(req.araddr);
         if(!(req.arsize == 2 && req.arlen == 0))
           err = True;
-	  		let resp= AXI4_Rd_Data {rresp:err?AXI4_SLVERR:AXI4_OKAY, 
+	  		let resp= AXI4_Rd_Data {rresp:err?AXI4_SLVERR:AXI4_OKAY,
                                      rdata:data, ruser: ?, rid:req.arid, rlast: True};
 	  		s_xactor.i_rd_data.enq(resp);
       endrule
@@ -292,7 +292,7 @@ package pwm;
         let err <- pwm.user.write(addreq.awaddr, datareq.wdata);
         if(!(addreq.awsize == 2 && addreq.awlen == 0))
           err = True;
-        let resp = AXI4_Wr_Resp {bresp: err?AXI4_SLVERR:AXI4_OKAY, buser: ?, 
+        let resp = AXI4_Wr_Resp {bresp: err?AXI4_SLVERR:AXI4_OKAY, buser: ?,
                                       bid:datareq.wid};
         s_xactor.i_wr_resp.enq(resp);
       endrule
@@ -305,7 +305,7 @@ package pwm;
     let clk <- exposeCurrentClock;
     PWM pwm <- mkPWM(clk);
     Reg#(Bit#(5)) rg_state <- mkReg(0);
-    
+
     rule state1(rg_state==0);
       rg_state<=1;
       let x <- pwm.user.write(0,'d4);
