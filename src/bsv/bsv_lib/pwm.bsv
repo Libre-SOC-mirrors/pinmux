@@ -2,25 +2,30 @@
 Copyright (c) 2013, IIT Madras
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted
-provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
 
-*  Redistributions of source code must retain the above copyright notice, this list of conditions
-   and the following disclaimer.
-*  Redistributions in binary form must reproduce the above copyright notice, this list of
-   conditions and the following disclaimer in the documentation and/or other materials provided
-   with the distribution.
-*  Neither the name of IIT Madras  nor the names of its contributors may be used to endorse or
-   promote products derived from this software without specific prior written permission.
+*  Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+*  Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+*  Neither the name of IIT Madras  nor the names of its contributors may be
+    used to endorse or promote products derived from this software without
+    specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
-IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -------------------------------------------------------------------------------------------------
 
 Code inpired by the pwm module at: https://github.com/freecores/pwm
@@ -79,13 +84,17 @@ package pwm;
     Reg#(Bit#(1)) pwm_output_enable <- mkReg(0);  // bit-4
     Reg#(Bit#(1)) interrupt <- mkReg(0);          // bit-5
     Reg#(Bit#(1)) reset_counter <- mkReg(0);      // bit-7
-    Reg#(Bit#(8)) control = concatReg8(reset_counter, readOnlyReg(0), readOnlyReg(interrupt),
-                                       pwm_output_enable, continous_once, pwm_start, pwm_enable,
+    Reg#(Bit#(8)) control = concatReg8(reset_counter, readOnlyReg(0),
+                                       readOnlyReg(interrupt),
+                                       pwm_output_enable, continous_once,
+                                        pwm_start, pwm_enable,
                                        clock_selector);
     // ================================================ //
 
-    // Generate a reset signal is there is a reset from the bus interface of if the reset_counter
-    // bit in the control register is set. The new reset is called overall_reset. Only the counter
+    // Generate a reset signal is there is a reset from
+    // the bus interface of if the reset_counter
+    // bit in the control register is set. The new reset
+    // is called overall_reset. Only the counter
     // and the output signals need to be reset by this.
     MakeResetIfc control_reset <- mkReset(1,False, bus_clock);
     rule generate_reset;
@@ -101,17 +110,23 @@ package pwm;
       clock_selection.select(clock_selector==1);
     endrule
 
-    // The following register is required to transfer the divisor value from bus_clock to
-    // external clock domain. This is necessary if the clock divider needs to operate on the
-    // external clock. In this case, the divisor value should also come from the same clock domain.
+    // The following register is required to transfer
+    // the divisor value from bus_clock to
+    // external clock domain. This is necessary if the
+    // clock divider needs to operate on the
+    // external clock. In this case, the divisor value
+    // should also come from the same clock domain.
     Reg#(Bit#(pwmnum_)) clock_divisor_sync <- mkSyncRegFromCC(0, clock_selection.clock_out);
     rule transfer_data_from_clock_domains;
       clock_divisor_sync <= clock_divisor;
     endrule
 
-    // The PWM can operate on a slowed-down clock. The following module generates a slowed-down
-    // clock based on the value given in register divisor. Since the clock_divider works on a muxed
-    // clock domain of the external clock or bus_clock, the divisor (which operates on the bus_clock
+    // The PWM can operate on a slowed-down clock.
+    // The following module generates a slowed-down
+    // clock based on the value given in register divisor.
+    // Since the clock_divider works on a muxed
+    // clock domain of the external clock or bus_clock,
+    // the divisor (which operates on the bus_clock
     // will have to be synchronized and sent to the divider
     Ifc_ClockDiv#(pwmnum_) clock_divider <- mkClockDiv(clocked_by clock_selection.clock_out,
                                          reset_by async_reset);
@@ -137,7 +152,8 @@ package pwm;
       sync_pwm_output <= pwm_output;
     endrule
 
-    // capture the synchronized values from the default clock domain to the downclock domain for
+    // capture the synchronized values from the default
+    // clock domain to the downclock domain for
     // actual timer and pwm functionality.
     rule sync_from_default_to_downclock;
       sync_continous_once <= continous_once;
@@ -148,7 +164,8 @@ package pwm;
     endrule
     let temp = sync_period==0?0:sync_period-1;
 
-    // This rule generates the interrupt in the timer mode and resets it if the user-write interface
+    // This rule generates the interrupt in the timer
+    // mode and resets it if the user-write interface
     // writes a value of 1 to the reset_counter bit.
     rule generate_interrupt_in_timer_mode;
       if(pwm_enable==0)
@@ -159,14 +176,21 @@ package pwm;
         interrupt <= 0;
     endrule
 
-    // This rule performs the actual pwm and the timer functionality. if pwm_enable is 1 then the
-    // PWM mode is selected. Every time the counter value equals/crosses the period value it is
+    // This rule performs the actual pwm and the timer
+    // functionality. if pwm_enable is 1 then the
+    // PWM mode is selected. Every time the counter
+    // value equals/crosses the period value it is
     // reset and the output pwm_output signal is toggled.
-    // The timer mode is selected when pwm_enable is 0. Here again 2 more modes are possible. if the
-    // continous_once bit is 0 then the timer is in one time. In this case once the counter reaches
-    // the period value it raises an interrupt and stops the counter. In the continuous mode
-    // however, when the counter reaches the period value the interrupt is raise, the counter is
-    // reset to 0 and continues counting. During continuous counting the interrupt can be cleared by
+    // The timer mode is selected when pwm_enable is 0.
+    // Here again 2 more modes are possible. if the
+    // continous_once bit is 0 then the timer is in one time.
+    // In this case once the counter reaches
+    // the period value it raises an interrupt and
+    // stops the counter. In the continuous mode
+    // however, when the counter reaches the period value
+    // the interrupt is raise, the counter is
+    // reset to 0 and continues counting.
+    // During continuous counting the interrupt can be cleared by
     // the user but will be set back when the counter reaches the period value.
     rule compare_and_generate_pwm(sync_pwm_start==1);
       let cntr = rg_counter+1;
@@ -233,7 +257,8 @@ package pwm;
   endmodule
 
   `ifdef PWM_AXI4Lite
-    // the following interface and module will add the AXI4Lite interface to the PWM module
+    // the following interface and module will add the
+    // AXI4Lite interface to the PWM module
     interface Ifc_PWM_bus;
       interface PWMIO pwm_io;
 	    interface AXI4_Lite_Slave_IFC#(`PADDR, `Reg_width,`USERSPACE) axi4_slave;
@@ -265,7 +290,8 @@ package pwm;
   `endif
 
   `ifdef PWM_AXI4
-    // the following interface and module will add the AXI4 interface to the PWM module
+    // the following interface and module will add the
+    // AXI4 interface to the PWM module
     interface Ifc_PWM_bus;
       interface PWMIO pwm_io;
 	    interface AXI4_Slave_IFC#(`PADDR, `Reg_width,`USERSPACE) axi4_slave;
