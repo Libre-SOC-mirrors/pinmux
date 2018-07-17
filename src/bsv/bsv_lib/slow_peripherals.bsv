@@ -213,8 +213,8 @@ package slow_peripherals;
     `endif
     // NEEL EDIT
     Ifc_pinmux pinmux <- mkpinmux; // mandatory
-    MUX#(3) mymux <- mkmux(); // mandatory. number depends on the number of instances required.
-    GPIO#(3) mygpioa <- mkgpio(); // optional. depends the number of IO pins declared before.
+    MUX#(3) muxa <- mkmux(); // mandatory. number depends on the number of instances required.
+    GPIO#(3) gpioa <- mkgpio(); // optional. depends the number of IO pins declared before.
     // NEEL EDIT OVER
 		/*=======================================================*/
 
@@ -268,12 +268,16 @@ package slow_peripherals;
     `endif
 
     // NEEL EDIT
-    mkConnection (slow_fabric.v_from_masters[fromInteger(valueOf(Muxa_slave_num))], mymux.axi_slave);
-    mkConnection (slow_fabric.v_from_masters[fromInteger(valueOf(Gpioa_slave_num))], gpioa.axi_slave);
+    mkConnection (slow_fabric.
+                  v_from_masters[fromInteger(valueOf(Muxa_slave_num))], 
+                  muxa.axi_slave);
+    mkConnection (slow_fabric.
+                  v_from_masters[fromInteger(valueOf(Gpioa_slave_num))], 
+                  gpioa.axi_slave);
     rule connect_select_lines_pinmux;// mandatory
-      pinmux.cell0_mux(mymux.mux_config[0]);  
-      pinmux.cell1_mux(mymux.mux_config[1]);  
-      pinmux.cell2_mux(mymux.mux_config[2]);  
+      pinmux.cell0_mux(muxa.mux_config[0]);  
+      pinmux.cell1_mux(muxa.mux_config[1]);  
+      pinmux.cell2_mux(muxa.mux_config[2]);  
     endrule
     rule connect_uart1tx;
       pinmux.peripheral_side.uart_tx(uart1.coe_rs232.rs232.sout);
