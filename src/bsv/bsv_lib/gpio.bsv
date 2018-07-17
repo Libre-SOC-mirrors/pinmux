@@ -201,7 +201,7 @@ package gpio;
 	  			temp[i]=pack(direction_reg[i]);
 	  		return temp;
 	  	endmethod
-    endinterface
+    endinterface;
     interface pad_config=interface GPIO_config
 	  	method Vector#(ionum,Bit#(1))   gpio_DRV0;
 	  		Vector#(ionum,Bit#(1)) temp;
