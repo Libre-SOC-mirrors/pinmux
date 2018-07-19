@@ -29,5 +29,14 @@
     `define I2C0End     'h000114FF // 8 32-bit registers
 
 
+`define QSPI0 enable
+    `define QSPI0CfgBase    'h00011800
+    `define QSPI0CfgEnd  'h000118FF // 13 32-bit registers
+    `define QSPI0MemBase    'h90000000
+    `define QSPI0MemEnd  'h9FFFFFFF // 256 MB
+
+  `define PWMBase      'h00011A00
+  `define PWMEnd       'h00011A0C // 4 32-bit registers
+
 //`define PWM_AXI4Lite enable
 
