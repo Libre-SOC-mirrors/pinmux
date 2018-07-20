@@ -132,6 +132,88 @@ typedef TAdd#(AxiExp1_slave_num,1) Num_Slow_Slaves;
 """
 
 
+class PeripheralIface(object):
+    def __init__(self, ifacename):
+        self.slow = None
+        slow = slowfactory.getcls(ifacename)
+        if slow:
+            self.slow = slow()
+
+    def slowimport(self):
+        if not self.slow:
+            return ''
+        return self.slow.importfn().format()
+
+    def slowifdecl(self, count):
+        if not self.slow:
+            return ''
+        return self.slow.ifacedecl().format(count, self.ifacename)
+
+    def axi_reg_def(self, start, count):
+        if not self.slow:
+            return ('', 0)
+        return self.slow.axi_reg_def(start, self.ifacename, count)
+
+    def axi_slave_idx(self, start, count):
+        if not self.slow:
+            return ('', 0)
+        return self.slow.axi_slave_idx(start, self.ifacename, count)
+
+    def axi_addr_map(self, count):
+        if not self.slow:
+            return ''
+        return self.slow.axi_addr_map(self.ifacename, count)
+
+class PeripheralInterfaces(object):
+    def __init__(self):
+        pass
+
+    def slowimport(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            ret.append(self.data[name].slowimport())
+        return '\n'.join(list(filter(None, ret)))
+
+    def slowifdecl(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                ret.append(self.data[name].slowifdecl(i))
+        return '\n'.join(list(filter(None, ret)))
+
+    def axi_reg_def(self, *args):
+        ret = []
+        start = 0x00011100  # start of AXI peripherals address
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                x = self.data[name].axi_reg_def(start, i)
+                print ("ifc", name, x)
+                (rdef, offs) = x
+                ret.append(rdef)
+                start += offs
+        return '\n'.join(list(filter(None, ret)))
+
+    def axi_slave_idx(self, *args):
+        ret = []
+        start = 0
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                (rdef, offs) = self.data[name].axi_slave_idx(start, i)
+                print ("ifc", name, rdef, offs)
+                ret.append(rdef)
+                start += offs
+        ret.append("typedef %d LastGen_slave_num" % (start - 1))
+        decls = '\n'.join(list(filter(None, ret)))
+        return axi_slave_declarations.format(decls)
+
+    def axi_addr_map(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                ret.append(self.data[name].axi_addr_map(i))
+        return '\n'.join(list(filter(None, ret)))
+
+
 class PFactory(object):
     def getcls(self, name):
         return {'uart': uart,
@@ -141,3 +223,6 @@ class PFactory(object):
                 'pwm': pwm,
                 'gpio': gpio
                 }.get(name, None)
+
+slowfactory = PFactory()
+

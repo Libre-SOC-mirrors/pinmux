@@ -8,9 +8,8 @@ except ImportError:
 from bsv.wire_def import generic_io  # special case
 from bsv.wire_def import muxwire  # special case
 from ifacebase import InterfacesBase
-from bsv.peripheral_gen import PFactory
-from bsv.peripheral_gen import axi_slave_declarations
-slowfactory = PFactory()
+from bsv.peripheral_gen import PeripheralIface
+from bsv.peripheral_gen import PeripheralInterfaces
 
 
 class Pin(object):
@@ -104,7 +103,7 @@ class Pin(object):
         return res
 
 
-class Interface(object):
+class Interface(PeripheralIface):
     """ create an interface from a list of pinspecs.
         each pinspec is a dictionary, see Pin class arguments
         single indicates that there is only one of these, and
@@ -119,15 +118,12 @@ class Interface(object):
     """
 
     def __init__(self, ifacename, pinspecs, ganged=None, single=False):
+        PeripheralIface.__init__(self, ifacename)
         self.ifacename = ifacename
         self.ganged = ganged or {}
         self.pins = []  # a list of instances of class Pin
         self.pinspecs = pinspecs  # a list of dictionary
         self.single = single
-        self.slow = None
-        slow = slowfactory.getcls(ifacename)
-        if slow:
-            self.slow = slow()
 
         for p in pinspecs:
             _p = {}
@@ -259,31 +255,6 @@ class Interface(object):
         res = res.format(*args)
         return '\n' + res + '\n'
 
-    def slowimport(self):
-        if not self.slow:
-            return ''
-        return self.slow.importfn().format()
-
-    def slowifdecl(self, count):
-        if not self.slow:
-            return ''
-        return self.slow.ifacedecl().format(count, self.ifacename)
-
-    def axi_reg_def(self, start, count):
-        if not self.slow:
-            return ('', 0)
-        return self.slow.axi_reg_def(start, self.ifacename, count)
-
-    def axi_slave_idx(self, start, count):
-        if not self.slow:
-            return ('', 0)
-        return self.slow.axi_slave_idx(start, self.ifacename, count)
-
-    def axi_addr_map(self, count):
-        if not self.slow:
-            return ''
-        return self.slow.axi_addr_map(self.ifacename, count)
-
 
 class MuxInterface(Interface):
 
@@ -307,12 +278,13 @@ class IOInterface(Interface):
         return generic_io.format(*args)
 
 
-class Interfaces(InterfacesBase):
+class Interfaces(InterfacesBase, PeripheralInterfaces):
     """ contains a list of interface definitions
     """
 
     def __init__(self, pth=None):
         InterfacesBase.__init__(self, Interface, pth)
+        PeripheralInterfaces.__init__(self)
 
     def ifacedef(self, f, *args):
         for (name, count) in self.ifacecount:
@@ -344,51 +316,6 @@ class Interfaces(InterfacesBase):
                 c = comment % name
                 f.write(c.format(i))
                 f.write(self.data[name].wirefmt(i))
-
-    def slowimport(self, *args):
-        ret = []
-        for (name, count) in self.ifacecount:
-            ret.append(self.data[name].slowimport())
-        return '\n'.join(list(filter(None, ret)))
-
-    def slowifdecl(self, *args):
-        ret = []
-        for (name, count) in self.ifacecount:
-            for i in range(count):
-                ret.append(self.data[name].slowifdecl(i))
-        return '\n'.join(list(filter(None, ret)))
-
-    def axi_reg_def(self, *args):
-        ret = []
-        start = 0x00011100  # start of AXI peripherals address
-        for (name, count) in self.ifacecount:
-            for i in range(count):
-                x = self.data[name].axi_reg_def(start, i)
-                print ("ifc", name, x)
-                (rdef, offs) = x
-                ret.append(rdef)
-                start += offs
-        return '\n'.join(list(filter(None, ret)))
-
-    def axi_slave_idx(self, *args):
-        ret = []
-        start = 0
-        for (name, count) in self.ifacecount:
-            for i in range(count):
-                (rdef, offs) = self.data[name].axi_slave_idx(start, i)
-                print ("ifc", name, rdef, offs)
-                ret.append(rdef)
-                start += offs
-        ret.append("typedef %d LastGen_slave_num" % (start - 1))
-        decls = '\n'.join(list(filter(None, ret)))
-        return axi_slave_declarations.format(decls)
-
-    def axi_addr_map(self, *args):
-        ret = []
-        for (name, count) in self.ifacecount:
-            for i in range(count):
-                ret.append(self.data[name].axi_addr_map(i))
-        return '\n'.join(list(filter(None, ret)))
 
 
 # ========= Interface declarations ================ #

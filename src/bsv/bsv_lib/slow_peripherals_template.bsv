@@ -57,7 +57,8 @@ package slow_peripherals;
 	endinterface
 	/*================================*/
 
-	function Tuple2#(Bool, Bit#(TLog#(Num_Slow_Slaves))) fn_address_mapping (Bit#(`PADDR) addr);
+	function Tuple2#(Bool, Bit#(TLog#(Num_Slow_Slaves)))
+                     fn_address_mapping (Bit#(`PADDR) addr);
 		`ifdef CLINT
 			if(addr>=`ClintBase && addr<=`ClintEnd)
 				return tuple2(True,fromInteger(valueOf(CLINT_slave_num)));
@@ -78,7 +79,8 @@ package slow_peripherals;
 	endfunction
 
 	(*synthesize*)
-	module mkslow_peripherals#(Clock fast_clock, Reset fast_reset, Clock uart_clock, Reset uart_reset
+	module mkslow_peripherals#(Clock fast_clock, Reset fast_reset,
+                               Clock uart_clock, Reset uart_reset
   `ifdef PWM_AXI4Lite ,Clock ext_pwm_clock `endif )(Ifc_slow_peripherals);
 		Clock sp_clock <-exposeCurrentClock; // slow peripheral clock
 		Reset sp_reset <-exposeCurrentReset; // slow peripheral reset
