@@ -48,6 +48,9 @@ class PBase(object):
     def mkslow_peripheral(self):
         return ''
 
+    def mksuffix(self, name, i):
+        return i
+
     def __mk_connection(self, con, aname):
         txt =  "        mkConnection (slow_fabric.v_to_slaves\n" + \
                "                    [fromInteger(valueOf({1}))],\n" + \
@@ -63,10 +66,12 @@ class PBase(object):
             name = self.name
         print "PBase mk_conn", self.name, count
         aname = self.axi_slave_name(name, count)
-        con = self._mk_connection(name).format(count, aname)
+        #dname = self.mksuffix(name, count)
+        #dname = "{0}{1}".format(name, dname)
+        con = self._mk_connection(name, count).format(count, aname)
         return self.__mk_connection(con, aname)
 
-    def _mk_connection(self, name=None):
+    def _mk_connection(self, name=None, count=0):
         return ''
 
 
@@ -87,7 +92,7 @@ class uart(PBase):
                "                mkUart16550(clocked_by uart_clock,\n" + \
                "                    reset_by uart_reset, sp_clock, sp_reset);"
 
-    def _mk_connection(self, name=None):
+    def _mk_connection(self, name=None, count=0):
         return "uart{0}.slave_axi_uart"
 
 
@@ -112,7 +117,7 @@ class rs232(PBase):
                "                mkUart_bs(clocked_by sp_clock,\n" + \
                "                    reset_by sp_reset, sp_clock, sp_reset);"
 
-    def _mk_connection(self, name=None):
+    def _mk_connection(self, name=None, count=0):
         return "uart{0}.slave_axi_uart"
 
 
@@ -131,7 +136,7 @@ class twi(PBase):
     def mkslow_peripheral(self):
         return "        I2C_IFC i2c{0} <- mkI2CController();"
 
-    def _mk_connection(self, name=None):
+    def _mk_connection(self, name=None, count=0):
         return "i2c{0}.slave_i2c_axi"
 
 
@@ -150,7 +155,7 @@ class qspi(PBase):
     def mkslow_peripheral(self):
         return "        Ifc_qspi qspi{0} <-  mkqspi();"
 
-    def _mk_connection(self, name=None):
+    def _mk_connection(self, name=None, count=0):
         return "qspi{0}.slave"
 
 
@@ -168,7 +173,7 @@ class pwm(PBase):
     def mkslow_peripheral(self):
         return "        Ifc_PWM_bus pwm{0}_bus <- mkPWM_bus(sp_clock);"
 
-    def _mk_connection(self, name=None):
+    def _mk_connection(self, name=None, count=0):
         return "pwm{0}_bus.axi4_slave"
 
 
@@ -202,19 +207,26 @@ class gpio(PBase):
     def mk_connection(self, count):
         print "GPIO mk_conn", self.name, count
         res = []
-        for i, n in enumerate(['gpio', 'mux']):
+        dname = self.mksuffix(self.name, count)
+        for i, n in enumerate(['gpio' + dname, 'mux' + dname]):
             res.append(PBase.mk_connection(self, count, n))
         return '\n'.join(res)
 
-    def _mk_connection(self, name=None):
+    def _mk_connection(self, name=None, count=0):
+        n = self.mksuffix(name, count)
         if name.startswith('gpio'):
-            return "gpio{0}.axi_slave"
+            return "gpio{0}.axi_slave".format(n)
         if name.startswith('mux'):
-            return "mux{0}.axi_slave"
+            return "mux{0}.axi_slave".format(n)
 
-    def mk_cellconn(self, cellnum, bank, count):
+    def mksuffix(self, name, i):
+        if name.startswith('mux'):
+            return name[3:]
+        return name[4:]
+
+    def mk_cellconn(self, cellnum, name, count):
         ret = []
-        bank = bank[4:] # strip off "gpio"
+        bank = self.mksuffix(name, count)
         txt = "       pinmux.mux_lines.cell{0}_mux(mux{1}.mux_config.mux[{2}]);"
         for p in self.peripheral.pinspecs:
             ret.append(txt.format(cellnum, bank, p['name'][1:]))
@@ -268,6 +280,11 @@ class PeripheralIface(object):
 
         #print "PeripheralIface"
         #print dir(self)
+
+    def mksuffix(self, name, i):
+        if self.slow is None:
+            return i
+        return self.slow.mksuffix(name, i)
 
     def axi_reg_def(self, start, count):
         if not self.slow:
@@ -342,7 +359,8 @@ class PeripheralInterfaces(object):
                 print "mkslow", name, count
                 x = self.data[name].mkslow_peripheral()
                 print name, count, x
-                ret.append(x.format(i))
+                suffix = self.data[name].mksuffix(name, i)
+                ret.append(x.format(suffix))
         return '\n'.join(list(filter(None, ret)))
 
     def mk_connection(self, *args):
