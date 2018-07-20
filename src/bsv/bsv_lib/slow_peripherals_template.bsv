@@ -8,6 +8,8 @@ package slow_peripherals;
 	import Semi_FIFOF::*;
 	import AXI4Lite_AXI4_Bridge::*;
 	`include "instance_defines.bsv"
+    /* ==== define the AXI Addresses ==== */
+{2}
 	/*===========================*/
 	/*=== package imports ===*/
 	import Clocks::*;

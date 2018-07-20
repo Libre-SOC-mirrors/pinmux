@@ -164,7 +164,7 @@ class Interface(object):
     def getifacetype(self, name):
         for p in self.pinspecs:
             fname = "%s_%s" % (self.ifacename, p['name'])
-            #print "search", self.ifacename, name, fname
+            # print "search", self.ifacename, name, fname
             if fname == name:
                 if p.get('action'):
                     return 'out'
@@ -192,7 +192,7 @@ class Interface(object):
         """
         if not self.ganged:
             return ''  # when self.ganged is None
-        #print self.ganged
+        # print self.ganged
         res = []
         for (k, pnames) in self.ganged.items():
             name = self.pname('%senable' % k).format(*args)
@@ -246,7 +246,7 @@ class Interface(object):
     def ifacefmtpin(self, pin):
         decfn = self.ifacefmtdecfn2
         outfn = self.ifacefmtoutfn
-        #print pin, pin.outenmode
+        # print pin, pin.outenmode
         if pin.outenmode:
             decfn = self.ifacefmtdecfn3
             outfn = self.ifacefmtoutenfn
@@ -267,6 +267,11 @@ class Interface(object):
         if not self.slow:
             return ''
         return self.slow.ifacedecl().format(count, self.ifacename)
+
+    def axi_reg_def(self, start, count):
+        if not self.slow:
+            return ('', 0)
+        return self.slow.axi_reg_def(start, self.ifacename, count)
 
 
 class MuxInterface(Interface):
@@ -342,14 +347,26 @@ class Interfaces(InterfacesBase):
                 ret.append(self.data[name].slowifdecl(i))
         return '\n'.join(list(filter(None, ret)))
 
+    def axi_reg_def(self, *args):
+        ret = []
+        start = 0x00011100  # start of AXI peripherals address
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                x = self.data[name].axi_reg_def(start, i)
+                print ("ifc", name, x)
+                (rdef, offs) = x
+                ret.append(rdef)
+                start += offs
+        return '\n'.join(list(filter(None, ret)))
+
 
 # ========= Interface declarations ================ #
 
-mux_interface = MuxInterface('cell',
+mux_interface=MuxInterface('cell',
                              [{'name': 'mux', 'ready': False, 'enabled': False,
                                'bitspec': '{1}', 'action': True}])
 
-io_interface = IOInterface(
+io_interface=IOInterface(
     'io',
     [{'name': 'cell_out', 'enabled': True, },
      {'name': 'cell_outen', 'enabled': True, 'outenmode': True, },
@@ -365,12 +382,12 @@ io_interface = IOInterface(
 # basic test
 if __name__ == '__main__':
 
-    uartinterface_decl = Interface('uart',
+    uartinterface_decl=Interface('uart',
                                    [{'name': 'rx'},
                                     {'name': 'tx', 'action': True},
                                     ])
 
-    twiinterface_decl = Interface('twi',
+    twiinterface_decl=Interface('twi',
                                   [{'name': 'sda', 'outen': True},
                                    {'name': 'scl', 'outen': True},
                                    ])

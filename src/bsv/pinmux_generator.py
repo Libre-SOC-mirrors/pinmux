@@ -101,8 +101,9 @@ def write_slow(slow, template, p, ifaces):
         template = bsv_file.read()
     imports = ifaces.slowimport()
     ifdecl = ifaces.slowifdecl()
+    regdef = ifaces.axi_reg_def()
     with open(slow, "w") as bsv_file:
-        bsv_file.write(template.format(imports, ifdecl))
+        bsv_file.write(template.format(imports, ifdecl, regdef))
 
 
 def write_bus(bus, p, ifaces):
@@ -354,10 +355,10 @@ def write_bvp(bvp, p, ifaces):
             decl.append(muxdec .format(npins, bank))
             idec.append(gpioifc.format(bank))
             idec.append(muxifc.format(bank))
-        print (dir(ifaces))
-        print (ifaces.items())
-        print (dir(ifaces['gpioa']))
-        print (ifaces['gpioa'].pinspecs)
+        print dir(ifaces)
+        print ifaces.items()
+        print dir(ifaces['gpioa'])
+        print ifaces['gpioa'].pinspecs
         gpiodecl = '\n'.join(decl) + '\n' + '\n'.join(idec)
         gpiocfg = '\n'.join(cfg)
         bsv_file.write(axi4_lite.format(gpiodecl, gpiocfg))

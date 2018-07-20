@@ -1,12 +1,23 @@
 class PBase(object):
     pass
 
-    def axi_reg_def(self, start, name, ifacenum):
+    def axibase(self, name, ifacenum):
         name = name.upper()
-        offs = self.num_axi_regs32()*4
-        end = start + offs - 1
-        return ("    `define%(name)s%(ifacenum)dBase 'h%(start)08x'\n" \
-                "    `define%(name)s%(ifacenum)dEnd  'h%(end)08x'\n" % locals(),
+        return "%(name)s%(ifacenum)dBase" % locals()
+
+    def axiend(self, name, ifacenum):
+        name = name.upper()
+        return "%(name)s%(ifacenum)dEnd" % locals()
+
+    def axi_reg_def(self, start, name, ifacenum):
+        name=name.upper()
+        offs=self.num_axi_regs32() * 4 * 16
+        end=start + offs - 1
+        bname=self.axibase(name, ifacenum)
+        bend=self.axiend(name, ifacenum)
+        comment = "%d 32-bit regs" % self.num_axi_regs32()
+        return ("    `define%(bname)s 'h%(start)08X\n"
+                "    `define%(bend)s  'h%(end)08X // %(comment)s" % locals(),
                 offs)
 
 
@@ -15,7 +26,7 @@ class uart(PBase):
         return "          import Uart16550         :: *;"
 
     def ifacedecl(self):
-        return "            interface RS232_PHY_Ifc uart{0}_coe;\n" \
+        return "            interface RS232_PHY_Ifc uart{0}_coe;\n" + \
                "            method Bit#(1) uart{0}_intr;"
 
     def num_axi_regs32(self):
@@ -24,7 +35,7 @@ class uart(PBase):
 
 class rs232(PBase):
     def importfn(self):
-        return "        import Uart_bs::*;\n" \
+        return "        import Uart_bs::*;\n" + \
                "        import RS232_modified::*;"
 
     def ifacedecl(self):
@@ -39,7 +50,7 @@ class twi(PBase):
         return "        import I2C_top           :: *;"
 
     def ifacedecl(self):
-        return "            interface I2C_out i2c{0}_out;\n" \
+        return "            interface I2C_out i2c{0}_out;\n" + \
                "            method Bit#(1) i2c{0}_isint;"
 
     def num_axi_regs32(self):
@@ -51,7 +62,7 @@ class qspi(PBase):
         return "        import qspi              :: *;"
 
     def ifacedecl(self):
-        return "            interface QSPI_out qspi{0}_out;\n" \
+        return "            interface QSPI_out qspi{0}_out;\n" + \
                "            method Bit#(1) qspi{0}_isint;"
 
     def num_axi_regs32(self):
@@ -71,8 +82,8 @@ class pwm(PBase):
 
 class gpio(PBase):
     def importfn(self):
-        return "     import pinmux::*;\n" \
-               "     import mux::*;\n" \
+        return "     import pinmux::*;\n" + \
+               "     import mux::*;\n" + \
                "     import gpio::*;\n"
 
     def ifacedecl(self):
