@@ -47,7 +47,8 @@ class PBase(object):
         for p in self.peripheral.pinspecs:
             typ = p['type']
             pname = p['name']
-            n = "{0}{1}".format(name, self.mksuffix(name, count))
+            #n = "{0}{1}".format(self.name, self.mksuffix(name, count))
+            n = name#"{0}{1}".format(self.name, self.mksuffix(name, count))
             ret.append("    //%s %s" % (n, str(p)))
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s" % sname
@@ -293,6 +294,31 @@ class gpio(PBase):
             ret.append(txt.format(cellnum, bank, p['name'][1:]))
             cellnum += 1
         return ("\n".join(ret), cellnum)
+
+    def pinname_out(self, pname):
+        return "func.gpio_out[{0}]".format(pname[1:])
+
+    def pinname_outen(self, pname):
+        return {'sda': 'out.sda_outen',
+                'scl': 'out.scl_outen'}.get(pname, '')
+
+    def mk_pincon(self, name, count):
+        ret = [PBase.mk_pincon(self, name, count)]
+        # special-case for gpio in, store in a temporary vector
+        plen = len(self.peripheral.pinspecs)
+        ret.append("    rule con_%s%d_in" % (name, count))
+        ret.append("       Vector#({0},Bit#(1)) temp;".format(plen))
+        for p in self.peripheral.pinspecs:
+            typ = p['type']
+            pname = p['name']
+            idx = pname[1:]
+            n = name
+            sname = self.peripheral.pname(pname).format(count)
+            ps = "pinmux.peripheral_side.%s_in" % sname
+            ret.append("        temp[{0}]={1};".format(idx, ps))
+        ret.append("        {0}.func.gpio_in(temp);".format(name))
+        ret.append("    endrule")
+        return '\n'.join(ret)
 
 
 axi_slave_declarations = """\
