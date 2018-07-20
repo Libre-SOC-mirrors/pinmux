@@ -1,6 +1,7 @@
 import types
 from copy import deepcopy
 
+
 class PBase(object):
     pass
 
@@ -40,7 +41,7 @@ class PBase(object):
             return tuple2(True,fromInteger(valueOf({2})));
         else""".format(bname, bend, name)
 
-    def mkslow_peripheral(self, name, ifacenum):
+    def mkslow_peripheral(self):
         return ''
 
 
@@ -140,7 +141,6 @@ class pwm(PBase):
         return "        Ifc_PWM_bus pwm_bus <- mkPWM_bus(sp_clock);"
 
 
-
 class gpio(PBase):
     def __init__(self):
         PBase.__init__(self)
@@ -182,6 +182,7 @@ typedef  TAdd#(Plic_slave_num   ,`ifdef AXIEXP      1 `else 0 `endif )
 typedef TAdd#(AxiExp1_slave_num,1) Num_Slow_Slaves;
 """
 
+
 class CallFn(object):
     def __init__(self, peripheral, name):
         self.peripheral = peripheral
@@ -193,13 +194,14 @@ class CallFn(object):
             return ''
         return getattr(self.peripheral.slow, self.name)(*args[1:])
 
+
 class PeripheralIface(object):
     def __init__(self, ifacename):
         self.slow = None
         slow = slowfactory.getcls(ifacename)
         if slow:
             self.slow = slow()
-        for fname in ['slowimport', 'slowifdecl']:
+        for fname in ['slowimport', 'slowifdecl', 'mkslow_peripheral']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
 
@@ -221,10 +223,6 @@ class PeripheralIface(object):
             return ''
         return self.slow.axi_addr_map(self.ifacename, count)
 
-    def mkslow_periph(self, count):
-        if not self.slow:
-            return ''
-        return self.slow.mkslow_peripheral().format(count, self.ifacename)
 
 class PeripheralInterfaces(object):
     def __init__(self):
@@ -276,11 +274,11 @@ class PeripheralInterfaces(object):
                 ret.append(self.data[name].axi_addr_map(i))
         return '\n'.join(list(filter(None, ret)))
 
-    def mkslow_periph(self, *args):
+    def mkslow_peripheral(self, *args):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
-                ret.append(self.data[name].mkslow_periph(i))
+                ret.append(self.data[name].mkslow_peripheral().format(i))
         return '\n'.join(list(filter(None, ret)))
 
 
