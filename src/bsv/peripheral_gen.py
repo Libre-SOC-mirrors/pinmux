@@ -53,7 +53,7 @@ class uart(PBase):
         return 8
 
     def mkslow_peripheral(self):
-        return "            Uart16550_AXI4_Lite_Ifc uart{0} <- \n" + \
+        return "        Uart16550_AXI4_Lite_Ifc uart{0} <- \n" + \
                "                mkUart16550(clocked_by uart_clock,\n" + \
                "                    reset_by uart_reset, sp_clock, sp_reset);"
 
@@ -194,6 +194,11 @@ class PeripheralIface(object):
             return ''
         return self.slow.axi_addr_map(self.ifacename, count)
 
+    def mkslow_periph(self, count):
+        if not self.slow:
+            return ''
+        return self.slow.mkslow_peripheral().format(count, self.ifacename)
+
 class PeripheralInterfaces(object):
     def __init__(self):
         pass
@@ -241,6 +246,13 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 ret.append(self.data[name].axi_addr_map(i))
+        return '\n'.join(list(filter(None, ret)))
+
+    def mkslow_periph(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                ret.append(self.data[name].mkslow_periph(i))
         return '\n'.join(list(filter(None, ret)))
 
 

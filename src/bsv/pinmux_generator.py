@@ -104,9 +104,10 @@ def write_slow(slow, template, p, ifaces):
     regdef = ifaces.axi_reg_def()
     slavedecl = ifaces.axi_slave_idx()
     fnaddrmap = ifaces.axi_addr_map()
+    mkslow = ifaces.mkslow_periph()
     with open(slow, "w") as bsv_file:
         bsv_file.write(template.format(imports, ifdecl, regdef, slavedecl,
-                                       fnaddrmap))
+                                       fnaddrmap, mkslow))
 
 
 def write_bus(bus, p, ifaces):

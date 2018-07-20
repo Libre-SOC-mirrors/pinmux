@@ -87,13 +87,7 @@ package slow_peripherals;
 		Reset sp_reset <-exposeCurrentReset; // slow peripheral reset
 
 		/*======= Module declarations for each peripheral =======*/
-		`ifdef UART0
-			Uart16550_AXI4_Lite_Ifc uart0 <- mkUart16550(clocked_by uart_clock, reset_by uart_reset, sp_clock, sp_reset);
-		`endif
-		`ifdef UART1
-			//Ifc_Uart_bs uart1 <- mkUart_bs(clocked_by uart_clock, reset_by uart_reset,sp_clock, sp_reset);
-			Ifc_Uart_bs uart1 <- mkUart_bs(clocked_by sp_clock, reset_by sp_reset,sp_clock, sp_reset);
-		`endif
+{5}
 		`ifdef CLINT
 			Ifc_clint				clint				<- mkclint();
 		`endif
@@ -102,30 +96,11 @@ package slow_peripherals;
          Wire#(Bit#(TLog#(`INTERRUPT_PINS))) interrupt_id <- mkWire();
 			  Vector#(32, FIFO#(bit)) ff_gateway_queue <- replicateM(mkFIFO);
 		`endif
-		`ifdef I2C0 
-			I2C_IFC					i2c0				<- mkI2CController();
-		`endif
-		`ifdef I2C1
-			I2C_IFC					i2c1				<- mkI2CController();
-		`endif
-		`ifdef QSPI0 
-			Ifc_qspi			qspi0				<-	mkqspi(); 
-		`endif
-		`ifdef QSPI1 
-			Ifc_qspi			qspi1				<-	mkqspi(); 
-		`endif
 		`ifdef AXIEXP
 			Ifc_AxiExpansion		axiexp1			<- mkAxiExpansion();	
 		`endif
-    `ifdef PWM_AXI4Lite
-      Ifc_PWM_bus pwm_bus <- mkPWM_bus(ext_pwm_clock);
-    `endif
-    // NEEL EDIT
     Ifc_pinmux pinmux <- mkpinmux; // mandatory
-    MUX#(3) muxa <- mkmux(); // mandatory. number depends on the number of instances required.
-    GPIO#(3) gpioa <- mkgpio(); // optional. depends the number of IO pins declared before.
     Wire#(Bit#(32)) wr_interrupt <- mkWire();
-    // NEEL EDIT OVER
 		/*=======================================================*/
 
    	AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `PADDR, `Reg_width,`USERSPACE)	slow_fabric <- 
