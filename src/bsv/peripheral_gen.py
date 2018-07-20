@@ -1,3 +1,6 @@
+import types
+from copy import deepcopy
+
 class PBase(object):
     pass
 
@@ -42,10 +45,13 @@ class PBase(object):
 
 
 class uart(PBase):
-    def importfn(self):
+    def __init__(self):
+        PBase.__init__(self)
+
+    def slowimport(self):
         return "          import Uart16550         :: *;"
 
-    def ifacedecl(self):
+    def slowifdecl(self):
         return "            interface RS232_PHY_Ifc uart{0}_coe;\n" + \
                "            method Bit#(1) uart{0}_intr;"
 
@@ -59,11 +65,14 @@ class uart(PBase):
 
 
 class rs232(PBase):
-    def importfn(self):
+    def __init__(self):
+        PBase.__init__(self)
+
+    def slowimport(self):
         return "        import Uart_bs::*;\n" + \
                "        import RS232_modified::*;"
 
-    def ifacedecl(self):
+    def slowifdecl(self):
         return "            interface RS232 uart{0}_coe;"
 
     def num_axi_regs32(self):
@@ -79,10 +88,13 @@ class rs232(PBase):
 
 
 class twi(PBase):
-    def importfn(self):
+    def __init__(self):
+        PBase.__init__(self)
+
+    def slowimport(self):
         return "        import I2C_top           :: *;"
 
-    def ifacedecl(self):
+    def slowifdecl(self):
         return "            interface I2C_out i2c{0}_out;\n" + \
                "            method Bit#(1) i2c{0}_isint;"
 
@@ -94,10 +106,13 @@ class twi(PBase):
 
 
 class qspi(PBase):
-    def importfn(self):
+    def __init__(self):
+        PBase.__init__(self)
+
+    def slowimport(self):
         return "        import qspi              :: *;"
 
-    def ifacedecl(self):
+    def slowifdecl(self):
         return "            interface QSPI_out qspi{0}_out;\n" + \
                "            method Bit#(1) qspi{0}_isint;"
 
@@ -109,11 +124,14 @@ class qspi(PBase):
 
 
 class pwm(PBase):
-    def importfn(self):
+    def __init__(self):
+        PBase.__init__(self)
+
+    def slowimport(self):
         return "        import pwm::*;"
 
-    def ifacedecl(self):
-        return "        interface PWMIO pwm_o;"
+    def slowifdecl(self):
+        return "        interface PWMIO pwm{0}_o;"
 
     def num_axi_regs32(self):
         return 4
@@ -124,12 +142,15 @@ class pwm(PBase):
 
 
 class gpio(PBase):
-    def importfn(self):
+    def __init__(self):
+        PBase.__init__(self)
+
+    def slowimport(self):
         return "     import pinmux::*;\n" + \
                "     import mux::*;\n" + \
                "     import gpio::*;\n"
 
-    def ifacedecl(self):
+    def slowifdecl(self):
         return "        interface GPIO_config#({1}) pad_config{0};"
 
     def num_axi_regs32(self):
@@ -161,6 +182,16 @@ typedef  TAdd#(Plic_slave_num   ,`ifdef AXIEXP      1 `else 0 `endif )
 typedef TAdd#(AxiExp1_slave_num,1) Num_Slow_Slaves;
 """
 
+class CallFn(object):
+    def __init__(self, peripheral, name):
+        self.peripheral = peripheral
+        self.name = name
+
+    def __call__(self, *args):
+        #print "__call__", self.name, args
+        if not self.peripheral.slow:
+            return ''
+        return getattr(self.peripheral.slow, self.name)(*args[1:])
 
 class PeripheralIface(object):
     def __init__(self, ifacename):
@@ -168,16 +199,12 @@ class PeripheralIface(object):
         slow = slowfactory.getcls(ifacename)
         if slow:
             self.slow = slow()
+        for fname in ['slowimport', 'slowifdecl']:
+            fn = CallFn(self, fname)
+            setattr(self, fname, types.MethodType(fn, self))
 
-    def slowimport(self):
-        if not self.slow:
-            return ''
-        return self.slow.importfn().format()
-
-    def slowifdecl(self, count):
-        if not self.slow:
-            return ''
-        return self.slow.ifacedecl().format(count, self.ifacename)
+        #print "PeripheralIface"
+        #print dir(self)
 
     def axi_reg_def(self, start, count):
         if not self.slow:
@@ -206,6 +233,7 @@ class PeripheralInterfaces(object):
     def slowimport(self, *args):
         ret = []
         for (name, count) in self.ifacecount:
+            #print "slowimport", name, self.data[name].slowimport
             ret.append(self.data[name].slowimport())
         return '\n'.join(list(filter(None, ret)))
 
@@ -213,7 +241,7 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
-                ret.append(self.data[name].slowifdecl(i))
+                ret.append(self.data[name].slowifdecl().format(i, name))
         return '\n'.join(list(filter(None, ret)))
 
     def axi_reg_def(self, *args):
@@ -222,7 +250,7 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 x = self.data[name].axi_reg_def(start, i)
-                print ("ifc", name, x)
+                #print ("ifc", name, x)
                 (rdef, offs) = x
                 ret.append(rdef)
                 start += offs
@@ -234,7 +262,7 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 (rdef, offs) = self.data[name].axi_slave_idx(start, i)
-                print ("ifc", name, rdef, offs)
+                #print ("ifc", name, rdef, offs)
                 ret.append(rdef)
                 start += offs
         ret.append("typedef %d LastGen_slave_num" % (start - 1))
@@ -268,3 +296,8 @@ class PFactory(object):
 
 
 slowfactory = PFactory()
+
+if __name__ == '__main__':
+    p = uart()
+    print p.slowimport()
+    print p.slowifdecl()
