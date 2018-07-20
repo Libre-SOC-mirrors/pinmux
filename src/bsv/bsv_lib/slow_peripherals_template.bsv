@@ -81,7 +81,8 @@ package slow_peripherals;
 	(*synthesize*)
 	module mkslow_peripherals#(Clock fast_clock, Reset fast_reset,
                                Clock uart_clock, Reset uart_reset
-  `ifdef PWM_AXI4Lite ,Clock ext_pwm_clock `endif )(Ifc_slow_peripherals);
+  `ifdef PWM_AXI4Lite ,Clock ext_pwm_clock `endif
+                              )(Ifc_slow_peripherals);
 		Clock sp_clock <-exposeCurrentClock; // slow peripheral clock
 		Reset sp_reset <-exposeCurrentReset; // slow peripheral reset
 

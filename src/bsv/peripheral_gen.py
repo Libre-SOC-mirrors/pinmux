@@ -37,6 +37,9 @@ class PBase(object):
             return tuple2(True,fromInteger(valueOf({2})));
         else""".format(bname, bend, name)
 
+    def mkslow_peripheral(self, name, ifacenum):
+        return ''
+
 
 class uart(PBase):
     def importfn(self):
@@ -48,6 +51,11 @@ class uart(PBase):
 
     def num_axi_regs32(self):
         return 8
+
+    def mkslow_peripheral(self):
+        return "            Uart16550_AXI4_Lite_Ifc uart{0} <- \n" + \
+               "                mkUart16550(clocked_by uart_clock,\n" + \
+               "                    reset_by uart_reset, sp_clock, sp_reset);"
 
 
 class rs232(PBase):
@@ -61,6 +69,14 @@ class rs232(PBase):
     def num_axi_regs32(self):
         return 2
 
+    def mkslow_peripheral(self):
+        return "        //Ifc_Uart_bs uart{0} <-" + \
+               "        //       mkUart_bs(clocked_by uart_clock,\n" + \
+               "        //          reset_by uart_reset,sp_clock, sp_reset);" +\
+               "        Ifc_Uart_bs uart{0} <-" + \
+               "                mkUart_bs(clocked_by sp_clock,\n" + \
+               "                    reset_by sp_reset, sp_clock, sp_reset);"
+
 
 class twi(PBase):
     def importfn(self):
@@ -72,6 +88,9 @@ class twi(PBase):
 
     def num_axi_regs32(self):
         return 8
+
+    def mkslow_peripheral(self):
+        return "        I2C_IFC i2c{0} <- mkI2CController();"
 
 
 class qspi(PBase):
@@ -85,6 +104,9 @@ class qspi(PBase):
     def num_axi_regs32(self):
         return 13
 
+    def mkslow_peripheral(self):
+        return "        Ifc_qspi qspi{0} <-  mkqspi();"
+
 
 class pwm(PBase):
     def importfn(self):
@@ -95,6 +117,10 @@ class pwm(PBase):
 
     def num_axi_regs32(self):
         return 4
+
+    def mkslow_peripheral(self):
+        return "        Ifc_PWM_bus pwm_bus <- mkPWM_bus(sp_clock);"
+
 
 
 class gpio(PBase):
@@ -117,6 +143,10 @@ class gpio(PBase):
         (ret, x) = PBase.axi_slave_idx(self, idx, name, ifacenum)
         (ret2, x) = PBase.axi_slave_idx(self, idx, "mux", ifacenum)
         return ("%s\n%s" % (ret, ret2), 2)
+
+    def mkslow_peripheral(self):
+        return "          MUX#({1}) mux{0} <- mkmux();\n" + \
+               "          GPIO#({1}) gpio{0} <- mkgpio();"
 
 
 axi_slave_declarations = """\
@@ -163,7 +193,6 @@ class PeripheralIface(object):
         if not self.slow:
             return ''
         return self.slow.axi_addr_map(self.ifacename, count)
-
 
 class PeripheralInterfaces(object):
     def __init__(self):
