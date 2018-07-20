@@ -42,6 +42,9 @@ class PBase(object):
             return tuple2(True,fromInteger(valueOf({2})));
         else""".format(bname, bend, name)
 
+    def mk_cellconn(self, *args):
+        return ''
+
     def mkslow_peripheral(self):
         return ''
 
@@ -213,7 +216,10 @@ class gpio(PBase):
         ret = []
         bank = bank[4:] # strip off "gpio"
         txt = "       pinmux.mux_lines.cell{0}_mux(mux{1}.mux_config.mux[{2}]);"
-        return txt.format(cellnum, bank, count)
+        for p in self.peripheral.pinspecs:
+            ret.append(txt.format(cellnum, bank, p['name'][1:]))
+            cellnum += 1
+        return ("\n".join(ret), cellnum)
 
 
 axi_slave_declarations = """\
@@ -254,8 +260,9 @@ class PeripheralIface(object):
         print "Iface", ifacename, slow
         if slow:
             self.slow = slow(ifacename)
+            self.slow.peripheral = self
         for fname in ['slowimport', 'slowifdecl', 'mkslow_peripheral',
-                      'mk_connection']:
+                      'mk_connection', 'mk_cellconn']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
 
@@ -332,6 +339,7 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
+                print "mkslow", name, count
                 x = self.data[name].mkslow_peripheral()
                 print name, count, x
                 ret.append(x.format(i))
@@ -354,8 +362,10 @@ class PeripheralInterfaces(object):
         cellcount = 0
         for (name, count) in self.ifacecount:
             for i in range(count):
-                txt = self.data[name].mk_cellcon(cellcount, name, i)
-                cellcount += 1
+                res = self.data[name].mk_cellconn(cellcount, name, i)
+                if not res:
+                    continue
+                (txt, cellcount) = res
                 ret.append(txt)
         ret = '\n'.join(list(filter(None, ret)))
         return pinmux_cellrule.format(ret)
