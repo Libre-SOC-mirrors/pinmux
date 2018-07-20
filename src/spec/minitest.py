@@ -8,7 +8,7 @@ from spec.ifaceprint import display_fixed
 
 def pinspec():
     pinbanks = {
-        'B': 28,
+        'A': 28,
     }
     fixedpins = {
         'CTRL_SYS': [
@@ -60,27 +60,27 @@ def pinspec():
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
 
-    # Bank B, 16-47
-    ps.gpio("", ('B', 0), 0, 0, 28)
-    ps.rgbttl("", ('B', 0), 1, limit=23)
-    ps.spi("0", ('B', 10), 2)
-    ps.quadspi("", ('B', 4), 2)
-    ps.uart("0", ('B', 16), 2)
-    ps.i2c("1", ('B', 18), 2)
-    ps.pwm("", ('B', 21), 2, 0, 3)
-    ps.sdmmc("0", ('B', 22), 3)
-    ps.eint("", ('B', 0), 3, 0, 4)
-    ps.eint("", ('B', 20), 2, 4, 1)
-    ps.eint("", ('B', 23), 1, 5, 1)
-    ps.sdmmc("1", ('B', 4), 3)
-    ps.jtag("1", ('B', 10), 3)
-    ps.uartfull("0", ('B', 14), 3)
-    ps.uartfull("1", ('B', 18), 3)
-    ps.jtag("0", ('B', 24), 2)
-    ps.spi("1", ('B', 24), 1)
-    ps.i2c("0", ('B', 0), 2)
-    ps.uart("1", ('B', 2), 2)
-    ps.uart("2", ('B', 14), 2)
+    # Bank A, 0-27
+    ps.gpio("", ('A', 0), 0, 0, 28)
+    ps.rgbttl("", ('A', 0), 1, limit=23)
+    ps.spi("0", ('A', 10), 2)
+    ps.quadspi("", ('A', 4), 2)
+    ps.uart("0", ('A', 16), 2)
+    ps.i2c("1", ('A', 18), 2)
+    ps.pwm("", ('A', 21), 2, 0, 3)
+    ps.sdmmc("0", ('A', 22), 3)
+    ps.eint("", ('A', 0), 3, 0, 4)
+    ps.eint("", ('A', 20), 2, 4, 1)
+    ps.eint("", ('A', 23), 1, 5, 1)
+    ps.sdmmc("1", ('A', 4), 3)
+    ps.jtag("1", ('A', 10), 3)
+    ps.uartfull("0", ('A', 14), 3)
+    ps.uartfull("1", ('A', 18), 3)
+    ps.jtag("0", ('A', 24), 2)
+    ps.spi("1", ('A', 24), 1)
+    ps.i2c("0", ('A', 0), 2)
+    ps.uart("1", ('A', 2), 2)
+    ps.uart("2", ('A', 14), 2)
 
     # Scenarios below can be spec'd out as either "find first interface"
     # by name/number e.g. SPI1, or as "find in bank/mux" which must be
