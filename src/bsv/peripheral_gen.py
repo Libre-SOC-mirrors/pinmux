@@ -1,12 +1,12 @@
 class PBase(object):
     pass
 
-    def axi_reg_def(self, start, name, idx):
+    def axi_reg_def(self, start, name, ifacenum):
         name = name.upper()
         offs = self.num_axi_regs32()*4
         end = start + offs - 1
-        return ("    `define%(name)s%(idx)dBase  'h%(start)08x'\n" \
-                "    `define%(name)s%(idx)dEnd   'h%(end)08x'\n" % locals(),
+        return ("    `define%(name)s%(ifacenum)dBase 'h%(start)08x'\n" \
+                "    `define%(name)s%(ifacenum)dEnd  'h%(end)08x'\n" % locals(),
                 offs)
 
 
