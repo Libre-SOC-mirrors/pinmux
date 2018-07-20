@@ -362,11 +362,11 @@ class Interfaces(InterfacesBase):
 
 # ========= Interface declarations ================ #
 
-mux_interface=MuxInterface('cell',
+mux_interface = MuxInterface('cell',
                              [{'name': 'mux', 'ready': False, 'enabled': False,
                                'bitspec': '{1}', 'action': True}])
 
-io_interface=IOInterface(
+io_interface = IOInterface(
     'io',
     [{'name': 'cell_out', 'enabled': True, },
      {'name': 'cell_outen', 'enabled': True, 'outenmode': True, },
@@ -382,12 +382,12 @@ io_interface=IOInterface(
 # basic test
 if __name__ == '__main__':
 
-    uartinterface_decl=Interface('uart',
+    uartinterface_decl = Interface('uart',
                                    [{'name': 'rx'},
                                     {'name': 'tx', 'action': True},
                                     ])
 
-    twiinterface_decl=Interface('twi',
+    twiinterface_decl = Interface('twi',
                                   [{'name': 'sda', 'outen': True},
                                    {'name': 'scl', 'outen': True},
                                    ])

@@ -10,11 +10,11 @@ class PBase(object):
         return "%(name)s%(ifacenum)dEnd" % locals()
 
     def axi_reg_def(self, start, name, ifacenum):
-        name=name.upper()
-        offs=self.num_axi_regs32() * 4 * 16
-        end=start + offs - 1
-        bname=self.axibase(name, ifacenum)
-        bend=self.axiend(name, ifacenum)
+        name = name.upper()
+        offs = self.num_axi_regs32() * 4 * 16
+        end = start + offs - 1
+        bname = self.axibase(name, ifacenum)
+        bend = self.axiend(name, ifacenum)
         comment = "%d 32-bit regs" % self.num_axi_regs32()
         return ("    `define%(bname)s 'h%(start)08X\n"
                 "    `define%(bend)s  'h%(end)08X // %(comment)s" % locals(),
