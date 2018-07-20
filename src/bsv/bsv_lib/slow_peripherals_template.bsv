@@ -129,6 +129,7 @@ package slow_peripherals;
 
     /*========== pinmux connections ============*/
 {7}
+{8}
     rule connect_i2c0_scl;
       pinmux.peripheral_side.twi_scl_out(i2c0.out.scl_out);
       pinmux.peripheral_side.twi_scl_outen(pack(i2c0.out.scl_out_en));

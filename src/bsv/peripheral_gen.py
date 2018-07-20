@@ -42,6 +42,22 @@ class PBase(object):
             return tuple2(True,fromInteger(valueOf({2})));
         else""".format(bname, bend, name)
 
+    def mk_pincon(self, name, count):
+        ret = []
+        for p in self.peripheral.pinspecs:
+            typ = p['type']
+            pname = p['name']
+            ret.append("    rule con_%s%d_%s_%s" % (name, count, pname, typ))
+            sname = self.peripheral.pname(pname).format(count)
+            ps = "pinmux.peripheral_side.%s" % sname
+            if typ == 'out':
+                fname = self.pinname_out(pname)
+                n = "{0}{1}".format(name, self.mksuffix(name, count))
+                ret.append("        {0}_out({1}.{2});".format(ps, n, fname))
+            ret.append("        //%s" % str(p))
+            ret.append("    endrule")
+        return '\n'.join(ret)
+
     def mk_cellconn(self, *args):
         return ''
 
@@ -74,6 +90,15 @@ class PBase(object):
     def _mk_connection(self, name=None, count=0):
         return ''
 
+    def pinname_out(self, pname):
+        return ''
+
+    def pinname_in(self, pname):
+        return ''
+
+    def pinname_outen(self, pname):
+        return ''
+
 
 class uart(PBase):
 
@@ -95,6 +120,11 @@ class uart(PBase):
     def _mk_connection(self, name=None, count=0):
         return "uart{0}.slave_axi_uart"
 
+    def pinname_out(self, pname):
+        return {'tx': 'coe_rs232.sout'}.get(pname, '')
+
+    def pinname_in(self, pname):
+        return {'rx': 'coe_rs232.sin'}.get(pname, '')
 
 
 class rs232(PBase):
@@ -274,7 +304,7 @@ class PeripheralIface(object):
             self.slow = slow(ifacename)
             self.slow.peripheral = self
         for fname in ['slowimport', 'slowifdecl', 'mkslow_peripheral',
-                      'mk_connection', 'mk_cellconn']:
+                      'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
 
@@ -387,6 +417,14 @@ class PeripheralInterfaces(object):
                 ret.append(txt)
         ret = '\n'.join(list(filter(None, ret)))
         return pinmux_cellrule.format(ret)
+
+    def mk_pincon(self):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                txt = self.data[name].mk_pincon(name, i)
+                ret.append(txt)
+        return '\n'.join(list(filter(None, ret)))
 
 class PFactory(object):
     def getcls(self, name):

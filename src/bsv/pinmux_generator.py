@@ -107,9 +107,11 @@ def write_slow(slow, template, p, ifaces, iocells):
     mkslow = ifaces.mkslow_peripheral()
     mkcon = ifaces.mk_connection()
     mkcellcon = ifaces.mk_cellconn()
+    pincon = ifaces.mk_pincon()
     with open(slow, "w") as bsv_file:
         bsv_file.write(template.format(imports, ifdecl, regdef, slavedecl,
-                                       fnaddrmap, mkslow, mkcon, mkcellcon))
+                                       fnaddrmap, mkslow, mkcon, mkcellcon,
+                                       pincon))
 
 
 def write_bus(bus, p, ifaces):
