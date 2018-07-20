@@ -192,8 +192,8 @@ class gpio(PBase):
         return ("%s\n%s" % (ret, ret2), 2)
 
     def mkslow_peripheral(self):
-        return "          MUX#(%(name)s) mux{0} <- mkmux();\n" + \
-               "          GPIO#(%(name)s) gpio{0} <- mkgpio();" % \
+        return "        MUX#(%(name)s) mux{0} <- mkmux();\n" + \
+               "        GPIO#(%(name)s) gpio{0} <- mkgpio();" % \
                     {'name': self.name}
 
     def mk_connection(self, count):
@@ -222,6 +222,12 @@ typedef  TAdd#(Plic_slave_num   ,`ifdef AXIEXP      1 `else 0 `endif )
 typedef TAdd#(AxiExp1_slave_num,1) Num_Slow_Slaves;
 """
 
+pinmux_cellrule = """\
+    rule connect_select_lines_pinmux;
+{0}
+    endrule
+"""
+
 
 class CallFn(object):
     def __init__(self, peripheral, name):
@@ -229,7 +235,7 @@ class CallFn(object):
         self.name = name
 
     def __call__(self, *args):
-        print "__call__", self.name, self.peripheral.slow, args
+        #print "__call__", self.name, self.peripheral.slow, args
         if not self.peripheral.slow:
             return ''
         return getattr(self.peripheral.slow, self.name)(*args[1:])
@@ -337,6 +343,14 @@ class PeripheralInterfaces(object):
                 ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
 
+    def mk_cellconn(self):
+        ret = []
+        txt = "        pinmux.mux_lines.cell{0}_mux(muxa.mux_config.mux[{0}]);"
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                ret.append(txt.format(i))
+        ret = '\n'.join(list(filter(None, ret)))
+        return pinmux_cellrule.format(ret)
 
 class PFactory(object):
     def getcls(self, name):

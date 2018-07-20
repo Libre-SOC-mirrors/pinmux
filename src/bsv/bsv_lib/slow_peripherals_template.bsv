@@ -81,7 +81,7 @@ package slow_peripherals;
 	(*synthesize*)
 	module mkslow_peripherals#(Clock fast_clock, Reset fast_reset,
                                Clock uart_clock, Reset uart_reset
-  `ifdef PWM_AXI4Lite ,Clock ext_pwm_clock `endif
+                              `ifdef PWM_AXI4Lite ,Clock ext_pwm_clock `endif
                               )(Ifc_slow_peripherals);
 		Clock sp_clock <-exposeCurrentClock; // slow peripheral clock
 		Reset sp_reset <-exposeCurrentReset; // slow peripheral reset
@@ -112,24 +112,23 @@ package slow_peripherals;
 		/*======= Slave connections to AXI4Lite fabric =========*/
 {6}
 		`ifdef CLINT
-			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(CLINT_slave_num))],
+			mkConnection (slow_fabric.v_to_slaves
+                    [fromInteger(valueOf(CLINT_slave_num))],
                     clint.axi4_slave);
 		`endif
 		`ifdef PLIC
-			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Plic_slave_num))],	
+			mkConnection (slow_fabric.v_to_slaves
+                    [fromInteger(valueOf(Plic_slave_num))],	
                     plic.axi4_slave_plic); //
 		`endif
 		`ifdef AXIEXP
-   		mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(AxiExp1_slave_num))],	
+   		mkConnection (slow_fabric.v_to_slaves
+                    [fromInteger(valueOf(AxiExp1_slave_num))],	
                     axiexp1.axi_slave); //
 		`endif
 
     /*========== pinmux connections ============*/
-    rule connect_select_lines_pinmux;// mandatory
-      pinmux.mux_lines.cell0_mux(muxa.mux_config.mux[0]);  
-      pinmux.mux_lines.cell1_mux(muxa.mux_config.mux[1]);  
-      pinmux.mux_lines.cell2_mux(muxa.mux_config.mux[2]);  
-    endrule
+{7}
     rule connect_i2c0_scl;
       pinmux.peripheral_side.twi_scl_out(i2c0.out.scl_out);
       pinmux.peripheral_side.twi_scl_outen(pack(i2c0.out.scl_out_en));
