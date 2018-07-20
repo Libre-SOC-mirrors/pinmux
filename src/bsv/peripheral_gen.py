@@ -164,6 +164,7 @@ class PeripheralIface(object):
             return ''
         return self.slow.axi_addr_map(self.ifacename, count)
 
+
 class PeripheralInterfaces(object):
     def __init__(self):
         pass
@@ -224,5 +225,5 @@ class PFactory(object):
                 'gpio': gpio
                 }.get(name, None)
 
-slowfactory = PFactory()
 
+slowfactory = PFactory()
