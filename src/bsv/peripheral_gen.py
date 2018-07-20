@@ -47,15 +47,27 @@ class PBase(object):
         for p in self.peripheral.pinspecs:
             typ = p['type']
             pname = p['name']
-            ret.append("    rule con_%s%d_%s_%s" % (name, count, pname, typ))
+            n = "{0}{1}".format(name, self.mksuffix(name, count))
+            ret.append("    //%s %s" % (n, str(p)))
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s" % sname
-            if typ == 'out':
+            if typ == 'out' or typ == 'inout':
+                ret.append("    rule con_%s%d_%s_out" % (name, count, pname))
                 fname = self.pinname_out(pname)
-                n = "{0}{1}".format(name, self.mksuffix(name, count))
-                ret.append("        {0}_out({1}.{2});".format(ps, n, fname))
-            ret.append("        //%s" % str(p))
-            ret.append("    endrule")
+                if fname:
+                    ret.append("      {0}_out({1}.{2});".format(ps, n, fname))
+                fname = None
+                if p.get('outen'):
+                    fname = self.pinname_outen(pname)
+                if fname:
+                    ret.append("      {0}_outen({1}.{2});".format(ps, n, fname))
+                ret.append("    endrule")
+            if typ == 'in' or typ == 'inout':
+                fname = self.pinname_in(pname)
+                if fname:
+                    ret.append("    rule con_%s%d_%s_in" % (name, count, pname))
+                    ret.append("      {1}.{2}({0}_in);".format(ps, n, fname))
+                    ret.append("    endrule")
         return '\n'.join(ret)
 
     def mk_cellconn(self, *args):
@@ -150,6 +162,12 @@ class rs232(PBase):
     def _mk_connection(self, name=None, count=0):
         return "uart{0}.slave_axi_uart"
 
+    def pinname_out(self, pname):
+        return {'tx': 'coe_rs232.sout'}.get(pname, '')
+
+    def pinname_in(self, pname):
+        return {'rx': 'coe_rs232.sin'}.get(pname, '')
+
 
 class twi(PBase):
 
@@ -157,17 +175,30 @@ class twi(PBase):
         return "        import I2C_top           :: *;"
 
     def slowifdecl(self):
-        return "            interface I2C_out i2c{0}_out;\n" + \
-               "            method Bit#(1) i2c{0}_isint;"
+        return "            interface I2C_out twi{0}_out;\n" + \
+               "            method Bit#(1) twi{0}_isint;"
 
     def num_axi_regs32(self):
         return 8
 
     def mkslow_peripheral(self):
-        return "        I2C_IFC i2c{0} <- mkI2CController();"
+        return "        I2C_IFC twi{0} <- mkI2CController();"
 
     def _mk_connection(self, name=None, count=0):
-        return "i2c{0}.slave_i2c_axi"
+        return "twi{0}.slave_i2c_axi"
+
+    def pinname_out(self, pname):
+        return {'sda': 'out.sda_out',
+                'scl': 'out.scl_out'}.get(pname, '')
+
+    def pinname_in(self, pname):
+        return {'sda': 'out.sda_in',
+                'scl': 'out.scl_in'}.get(pname, '')
+
+    def pinname_outen(self, pname):
+        return {'sda': 'out.sda_outen',
+                'scl': 'out.scl_outen'}.get(pname, '')
+
 
 
 class qspi(PBase):
