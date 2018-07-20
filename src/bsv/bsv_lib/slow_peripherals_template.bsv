@@ -124,13 +124,7 @@ package slow_peripherals;
                     axiexp1.axi_slave); //
 		`endif
 
-    // NEEL EDIT
-    mkConnection (slow_fabric.
-                  v_to_slaves[fromInteger(valueOf(Muxa_slave_num))], 
-                  muxa.axi_slave);
-    mkConnection (slow_fabric.
-                  v_to_slaves[fromInteger(valueOf(Gpioa_slave_num))], 
-                  gpioa.axi_slave);
+    /*========== pinmux connections ============*/
     rule connect_select_lines_pinmux;// mandatory
       pinmux.mux_lines.cell0_mux(muxa.mux_config.mux[0]);  
       pinmux.mux_lines.cell1_mux(muxa.mux_config.mux[1]);  
