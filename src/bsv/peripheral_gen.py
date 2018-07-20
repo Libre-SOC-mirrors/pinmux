@@ -20,6 +20,10 @@ class PBase(object):
                 "    `define%(bend)s  'h%(end)08X // %(comment)s" % locals(),
                 offs)
 
+    def axi_slave_idx(self, idx, name, ifacenum):
+        name = name.upper()
+        return "typedef {0} {1}{2}_slave_num;".format(idx, name, ifacenum)
+
 
 class uart(PBase):
     def importfn(self):
