@@ -103,9 +103,10 @@ package slow_peripherals;
     Wire#(Bit#(32)) wr_interrupt <- mkWire();
 		/*=======================================================*/
 
-   	AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `PADDR, `Reg_width,`USERSPACE)	slow_fabric <- 
-                                                            mkAXI4_Lite_Fabric(fn_address_mapping);
-		Ifc_AXI4Lite_AXI4_Bridge bridge	<-mkAXI4Lite_AXI4_Bridge(fast_clock,fast_reset);
+   	AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `PADDR, `Reg_width,`USERSPACE)
+            slow_fabric <- mkAXI4_Lite_Fabric(fn_address_mapping);
+		Ifc_AXI4Lite_AXI4_Bridge
+            bridge<-mkAXI4Lite_AXI4_Bridge(fast_clock,fast_reset);
    	
 		mkConnection (bridge.axi4_lite_master,	slow_fabric.v_from_masters [0]);
 		/*======= Slave connections to AXI4Lite fabric =========*/
