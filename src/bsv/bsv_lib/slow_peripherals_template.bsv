@@ -58,16 +58,6 @@ package slow_peripherals;
 	/*================================*/
 
 	function Tuple2#(Bool, Bit#(TLog#(Num_Slow_Slaves))) fn_address_mapping (Bit#(`PADDR) addr);
-		`ifdef UART0
-			if(addr>=`UART0Base && addr<=`UART0End)
-				return tuple2(True,fromInteger(valueOf(Uart0_slave_num)));
-			else
-		`endif
-		`ifdef UART1
-			if(addr>=`UART1Base && addr<=`UART1End)
-				return tuple2(True,fromInteger(valueOf(Uart1_slave_num)));
-			else
-		`endif
 		`ifdef CLINT
 			if(addr>=`ClintBase && addr<=`ClintEnd)
 				return tuple2(True,fromInteger(valueOf(CLINT_slave_num)));
@@ -78,46 +68,13 @@ package slow_peripherals;
 				return tuple2(True,fromInteger(valueOf(Plic_slave_num)));
 			else
 		`endif
-		`ifdef I2C0
-			if(addr>=`I2C0Base && addr<=`I2C0End)	
-				return tuple2(True,fromInteger(valueOf(I2c0_slave_num)));
-			else
-		`endif
-		`ifdef I2C1
-			if(addr>=`I2C1Base && addr<=`I2C1End)
-				return tuple2(True,fromInteger(valueOf(I2c1_slave_num)));
-			else
-		`endif
-		`ifdef QSPI0
-			if(addr>=`QSPI0CfgBase && addr<=`QSPI0CfgEnd)
-				return tuple2(True,fromInteger(valueOf(Qspi0_slave_num)));
-			else if(addr>=`QSPI0MemBase && addr<=`QSPI0MemEnd)
-				return tuple2(True,fromInteger(valueOf(Qspi0_slave_num)));
-			else
-		`endif
-		`ifdef QSPI1
-			if(addr>=`QSPI1CfgBase && addr<=`QSPI1CfgEnd)
-				return tuple2(True,fromInteger(valueOf(Qspi1_slave_num)));
-			else if(addr>=`QSPI1MemBase && addr<=`QSPI1MemEnd)
-				return tuple2(True,fromInteger(valueOf(Qspi1_slave_num)));
-			else
-		`endif
 		`ifdef AXIEXP
 			if(addr>=`AxiExp1Base && addr<=`AxiExp1End)
 				return tuple2(True,fromInteger(valueOf(AxiExp1_slave_num)));
 			else
 		`endif
-    `ifdef PWM_AXI4Lite
-      if(addr>=`PWMBase && addr<=`PWMEnd)
-        return tuple2(True,fromInteger(valueOf(Pwm_slave_num)));
-      else
-    `endif
-
-    // NEEL EDIT 
-      // give slave number and adress map to whatever peripherals you instantiate on the AXI4_Lite
-      // slave.
-    // NEEL EDIT OVER
-		return tuple2(False,?);
+{4}
+			return tuple2(False,?);
 	endfunction
 
 	(*synthesize*)

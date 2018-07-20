@@ -20,9 +20,22 @@ class PBase(object):
                 "    `define%(bend)s  'h%(end)08X // %(comment)s" % locals(),
                 offs)
 
-    def axi_slave_idx(self, idx, name, ifacenum):
+    def axi_slave_name(self, name, ifacenum):
         name = name.upper()
-        return ("typedef {0} {1}{2}_slave_num;".format(idx, name, ifacenum), 1)
+        return "{0}{1}_slave_num".format(name, ifacenum)
+
+    def axi_slave_idx(self, idx, name, ifacenum):
+        name = self.axi_slave_name(name, ifacenum)
+        return ("typedef {0} {1};".format(idx, name), 1)
+
+    def axi_addr_map(self, name, ifacenum):
+        bname = self.axibase(name, ifacenum)
+        bend = self.axiend(name, ifacenum)
+        name = self.axi_slave_name(name, ifacenum)
+        return """\
+        if(addr>=`{0} && addr<=`{1})
+            return tuple2(True,fromInteger(valueOf({2})));
+        else""".format(bname, bend, name)
 
 
 class uart(PBase):

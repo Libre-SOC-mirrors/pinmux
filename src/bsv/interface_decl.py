@@ -279,6 +279,11 @@ class Interface(object):
             return ('', 0)
         return self.slow.axi_slave_idx(start, self.ifacename, count)
 
+    def axi_addr_map(self, count):
+        if not self.slow:
+            return ''
+        return self.slow.axi_addr_map(self.ifacename, count)
+
 
 class MuxInterface(Interface):
 
@@ -377,6 +382,13 @@ class Interfaces(InterfacesBase):
         ret.append("typedef %d LastGen_slave_num" % (start - 1))
         decls = '\n'.join(list(filter(None, ret)))
         return axi_slave_declarations.format(decls)
+
+    def axi_addr_map(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                ret.append(self.data[name].axi_addr_map(i))
+        return '\n'.join(list(filter(None, ret)))
 
 
 # ========= Interface declarations ================ #
