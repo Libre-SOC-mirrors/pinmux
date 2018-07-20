@@ -150,19 +150,6 @@ package slow_peripherals;
     rule connect_uart1rx;
       uart1.coe_rs232.sin(pinmux.peripheral_side.uart_rx);
     endrule
-    rule connect_gpioa;
-      pinmux.peripheral_side.gpioa_a0_out(gpioa.func.gpio_out[0]);
-      pinmux.peripheral_side.gpioa_a0_outen(gpioa.func.gpio_out_en[0]);
-      pinmux.peripheral_side.gpioa_a1_out(gpioa.func.gpio_out[1]);
-      pinmux.peripheral_side.gpioa_a1_outen(gpioa.func.gpio_out_en[1]);
-      pinmux.peripheral_side.gpioa_a2_out(gpioa.func.gpio_out[2]);
-      pinmux.peripheral_side.gpioa_a2_outen(gpioa.func.gpio_out_en[2]);
-	  	Vector#(3,Bit#(1)) temp;
-	  	temp[0]=pinmux.peripheral_side.gpioa_a0_in;
-	  	temp[1]=pinmux.peripheral_side.gpioa_a1_in;
-	  	temp[2]=pinmux.peripheral_side.gpioa_a2_in;
-      gpioa.func.gpio_in(temp);
-    endrule
     for(Integer i=0;i<32;i=i+ 1)begin
       rule connect_int_to_plic(wr_interrupt[i]==1);
 				ff_gateway_queue[i].enq(1);
