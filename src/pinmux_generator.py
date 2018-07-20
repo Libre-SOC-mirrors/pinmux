@@ -21,9 +21,6 @@ import os.path
 import sys
 from spec import modules, specgen, dummytest
 
-from bsv.pinmux_generator import pinmuxgen as bsvgen
-from myhdlgen.pinmux_generator import pinmuxgen as myhdlgen
-
 
 def printhelp():
     print ('''pinmux_generator.py [-o outputdir] [-v|--validate] [-h|--help]
@@ -95,9 +92,13 @@ if __name__ == '__main__':
             else:
                 specgen(of, output_dir, pinout, bankspec, pinspec, fixedpins)
     else:
-        gentypes = {'bsv': bsvgen, 'myhdl': myhdlgen}
-        if output_type not in gentypes:
+        if output_type == 'bsv':
+            from bsv.pinmux_generator import pinmuxgen as gentypes
+        elif output_type == 'myhdl':
+            from myhdlgen.pinmux_generator import pinmuxgen as gentypes
+        else:
             print ("ERROR: output type '%s' does not exist" % output_type)
             printhelp()
             sys.exit(0)
-        gentypes[output_type](output_dir, validate)
+
+        gentypes(output_dir, validate)

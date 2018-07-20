@@ -72,8 +72,8 @@ def pinmuxgen(pth=None, verify=True):
     shutil.copyfile(os.path.join(cwd, 'Makefile.template'),
                     os.path.join(bp, 'Makefile'))
     cwd = os.path.join(cwd, 'bsv_lib')
-    for fname in ['AXI4_Lite_Types.bsv', 'Semi_FIFOF.bsv', 
-                  'gpio.bsv',  'mux.bsv']:
+    for fname in ['AXI4_Lite_Types.bsv', 'Semi_FIFOF.bsv',
+                  'gpio.bsv', 'mux.bsv']:
         shutil.copyfile(os.path.join(cwd, fname),
                         os.path.join(bl, fname))
 
@@ -82,12 +82,27 @@ def pinmuxgen(pth=None, verify=True):
     ptp = os.path.join(bp, 'PinTop.bsv')
     bvp = os.path.join(bp, 'bus.bsv')
     idef = os.path.join(bp, 'instance_defines.bsv')
+    slow = os.path.join(bp, 'slow_peripherals.bsv')
+    slowt = os.path.join(cwd, 'slow_peripherals_template.bsv')
 
     write_pmp(pmp, p, ifaces, iocells)
     write_ptp(ptp, p, ifaces)
     write_bvp(bvp, p, ifaces)
     write_bus(bus, p, ifaces)
     write_instances(idef, p, ifaces)
+    write_slow(slow, slowt, p, ifaces)
+
+
+def write_slow(slow, template, p, ifaces):
+    """ write out the slow_peripherals.bsv file.
+        joins all the peripherals together into one AXI Lite interface
+    """
+    with open(template) as bsv_file:
+        template = bsv_file.read()
+    imports = ifaces.slowimport()
+    ifdecl = ifaces.slowifdecl()
+    with open(slow, "w") as bsv_file:
+        bsv_file.write(template.format(imports, ifdecl))
 
 
 def write_bus(bus, p, ifaces):
@@ -339,16 +354,17 @@ def write_bvp(bvp, p, ifaces):
             decl.append(muxdec .format(npins, bank))
             idec.append(gpioifc.format(bank))
             idec.append(muxifc.format(bank))
-        print dir(ifaces)
-        print ifaces.items()
-        print dir(ifaces['gpioa'])
-        print ifaces['gpioa'].pinspecs
+        print (dir(ifaces))
+        print (ifaces.items())
+        print (dir(ifaces['gpioa']))
+        print (ifaces['gpioa'].pinspecs)
         gpiodecl = '\n'.join(decl) + '\n' + '\n'.join(idec)
         gpiocfg = '\n'.join(cfg)
         bsv_file.write(axi4_lite.format(gpiodecl, gpiocfg))
     # ##################################################
 
-def write_instances(idef,  p, ifaces):
+
+def write_instances(idef, p, ifaces):
     with open(idef, 'w') as bsv_file:
         txt = '''\
     `define ADDR {0}

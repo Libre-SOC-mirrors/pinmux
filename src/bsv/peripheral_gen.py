@@ -1,12 +1,13 @@
 class PBase(object):
     pass
 
+
 class uart(PBase):
     def importfn(self):
         return "          import Uart16550         :: *;"
 
     def ifacedecl(self):
-        return "            interface RS232_PHY_Ifc uart{0}_coe;" \
+        return "            interface RS232_PHY_Ifc uart{0}_coe;\n" \
                "            method Bit#(1) uart{0}_intr;"
 
 
@@ -24,7 +25,7 @@ class twi(PBase):
         return "        import I2C_top           :: *;"
 
     def ifacedecl(self):
-        return "            interface I2C_out i2c{0}_out;" \
+        return "            interface I2C_out i2c{0}_out;\n" \
                "            method Bit#(1) i2c{0}_isint;"
 
 
@@ -33,7 +34,7 @@ class qspi(PBase):
         return "        import qspi              :: *;"
 
     def ifacedecl(self):
-        return "            interface QSPI_out qspi{0}_out;" \
+        return "            interface QSPI_out qspi{0}_out;\n" \
                "            method Bit#(1) qspi{0}_isint;"
 
 
@@ -47,21 +48,20 @@ class pwm(PBase):
 
 class gpio(PBase):
     def importfn(self):
-        return "     import pinmux::*;" \
-               "     import mux::*;" \
-               "     import gpio::*;"
+        return "     import pinmux::*;\n" \
+               "     import mux::*;\n" \
+               "     import gpio::*;\n"
 
     def ifacedecl(self):
         return "        interface GPIO_config#({1}) pad_config{0};"
 
 
-
 class PFactory(object):
-    def __init__(self):
+    def getcls(self, name):
         return {'uart': uart,
                 'rs232': rs232,
                 'twi': twi,
-                'qspi', qspi,
-                'pwm', pwm,
-                'gpio', 'gpio'
-                }
+                'qspi': qspi,
+                'pwm': pwm,
+                'gpio': gpio
+                }.get(name, None)

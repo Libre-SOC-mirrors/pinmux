@@ -98,11 +98,11 @@ class MyHdlIface(object):
     def __init__(self, iface):
         self.pnames = []
         for p in iface.pins:
-            print "typ", p.typ, p.name
+            print ("typ", p.typ, p.name)
             io = IO(p.typ, p.name)
             setattr(self, p.name, io)
             self.pnames.append(p.name)
-        print dir(self)
+        print (dir(self))
 
 
 def create_module(p, ifaces):
@@ -124,12 +124,12 @@ def pinmux(muxfn, clk, p, ifaces, {0}):
         p.muxers.append(pin)
         m = Mux(p.cell_bitwidth)
         p.muxsel.append(m)
-    print args
+    print (args)
     p.myhdlifaces = []
     for k, count in ifaces.ifacecount:
         i = ifaces[k]
         for c in range(count):
-            print k
+            print (k)
             args.append("%s%d" % (k, c))
             p.myhdlifaces.append(MyHdlIface(ifaces[k]))
 

@@ -8,6 +8,8 @@ except ImportError:
 from bsv.wire_def import generic_io  # special case
 from bsv.wire_def import muxwire  # special case
 from ifacebase import InterfacesBase
+from bsv.peripheral_gen import PFactory
+slowfactory = PFactory()
 
 
 class Pin(object):
@@ -121,6 +123,11 @@ class Interface(object):
         self.pins = []  # a list of instances of class Pin
         self.pinspecs = pinspecs  # a list of dictionary
         self.single = single
+        self.slow = None
+        slow = slowfactory.getcls(ifacename)
+        if slow:
+            self.slow = slow()
+
         for p in pinspecs:
             _p = {}
             _p.update(p)
@@ -251,6 +258,16 @@ class Interface(object):
         res = res.format(*args)
         return '\n' + res + '\n'
 
+    def slowimport(self):
+        if not self.slow:
+            return ''
+        return self.slow.importfn().format()
+
+    def slowifdecl(self, count):
+        if not self.slow:
+            return ''
+        return self.slow.ifacedecl().format(count, self.ifacename)
+
 
 class MuxInterface(Interface):
 
@@ -311,6 +328,19 @@ class Interfaces(InterfacesBase):
                 c = comment % name
                 f.write(c.format(i))
                 f.write(self.data[name].wirefmt(i))
+
+    def slowimport(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            ret.append(self.data[name].slowimport())
+        return '\n'.join(list(filter(None, ret)))
+
+    def slowifdecl(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                ret.append(self.data[name].slowifdecl(i))
+        return '\n'.join(list(filter(None, ret)))
 
 
 # ========= Interface declarations ================ #

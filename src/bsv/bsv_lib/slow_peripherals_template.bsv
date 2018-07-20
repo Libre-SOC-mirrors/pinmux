@@ -19,12 +19,15 @@ package slow_peripherals;
 	/*=======================*/
 	/*===== Import the slow peripherals ====*/
 {0}
+    `ifdef CLINT
+        import clint::*;
+    `endif
+    `ifdef PLIC
+        import plic             ::*;
+    `endif
 	`ifdef AXIEXP
 		import axiexpansion	::*;
 	`endif
-  import pinmux::*;
-  import mux::*;
-  import gpio::*;
 	/*=====================================*/
 	
 	/*===== interface declaration =====*/
@@ -45,15 +48,7 @@ package slow_peripherals;
 			method Bit#(`Reg_width) mtime;
 		`endif
 		`ifdef PLIC method ActionValue#(Tuple2#(Bool,Bool)) intrpt_note; `endif
-		`ifdef I2C0	method Bit#(1) i2c0_isint; `endif
-		`ifdef I2C1	method Bit#(1) i2c1_isint; `endif
-		`ifdef QSPI0 method Bit#(1) qspi0_isint; `endif
-		`ifdef QSPI1 method Bit#(1) qspi1_isint; `endif
-		`ifdef UART0 method Bit#(1) uart0_intr; `endif
-    // NEEL EDIT
     interface IOCellSide iocell_side; // mandatory interface
-    interface GPIO_config#(3) pad_configa; // depends on the number of banks
-    // NEEL EDIT OVER
 	endinterface
 	/*================================*/
 
