@@ -3,7 +3,8 @@ from copy import deepcopy
 
 
 class PBase(object):
-    pass
+    def __init__(self, name):
+        self.name = name
 
     def axibase(self, name, ifacenum):
         name = name.upper()
@@ -44,10 +45,22 @@ class PBase(object):
     def mkslow_peripheral(self):
         return ''
 
+    def mk_connection(self, count):
+        aname = self.axi_slave_name(self.name, count)
+        txt =  "        mkConnection (slow_fabric.v_to_slaves\n" + \
+               "                    [fromInteger(valueOf({1}))],\n" + \
+               "                    {0});"
+
+        con = self._mk_connection().format(count, aname)
+        if not con:
+            return ''
+        return txt.format(con, aname)
+
+    def _mk_connection(self):
+        return ''
+
 
 class uart(PBase):
-    def __init__(self):
-        PBase.__init__(self)
 
     def slowimport(self):
         return "          import Uart16550         :: *;"
@@ -64,10 +77,12 @@ class uart(PBase):
                "                mkUart16550(clocked_by uart_clock,\n" + \
                "                    reset_by uart_reset, sp_clock, sp_reset);"
 
+    def _mk_connection(self):
+        return "uart{0}.slave_axi_uart"
+
+
 
 class rs232(PBase):
-    def __init__(self):
-        PBase.__init__(self)
 
     def slowimport(self):
         return "        import Uart_bs::*;\n" + \
@@ -87,10 +102,11 @@ class rs232(PBase):
                "                mkUart_bs(clocked_by sp_clock,\n" + \
                "                    reset_by sp_reset, sp_clock, sp_reset);"
 
+    def _mk_connection(self):
+        return "uart{0}.slave_axi_uart"
+
 
 class twi(PBase):
-    def __init__(self):
-        PBase.__init__(self)
 
     def slowimport(self):
         return "        import I2C_top           :: *;"
@@ -105,10 +121,11 @@ class twi(PBase):
     def mkslow_peripheral(self):
         return "        I2C_IFC i2c{0} <- mkI2CController();"
 
+    def _mk_connection(self):
+        return "i2c{0}.slave_i2c_axi"
+
 
 class qspi(PBase):
-    def __init__(self):
-        PBase.__init__(self)
 
     def slowimport(self):
         return "        import qspi              :: *;"
@@ -123,10 +140,11 @@ class qspi(PBase):
     def mkslow_peripheral(self):
         return "        Ifc_qspi qspi{0} <-  mkqspi();"
 
+    def _mk_connection(self):
+        return "qspi{0}.slave"
+
 
 class pwm(PBase):
-    def __init__(self):
-        PBase.__init__(self)
 
     def slowimport(self):
         return "        import pwm::*;"
@@ -142,8 +160,6 @@ class pwm(PBase):
 
 
 class gpio(PBase):
-    def __init__(self):
-        PBase.__init__(self)
 
     def slowimport(self):
         return "     import pinmux::*;\n" + \
@@ -200,8 +216,9 @@ class PeripheralIface(object):
         self.slow = None
         slow = slowfactory.getcls(ifacename)
         if slow:
-            self.slow = slow()
-        for fname in ['slowimport', 'slowifdecl', 'mkslow_peripheral']:
+            self.slow = slow(ifacename)
+        for fname in ['slowimport', 'slowifdecl', 'mkslow_peripheral',
+                      'mk_connection']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
 
@@ -279,6 +296,14 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 ret.append(self.data[name].mkslow_peripheral().format(i))
+        return '\n'.join(list(filter(None, ret)))
+
+    def mk_connection(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                txt = self.data[name].mk_connection(i)
+                ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
 
 

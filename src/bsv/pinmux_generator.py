@@ -105,9 +105,10 @@ def write_slow(slow, template, p, ifaces):
     slavedecl = ifaces.axi_slave_idx()
     fnaddrmap = ifaces.axi_addr_map()
     mkslow = ifaces.mkslow_peripheral()
+    mkcon = ifaces.mk_connection()
     with open(slow, "w") as bsv_file:
         bsv_file.write(template.format(imports, ifdecl, regdef, slavedecl,
-                                       fnaddrmap, mkslow))
+                                       fnaddrmap, mkslow, mkcon))
 
 
 def write_bus(bus, p, ifaces):

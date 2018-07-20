@@ -110,14 +110,7 @@ package slow_peripherals;
    	
 		mkConnection (bridge.axi4_lite_master,	slow_fabric.v_from_masters [0]);
 		/*======= Slave connections to AXI4Lite fabric =========*/
-		`ifdef UART0
-			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Uart0_slave_num))],	
-                    uart0.slave_axi_uart);  
-		`endif
-		`ifdef UART1
-	   	mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Uart1_slave_num))],	
-                    uart1.slave_axi_uart); 
-		`endif
+{6}
 		`ifdef CLINT
 			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(CLINT_slave_num))],
                     clint.axi4_slave);
@@ -125,14 +118,6 @@ package slow_peripherals;
 		`ifdef PLIC
 			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Plic_slave_num))],	
                     plic.axi4_slave_plic); //
-		`endif
-		`ifdef I2C0
-   		mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(I2c0_slave_num))],	
-                    i2c0.slave_i2c_axi); 
-		`endif
-		`ifdef I2C1
-   		mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(I2c1_slave_num))],		
-                    i2c1.slave_i2c_axi); // 
 		`endif
   		`ifdef QSPI0 
 			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Qspi0_slave_num))],	
