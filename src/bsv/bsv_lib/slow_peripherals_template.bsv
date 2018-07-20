@@ -119,22 +119,10 @@ package slow_peripherals;
 			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Plic_slave_num))],	
                     plic.axi4_slave_plic); //
 		`endif
-  		`ifdef QSPI0 
-			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Qspi0_slave_num))],	
-                    qspi0.slave); 
-		`endif
-  		`ifdef QSPI1 
-			mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Qspi1_slave_num))],	
-                    qspi1.slave); 
-		`endif
 		`ifdef AXIEXP
    		mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(AxiExp1_slave_num))],	
                     axiexp1.axi_slave); //
 		`endif
-    `ifdef PWM_AXI4Lite
-      mkConnection (slow_fabric.v_to_slaves [fromInteger(valueOf(Pwm_slave_num))],
-                    pwm_bus.axi4_slave);
-    `endif
 
     // NEEL EDIT
     mkConnection (slow_fabric.

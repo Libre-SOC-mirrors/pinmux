@@ -45,8 +45,7 @@ class PBase(object):
     def mkslow_peripheral(self):
         return ''
 
-    def mk_connection(self, count):
-        aname = self.axi_slave_name(self.name, count)
+    def __mk_connection(self, aname, count):
         txt =  "        mkConnection (slow_fabric.v_to_slaves\n" + \
                "                    [fromInteger(valueOf({1}))],\n" + \
                "                    {0});"
@@ -55,6 +54,10 @@ class PBase(object):
         if not con:
             return ''
         return txt.format(con, aname)
+
+    def mk_connection(self, count):
+        aname = self.axi_slave_name(self.name, count)
+        return :elf.__mk_connection(aname, count)
 
     def _mk_connection(self):
         return ''
@@ -156,7 +159,10 @@ class pwm(PBase):
         return 4
 
     def mkslow_peripheral(self):
-        return "        Ifc_PWM_bus pwm_bus <- mkPWM_bus(sp_clock);"
+        return "        Ifc_PWM_bus pwm{0}_bus <- mkPWM_bus(sp_clock);"
+
+    def _mk_connection(self):
+        return "pwm{0}_bus.axi4_slave"
 
 
 class gpio(PBase):
