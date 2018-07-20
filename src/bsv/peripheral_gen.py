@@ -1,6 +1,14 @@
 class PBase(object):
     pass
 
+    def axi_reg_def(self, start, name, idx):
+        name = name.upper()
+        offs = self.num_axi_regs32()*4
+        end = start + offs - 1
+        return ("    `define%(name)s%(idx)dBase  'h%(start)08x'\n" \
+                "    `define%(name)s%(idx)dEnd   'h%(end)08x'\n" % locals(),
+                offs)
+
 
 class uart(PBase):
     def importfn(self):
