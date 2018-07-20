@@ -374,7 +374,7 @@ class Interfaces(InterfacesBase):
                 print ("ifc", name, rdef, offs)
                 ret.append(rdef)
                 start += offs
-        ret.append("typedef %d LastGen_slave_num" % (start-1))
+        ret.append("typedef %d LastGen_slave_num" % (start - 1))
         decls = '\n'.join(list(filter(None, ret)))
         return axi_slave_declarations.format(decls)
 
