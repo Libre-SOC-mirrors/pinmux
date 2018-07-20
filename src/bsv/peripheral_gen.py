@@ -10,6 +10,9 @@ class uart(PBase):
         return "            interface RS232_PHY_Ifc uart{0}_coe;\n" \
                "            method Bit#(1) uart{0}_intr;"
 
+    def num_axi_regs32(self):
+        return 8
+
 
 class rs232(PBase):
     def importfn(self):
@@ -18,6 +21,9 @@ class rs232(PBase):
 
     def ifacedecl(self):
         return "            interface RS232 uart{0}_coe;"
+
+    def num_axi_regs32(self):
+        return 2
 
 
 class twi(PBase):
@@ -28,6 +34,9 @@ class twi(PBase):
         return "            interface I2C_out i2c{0}_out;\n" \
                "            method Bit#(1) i2c{0}_isint;"
 
+    def num_axi_regs32(self):
+        return 8
+
 
 class qspi(PBase):
     def importfn(self):
@@ -37,6 +46,9 @@ class qspi(PBase):
         return "            interface QSPI_out qspi{0}_out;\n" \
                "            method Bit#(1) qspi{0}_isint;"
 
+    def num_axi_regs32(self):
+        return 13
+
 
 class pwm(PBase):
     def importfn(self):
@@ -44,6 +56,9 @@ class pwm(PBase):
 
     def ifacedecl(self):
         return "        interface PWMIO pwm_o;"
+
+    def num_axi_regs32(self):
+        return 4
 
 
 class gpio(PBase):
@@ -54,6 +69,9 @@ class gpio(PBase):
 
     def ifacedecl(self):
         return "        interface GPIO_config#({1}) pad_config{0};"
+
+    def num_axi_regs32(self):
+        return 2
 
 
 class PFactory(object):
