@@ -209,6 +209,12 @@ class gpio(PBase):
         if name.startswith('mux'):
             return "mux{0}.axi_slave"
 
+    def mk_cellconn(self, cellnum, bank, count):
+        ret = []
+        bank = bank[4:] # strip off "gpio"
+        txt = "       pinmux.mux_lines.cell{0}_mux(mux{1}.mux_config.mux[{2}]);"
+        return txt.format(cellnum, bank, count)
+
 
 axi_slave_declarations = """\
 typedef  0  SlowMaster;
@@ -345,10 +351,12 @@ class PeripheralInterfaces(object):
 
     def mk_cellconn(self):
         ret = []
-        txt = "        pinmux.mux_lines.cell{0}_mux(muxa.mux_config.mux[{0}]);"
+        cellcount = 0
         for (name, count) in self.ifacecount:
             for i in range(count):
-                ret.append(txt.format(i))
+                txt = self.data[name].mk_cellcon(cellcount, name, i)
+                cellcount += 1
+                ret.append(txt)
         ret = '\n'.join(list(filter(None, ret)))
         return pinmux_cellrule.format(ret)
 
