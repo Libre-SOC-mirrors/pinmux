@@ -10,6 +10,9 @@ package slow_peripherals;
 	`include "instance_defines.bsv"
     /* ==== define the AXI Addresses ==== */
 {2}
+    /*====== AXI4 Lite slave declarations =======*/
+
+{3}
 	/*===========================*/
 	/*=== package imports ===*/
 	import Clocks::*;

@@ -22,7 +22,7 @@ class PBase(object):
 
     def axi_slave_idx(self, idx, name, ifacenum):
         name = name.upper()
-        return "typedef {0} {1}{2}_slave_num;".format(idx, name, ifacenum)
+        return ("typedef {0} {1}{2}_slave_num;".format(idx, name, ifacenum), 1)
 
 
 class uart(PBase):
@@ -95,6 +95,28 @@ class gpio(PBase):
 
     def num_axi_regs32(self):
         return 2
+
+    def axi_slave_idx(self, idx, name, ifacenum):
+        """ generates AXI slave number definition, except
+            GPIO also has a muxer per bank
+        """
+        name = name.upper()
+        (ret, x) = PBase.axi_slave_idx(self, idx, name, ifacenum)
+        (ret2, x) = PBase.axi_slave_idx(self, idx, "mux", ifacenum)
+        return ("%s\n%s" % (ret, ret2), 2)
+
+
+axi_slave_declarations = """\
+typedef  0  SlowMaster;
+{0}
+typedef  TAdd#(LastGen_slave_num,`ifdef CLINT       1 `else 0 `endif )
+              CLINT_slave_num;
+typedef  TAdd#(CLINT_slave_num  ,`ifdef PLIC        1 `else 0 `endif )
+              Plic_slave_num;
+typedef  TAdd#(Plic_slave_num   ,`ifdef AXIEXP      1 `else 0 `endif )
+              AxiExp1_slave_num;
+typedef TAdd#(AxiExp1_slave_num,1) Num_Slow_Slaves;
+"""
 
 
 class PFactory(object):

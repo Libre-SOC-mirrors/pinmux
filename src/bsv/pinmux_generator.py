@@ -102,8 +102,9 @@ def write_slow(slow, template, p, ifaces):
     imports = ifaces.slowimport()
     ifdecl = ifaces.slowifdecl()
     regdef = ifaces.axi_reg_def()
+    slavedecl = ifaces.axi_slave_idx()
     with open(slow, "w") as bsv_file:
-        bsv_file.write(template.format(imports, ifdecl, regdef))
+        bsv_file.write(template.format(imports, ifdecl, regdef, slavedecl))
 
 
 def write_bus(bus, p, ifaces):

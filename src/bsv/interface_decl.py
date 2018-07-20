@@ -9,6 +9,7 @@ from bsv.wire_def import generic_io  # special case
 from bsv.wire_def import muxwire  # special case
 from ifacebase import InterfacesBase
 from bsv.peripheral_gen import PFactory
+from bsv.peripheral_gen import axi_slave_declarations
 slowfactory = PFactory()
 
 
@@ -273,6 +274,11 @@ class Interface(object):
             return ('', 0)
         return self.slow.axi_reg_def(start, self.ifacename, count)
 
+    def axi_slave_idx(self, start, count):
+        if not self.slow:
+            return ('', 0)
+        return self.slow.axi_slave_idx(start, self.ifacename, count)
+
 
 class MuxInterface(Interface):
 
@@ -358,6 +364,19 @@ class Interfaces(InterfacesBase):
                 ret.append(rdef)
                 start += offs
         return '\n'.join(list(filter(None, ret)))
+
+    def axi_slave_idx(self, *args):
+        ret = []
+        start = 0
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                (rdef, offs) = self.data[name].axi_slave_idx(start, i)
+                print ("ifc", name, rdef, offs)
+                ret.append(rdef)
+                start += offs
+        ret.append("typedef %d LastGen_slave_num" % (start-1))
+        decls = '\n'.join(list(filter(None, ret)))
+        return axi_slave_declarations.format(decls)
 
 
 # ========= Interface declarations ================ #
