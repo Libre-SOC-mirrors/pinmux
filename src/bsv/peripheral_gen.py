@@ -411,8 +411,7 @@ class gpio(PBase):
         return "func.gpio_out[{0}]".format(pname[1:])
 
     def pinname_outen(self, pname):
-        return {'sda': 'out.sda_outen',
-                'scl': 'out.scl_outen'}.get(pname, '')
+        return "func.gpio_outen[{0}]".format(pname[1:])
 
     def mk_pincon(self, name, count):
         ret = [PBase.mk_pincon(self, name, count)]
