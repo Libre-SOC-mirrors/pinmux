@@ -63,7 +63,10 @@ class PBase(object):
                         ps_ = ps + '_out'
                     else:
                         ps_ = ps
-                    n_ = "{0}{1}".format(n, count)
+                    if not n.startswith('gpio'): # XXX EURGH! horrible hack
+                      n_ = "{0}{1}".format(n, count)
+                    else:
+                      n_ = n
                     ret.append("      {0}({1}.{2});".format(ps_, n_, fname))
                 fname = None
                 if p.get('outen'):
@@ -294,7 +297,7 @@ class pwm(PBase):
         return "        import pwm::*;"
 
     def slowifdecl(self):
-        return "        interface PWMIO pwm{0}_o;"
+        return "        interface PWMIO pwm{0};"
 
     def num_axi_regs32(self):
         return 4
