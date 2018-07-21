@@ -84,7 +84,8 @@ class PBase(object):
                     ret.append(
                         "    rule con_%s%d_%s_in;" %
                         (name, count, pname))
-                    ret.append("      {1}.{2}({0});".format(ps_, n, fname))
+                    n_ = "{0}{1}".format(n, count)
+                    ret.append("      {1}.{2}({0});".format(ps_, n_, fname))
                     ret.append("    endrule")
         return '\n'.join(ret)
 
