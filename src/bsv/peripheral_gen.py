@@ -43,6 +43,9 @@ class PBase(object):
         else""".format(bname, bend, name)
 
     def mk_pincon(self, name, count):
+        # TODO: really should be using bsv.interface_decl.Interfaces
+        # pin-naming rules.... logic here is hard-coded to duplicate
+        # it (see Interface.__init__ outen)
         ret = []
         for p in self.peripheral.pinspecs:
             typ = p['type']
@@ -56,7 +59,12 @@ class PBase(object):
                 ret.append("    rule con_%s%d_%s_out" % (name, count, pname))
                 fname = self.pinname_out(pname)
                 if fname:
-                    ret.append("      {0}_out({1}.{2});".format(ps, n, fname))
+                    if p.get('outen'):
+                        ps_ = ps + '_out'
+                    else:
+                        ps_ = ps
+                    n_ = "{0}{1}".format(n, count)
+                    ret.append("      {0}({1}.{2});".format(ps_, n_, fname))
                 fname = None
                 if p.get('outen'):
                     fname = self.pinname_outen(pname)
@@ -68,8 +76,12 @@ class PBase(object):
             if typ == 'in' or typ == 'inout':
                 fname = self.pinname_in(pname)
                 if fname:
+                    if p.get('outen'):
+                        ps_ = ps + '_in'
+                    else:
+                        ps_ = ps
                     ret.append("    rule con_%s%d_%s_in" % (name, count, pname))
-                    ret.append("      {1}.{2}({0}_in);".format(ps, n, fname))
+                    ret.append("      {1}.{2}({0});".format(ps_, n, fname))
                     ret.append("    endrule")
         return '\n'.join(ret)
 
@@ -245,6 +257,9 @@ class pwm(PBase):
 
     def _mk_connection(self, name=None, count=0):
         return "pwm{0}_bus.axi4_slave"
+
+    def pinname_out(self, pname):
+        return {'out': 'pwm_io.pwm_o'}.get(pname, '')
 
 
 class gpio(PBase):
