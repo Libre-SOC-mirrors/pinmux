@@ -82,6 +82,7 @@ def pinmuxgen(pth=None, verify=True):
                   'I2C_top.bsv', 'I2C_Defs.bsv', 
                   'plic.bsv', 'Cur_Cycle.bsv', 
                   'ClockDiv.bsv', 'axi_addr_generator.bsv', 
+                  'jtagdtm_new.bsv', 'jtagdefines.bsv', 
                   'pwm.bsv', 'qspi.bsv', 'qspi.defs', 
                   ]:
         shutil.copyfile(os.path.join(cwd, fname),
