@@ -32,13 +32,23 @@ class InterfacesBase(UserDict):
                 ]
                 """
                 spec, ganged = self.read_spec(pth, name)
-                iface = ifacekls(name, spec, ganged, count == 1)
-                self.ifaceadd(name, count, iface)
+                # XXX HORRIBLE hack!!!
+                if name == 'pwm' and count == 1 and len(spec) != 1:
+                    #print "read", name, count, spec, ganged
+                    #print "multi pwm", spec[:1], len(spec)
+                    spec[0]['name'] = 'out'
+                    iface = ifacekls(name, spec[:1], ganged, False)
+                    self.ifaceadd(name, len(spec), iface)
+                else:
+                    iface = ifacekls(name, spec, ganged, count == 1)
+                    self.ifaceadd(name, count, iface)
 
     def getifacetype(self, fname):
         # finds the interface type, e.g sd_d0 returns "inout"
         for iface in self.values():
             typ = iface.getifacetype(fname)
+            #if fname.startswith('pwm'):
+            #   print fname, iface.ifacename, typ
             if typ:
                 return typ
         return None

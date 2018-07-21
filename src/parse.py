@@ -52,6 +52,10 @@ class Parse(object):
                 if len(line1) == 2:  # dedicated
                     self.dedicated_cells.append(line1)
                 else:
+                    for i in range(1, len(line1)):
+                        # XXX HORRIBLE HACK!!
+                        if line1[i].startswith('pwm'):
+                            line1[i] = 'pwm%s_out' % line1[i][4:]
                     self.muxed_cells.append(line1)
 
         self.pinnumbers = sorted(self.pinnumbers)
