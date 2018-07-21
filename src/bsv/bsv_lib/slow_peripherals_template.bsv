@@ -103,7 +103,6 @@ package slow_peripherals;
 			Ifc_AxiExpansion		axiexp1			<- mkAxiExpansion();	
 		`endif
     Ifc_pinmux pinmux <- mkpinmux; // mandatory
-    Wire#(Bit#(32)) wr_interrupt <- mkWire();
 		/*=======================================================*/
 
    	AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `ADDR, `DATA,`USERSPACE)
@@ -133,12 +132,6 @@ package slow_peripherals;
     /*========== pinmux connections ============*/
 {7}
 {8}
-    for(Integer i=0;i<32;i=i+ 1)begin
-      rule connect_int_to_plic(wr_interrupt[i]==1);
-				ff_gateway_queue[i].enq(1);
-				plic.ifc_external_irq[i].irq_frm_gateway(True);
-      endrule
-    end
     rule rl_completion_msg_from_plic;
 		  let id <- plic.intrpt_completion;
       interrupt_id <= id;

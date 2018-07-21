@@ -9,6 +9,12 @@ class PBase(object):
     def slowifdeclmux(self):
         return ''
 
+    def slowimport(self):
+        return ''
+
+    def num_axi_regs32(self):
+        return 0
+
     def slowifdecl(self):
         return ''
 
@@ -23,6 +29,8 @@ class PBase(object):
     def axi_reg_def(self, start, name, ifacenum):
         name = name.upper()
         offs = self.num_axi_regs32() * 4 * 16
+        if offs == 0:
+            return ('', 0)
         end = start + offs - 1
         bname = self.axibase(name, ifacenum)
         bend = self.axiend(name, ifacenum)
@@ -262,6 +270,43 @@ class twi(PBase):
         if typ == 'outen':
             return "pack({0})".format(txt)
         return txt
+
+
+class eint(PBase):
+
+    def mkslow_peripheral(self, size=0):
+        size = len(self.peripheral.pinspecs)
+        return "        Wire#(Bit#(%d)) wr_interrupt <- mkWire();" % size
+
+
+    def _pinname_out(self, pname):
+        return {'sda': 'out.sda_out',
+                'scl': 'out.scl_out'}.get(pname, '')
+
+    def _pinname_in(self, pname):
+        return {'sda': 'out.sda_in',
+                'scl': 'out.scl_in'}.get(pname, '')
+
+    def _pinname_outen(self, pname):
+        return {'sda': 'out.sda_out_en',
+                'scl': 'out.scl_out_en'}.get(pname, '')
+
+    def mk_pincon(self, name, count):
+        size = len(self.peripheral.pinspecs)
+        ret = []
+        ret.append(eint_pincon_template.format(size))
+        return '\n'.join(ret)
+
+
+eint_pincon_template = '''\
+    // TODO: offset i by the number of eints already used
+    for(Integer i=0;i<{0};i=i+ 1)begin
+      rule connect_int_to_plic(wr_interrupt[i]==1);
+                ff_gateway_queue[i].enq(1);
+                plic.ifc_external_irq[i].irq_frm_gateway(True);
+      endrule
+    end
+'''
 
 
 class spi(PBase):
@@ -662,6 +707,7 @@ class PFactory(object):
                      'qspi': qspi,
                      'spi': spi,
                      'pwm': pwm,
+                     'eint': eint,
                      'gpio': gpio
                      }.items():
             if name.startswith(k):
