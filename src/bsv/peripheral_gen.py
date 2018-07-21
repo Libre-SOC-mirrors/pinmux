@@ -51,7 +51,7 @@ class PBase(object):
             typ = p['type']
             pname = p['name']
             #n = "{0}{1}".format(self.name, self.mksuffix(name, count))
-            n = name#"{0}{1}".format(self.name, self.mksuffix(name, count))
+            n = name  # "{0}{1}".format(self.name, self.mksuffix(name, count))
             ret.append("    //%s %s" % (n, str(p)))
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s" % sname
@@ -80,7 +80,9 @@ class PBase(object):
                         ps_ = ps + '_in'
                     else:
                         ps_ = ps
-                    ret.append("    rule con_%s%d_%s_in" % (name, count, pname))
+                    ret.append(
+                        "    rule con_%s%d_%s_in" %
+                        (name, count, pname))
                     ret.append("      {1}.{2}({0});".format(ps_, n, fname))
                     ret.append("    endrule")
         return '\n'.join(ret)
@@ -95,9 +97,9 @@ class PBase(object):
         return i
 
     def __mk_connection(self, con, aname):
-        txt =  "        mkConnection (slow_fabric.v_to_slaves\n" + \
-               "                    [fromInteger(valueOf({1}))],\n" + \
-               "                    {0});"
+        txt = "        mkConnection (slow_fabric.v_to_slaves\n" + \
+            "                    [fromInteger(valueOf({1}))],\n" + \
+            "                    {0});"
 
         print "PBase __mk_connection", self.name, aname
         if not con:
@@ -128,6 +130,7 @@ class PBase(object):
 
     def pinname_tweak(self, pname, typ, txt):
         return txt
+
 
 class uart(PBase):
 
@@ -287,7 +290,7 @@ class gpio(PBase):
     def mkslow_peripheral(self):
         return "        MUX#(%(name)s) mux{0} <- mkmux();\n" + \
                "        GPIO#(%(name)s) gpio{0} <- mkgpio();" % \
-                    {'name': self.name}
+            {'name': self.name}
 
     def mk_connection(self, count):
         print "GPIO mk_conn", self.name, count
@@ -506,15 +509,16 @@ class PeripheralInterfaces(object):
                 ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
 
+
 class PFactory(object):
     def getcls(self, name):
         for k, v in {'uart': uart,
-                'rs232': rs232,
-                'twi': twi,
-                'qspi': qspi,
-                'pwm': pwm,
-                'gpio': gpio
-                }.items():
+                     'rs232': rs232,
+                     'twi': twi,
+                     'qspi': qspi,
+                     'pwm': pwm,
+                     'gpio': gpio
+                     }.items():
             if name.startswith(k):
                 return v
         return None

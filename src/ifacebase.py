@@ -47,7 +47,7 @@ class InterfacesBase(UserDict):
         # finds the interface type, e.g sd_d0 returns "inout"
         for iface in self.values():
             typ = iface.getifacetype(fname)
-            #if fname.startswith('pwm'):
+            # if fname.startswith('pwm'):
             #   print fname, iface.ifacename, typ
             if typ:
                 return typ
