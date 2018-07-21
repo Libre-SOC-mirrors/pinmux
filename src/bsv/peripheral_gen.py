@@ -61,7 +61,9 @@ class PBase(object):
                 if p.get('outen'):
                     fname = self.pinname_outen(pname)
                 if fname:
-                    ret.append("      {0}_outen({1}.{2});".format(ps, n, fname))
+                    fname = "{0}{1}.{2}".format(n, count, fname)
+                    fname = self.pinname_tweak(pname, 'outen', fname)
+                    ret.append("      {0}_outen({1});".format(ps, fname))
                 ret.append("    endrule")
             if typ == 'in' or typ == 'inout':
                 fname = self.pinname_in(pname)
@@ -112,6 +114,8 @@ class PBase(object):
     def pinname_outen(self, pname):
         return ''
 
+    def pinname_tweak(self, pname, typ, txt):
+        return txt
 
 class uart(PBase):
 
@@ -200,6 +204,10 @@ class twi(PBase):
         return {'sda': 'out.sda_outen',
                 'scl': 'out.scl_outen'}.get(pname, '')
 
+    def pinname_tweak(self, pname, typ, txt):
+        if typ == 'outen':
+            return "pack({0})".format(txt)
+        return txt
 
 
 class qspi(PBase):
