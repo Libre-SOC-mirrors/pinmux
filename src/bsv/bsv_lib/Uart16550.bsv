@@ -73,7 +73,7 @@ import defined_types::*;
 import AXI4_Lite_Types::*;
 import AXI4_Lite_Fabric::*;
 import Semi_FIFOF::*;
-`include "defined_parameters.bsv" 
+`include "instance_defines.bsv" 
 
 // depth of transmit and receive FIFOs
 typedef 16 Tx_FIFO_depth;

@@ -76,6 +76,7 @@ def pinmuxgen(pth=None, verify=True):
                   'gpio.bsv', 'mux.bsv', 
                   'AXI4_Types.bsv', 'defined_types.bsv', 
                   'AXI4_Fabric.bsv', 'Uart16550.bsv', 
+                  'AXI4_Lite_Fabric.bsv', 'ConcatReg.bsv', 
                   'Uart_bs.bsv', 'RS232_modified.bsv', 
                   'AXI4Lite_AXI4_Bridge.bsv',
                   'I2C_top.bsv', 'I2C_Defs.bsv', 
@@ -385,8 +386,28 @@ def write_bvp(bvp, p, ifaces):
 def write_instances(idef, p, ifaces):
     with open(idef, 'w') as bsv_file:
         txt = '''\
-    `define ADDR {0}
-    `define DATA {1}
-    `define USERSPACE 0
+`define ADDR {0}
+`define PADDR {0}
+`define DATA {1}
+`define Reg_width {1}
+`define USERSPACE 0
+
+// TODO: work out if these are needed
+`define PRFDEPTH 6
+`define VADDR 39
+`define DCACHE_BLOCK_SIZE 4
+`define DCACHE_WORD_SIZE 8
+`define PERFMONITORS                            64
+`define DCACHE_WAYS 4
+`define DCACHE_TAG_BITS 20      // tag_bits = 52
+`define PLIC
+	`define PLICBase		'h0c000000
+	`define PLICEnd		'h10000000
+`define INTERRUPT_PINS 64
+
+`define BAUD_RATE 130
+`ifdef simulate
+  `define BAUD_RATE 5 //130 //
+`endif
 '''
         bsv_file.write(txt.format(p.ADDR_WIDTH, p.DATA_WIDTH))
