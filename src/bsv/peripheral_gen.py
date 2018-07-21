@@ -274,6 +274,14 @@ class twi(PBase):
 
 class eint(PBase):
 
+    def slowimport(self):
+        size = len(self.peripheral.pinspecs)
+        return "    `define NUM_EINTS %d" % size
+
+    def slowifdeclmux(self):
+        size = len(self.peripheral.pinspecs)
+        return "    method Action external_int(Bit#(%d) in);" % size
+
     def mkslow_peripheral(self, size=0):
         size = len(self.peripheral.pinspecs)
         return "        Wire#(Bit#(%d)) wr_interrupt <- mkWire();" % size

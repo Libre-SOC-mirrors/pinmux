@@ -48,7 +48,6 @@ package slow_peripherals;
 	interface Ifc_slow_peripherals;
 		interface AXI4_Slave_IFC#(`ADDR,`DATA,`USERSPACE) axi_slave;
 		interface SP_dedicated_ios slow_ios;
-    method Action external_int(Bit#(32) in);
 		`ifdef CLINT
 			method Bit#(1) msip_int;
 			method Bit#(1) mtip_int;
@@ -361,7 +360,7 @@ package slow_peripherals;
     // NEEL EDIT
     interface iocell_side=pinmux.iocell_side;
     interface pad_config0= gpioa.pad_config;
-    method Action external_int(Bit#(32) in);
+    method Action external_int(Bit#(`NUM_EINTS) in);
       wr_interrupt<= in;
     endmethod
     // NEEL EDIT OVER
