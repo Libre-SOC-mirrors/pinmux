@@ -280,7 +280,7 @@ class spi(PBase):
         return "        Ifc_qspi spi{0} <-  mkqspi();"
 
     def _mk_connection(self, name=None, count=0):
-        return "qspi{0}.slave"
+        return "spi{0}.slave"
 
     def pinname_out(self, pname):
         return {'clk': 'out.clk_o',
@@ -301,7 +301,7 @@ class spi(PBase):
         # special-case for gpio in, store in a temporary vector
         plen = len(self.peripheral.pinspecs)
         ret.append("    // XXX NSS and CLK are hard-coded master")
-        ret.append("    // TODO: must add qspi slave-mode")
+        ret.append("    // TODO: must add spi slave-mode")
         ret.append("    // all ins done in one rule from 4-bitfield")
         ret.append("    rule con_%s%d_io_in;" % (name, count))
         ret.append("       {0}{1}.out.io_i({{".format(name, count))
