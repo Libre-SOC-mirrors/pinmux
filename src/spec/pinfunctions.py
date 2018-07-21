@@ -211,7 +211,7 @@ class RangePin(object):
 
 
 def eint(suffix, bank):
-    return (RangePin("*"), [])
+    return (RangePin("-"), [])
 
 
 def pwm(suffix, bank):

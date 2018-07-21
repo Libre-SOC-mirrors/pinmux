@@ -102,7 +102,9 @@ class PBase(object):
                         "    rule con_%s%d_%s_in;" %
                         (name, count, pname))
                     n_ = "{0}{1}".format(n, count)
-                    ret.append("      {1}.{2}({0});".format(ps_, n_, fname))
+                    n_ = '{0}.{1}'.format(n_, fname)
+                    n_ = self.ifname_tweak(pname, 'in', n_) 
+                    ret.append("      {1}({0});".format(ps_, n_))
                     ret.append("    endrule")
         return '\n'.join(ret)
 
@@ -146,6 +148,9 @@ class PBase(object):
 
     def pinname_outen(self, pname):
         return ''
+
+    def ifname_tweak(self, pname, typ, txt):
+        return txt
 
     def pinname_tweak(self, pname, typ, txt):
         return txt
@@ -296,35 +301,27 @@ class eint(PBase):
     def axi_addr_map(self, name, ifacenum):
         return ''
 
-    def _pinname_out(self, pname):
-        return {'sda': 'out.sda_out',
-                'scl': 'out.scl_out'}.get(pname, '')
-
-    def _pinname_in(self, pname):
-        return {'sda': 'out.sda_in',
-                'scl': 'out.scl_in'}.get(pname, '')
-
-    def _pinname_outen(self, pname):
-        return {'sda': 'out.sda_out_en',
-                'scl': 'out.scl_out_en'}.get(pname, '')
+    def ifname_tweak(self, pname, typ, txt):
+        if typ != 'in':
+            return txt
+        print "ifnameweak", pname, typ, txt
+        return "wr_interrupt[{0}] <= ".format(pname)
 
     def mk_pincon(self, name, count):
+        ret = [PBase.mk_pincon(self, name, count)]
         size = len(self.peripheral.pinspecs)
-        ret = []
         ret.append(eint_pincon_template.format(size))
-
-        ret.append("    rule con_%s%d_io_out;" % (name, count))
-        for idx, p in enumerate(self.peripheral.pinspecs):
+        ret.append("    rule con_%s%d_io_in;" % (name,  count))
+        ret.append("    wr_interrupt({")
+        for idx,  p in enumerate(self.peripheral.pinspecs):
             pname = p['name']
             sname = self.peripheral.pname(pname).format(count)
-            ps = "pinmux.peripheral_side.%s_out" % sname
-            ret.append("        wr_interrupt[{0}] <= {1};".format(idx, ps))
-        for idx, p in enumerate(self.peripheral.pinspecs):
-            pname = p['name']
-            sname = self.peripheral.pname(pname).format(count)
-            ps = "pinmux.peripheral_side.%s_out_en" % sname
-            ret.append("        {0} <= 1'b1;".format(ps))
+            ps = "pinmux.peripheral_side.%s" % sname
+            comma = '' if idx == size-1 else ','
+            ret.append("             {0}{1}".format(ps,  comma))
+        ret.append("        });")
         ret.append("    endrule")
+
         return '\n'.join(ret)
 
 
