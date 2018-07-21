@@ -336,6 +336,7 @@ package slow_peripherals;
 		`ifdef QSPI1 method	qspi1_isint=qspi1.interrupts[5]; `endif
 		`ifdef UART0 method uart0_intr=uart0.irq; `endif
 		interface SP_ios slow_ios;
+/* template for dedicated peripherals
 			`ifdef UART0
 				interface uart0_coe=uart0.coe_rs232;
 			`endif
@@ -361,6 +362,7 @@ package slow_peripherals;
       `ifdef PWM_AXI4Lite
         interface pwm_o = pwm_bus.pwm_io;
       `endif
+*/
 		endinterface
     // NEEL EDIT
     interface iocell_side=pinmux.iocell_side;
