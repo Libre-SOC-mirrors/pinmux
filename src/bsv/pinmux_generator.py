@@ -73,18 +73,18 @@ def pinmuxgen(pth=None, verify=True):
                     os.path.join(bp, 'Makefile'))
     cwd = os.path.join(cwd, 'bsv_lib')
     for fname in ['AXI4_Lite_Types.bsv', 'Semi_FIFOF.bsv',
-                  'gpio.bsv', 'mux.bsv', 
-                  'AXI4_Types.bsv', 'defined_types.bsv', 
-                  'AXI4_Fabric.bsv', 'Uart16550.bsv', 
-                  'AXI4_Lite_Fabric.bsv', 'ConcatReg.bsv', 
-                  'Uart_bs.bsv', 'RS232_modified.bsv', 
+                  'gpio.bsv', 'mux.bsv',
+                  'AXI4_Types.bsv', 'defined_types.bsv',
+                  'AXI4_Fabric.bsv', 'Uart16550.bsv',
+                  'AXI4_Lite_Fabric.bsv', 'ConcatReg.bsv',
+                  'Uart_bs.bsv', 'RS232_modified.bsv',
                   'AXI4Lite_AXI4_Bridge.bsv',
-                  'I2C_top.bsv', 'I2C_Defs.bsv', 
-                  'plic.bsv', 'Cur_Cycle.bsv', 
-                  'ClockDiv.bsv', 'axi_addr_generator.bsv', 
-                  'jtagdtm_new.bsv', 'jtagdefines.bsv', 
+                  'I2C_top.bsv', 'I2C_Defs.bsv',
+                  'plic.bsv', 'Cur_Cycle.bsv',
+                  'ClockDiv.bsv', 'axi_addr_generator.bsv',
+                  'jtagdtm_new.bsv', 'jtagdefines.bsv',
                   'sdcard_dummy.bsv',
-                  'pwm.bsv', 'qspi.bsv', 'qspi.defs', 
+                  'pwm.bsv', 'qspi.bsv', 'qspi.defs',
                   ]:
         shutil.copyfile(os.path.join(cwd, fname),
                         os.path.join(bl, fname))
@@ -395,7 +395,7 @@ def write_instances(idef, p, ifaces):
 `define USERSPACE 0
 
 // TODO: work out if these are needed
-`define PWM_AXI4Lite 
+`define PWM_AXI4Lite
 `define PRFDEPTH 6
 `define VADDR 39
 `define DCACHE_BLOCK_SIZE 4

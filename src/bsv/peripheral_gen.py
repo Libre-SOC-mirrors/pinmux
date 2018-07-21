@@ -72,10 +72,10 @@ class PBase(object):
             if typ == 'out' or typ == 'inout':
                 ret.append("    rule con_%s%d_%s_out;" % (name, count, pname))
                 fname = self.pinname_out(pname)
-                if not n.startswith('gpio'): # XXX EURGH! horrible hack
-                  n_ = "{0}{1}".format(n, count)
+                if not n.startswith('gpio'):  # XXX EURGH! horrible hack
+                    n_ = "{0}{1}".format(n, count)
                 else:
-                  n_ = n
+                    n_ = n
                 if fname:
                     if p.get('outen'):
                         ps_ = ps + '_out'
@@ -103,7 +103,7 @@ class PBase(object):
                         (name, count, pname))
                     n_ = "{0}{1}".format(n, count)
                     n_ = '{0}.{1}'.format(n_, fname)
-                    n_ = self.ifname_tweak(pname, 'in', n_) 
+                    n_ = self.ifname_tweak(pname, 'in', n_)
                     ret.append("      {1}({0});".format(ps_, n_))
                     ret.append("    endrule")
         return '\n'.join(ret)
@@ -287,7 +287,6 @@ class eint(PBase):
         size = len(self.peripheral.pinspecs)
         return "        Wire#(Bit#(%d)) wr_interrupt <- mkWire();" % size
 
-
     def axi_slave_name(self, name, ifacenum):
         return ''
 
@@ -307,14 +306,14 @@ class eint(PBase):
         ret = [PBase.mk_pincon(self, name, count)]
         size = len(self.peripheral.pinspecs)
         ret.append(eint_pincon_template.format(size))
-        ret.append("    rule con_%s%d_io_in;" % (name,  count))
+        ret.append("    rule con_%s%d_io_in;" % (name, count))
         ret.append("    wr_interrupt <= ({")
-        for idx,  p in enumerate(self.peripheral.pinspecs):
+        for idx, p in enumerate(self.peripheral.pinspecs):
             pname = p['name']
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s" % sname
-            comma = '' if idx == size-1 else ','
-            ret.append("             {0}{1}".format(ps,  comma))
+            comma = '' if idx == size - 1 else ','
+            ret.append("             {0}{1}".format(ps, comma))
         ret.append("        });")
         ret.append("    endrule")
 
@@ -515,13 +514,13 @@ class gpio(PBase):
         name = name.upper()
         mname = 'mux' + name[4:]
         mname = mname.upper()
-        print "AXIslavenum", name,  mname
+        print "AXIslavenum", name, mname
         (ret, x) = PBase.axi_slave_idx(self, idx, name, ifacenum)
-        (ret2, x) = PBase.axi_slave_idx(self, idx+1, mname, ifacenum)
+        (ret2, x) = PBase.axi_slave_idx(self, idx + 1, mname, ifacenum)
         return ("%s\n%s" % (ret, ret2), 2)
 
     def mkslow_peripheral(self, size=0):
-        print "gpioslow", self.peripheral,  dir(self.peripheral)
+        print "gpioslow", self.peripheral, dir(self.peripheral)
         size = len(self.peripheral.pinspecs)
         return "        MUX#(%d) mux{0} <- mkmux();\n" % size + \
                "        GPIO#(%d) gpio{0} <- mkgpio();" % size
@@ -619,7 +618,7 @@ class PeripheralIface(object):
         if slow:
             self.slow = slow(ifacename)
             self.slow.peripheral = self
-        for fname in ['slowimport', 'slowifdecl', 'slowifdeclmux', 
+        for fname in ['slowimport', 'slowifdecl', 'slowifdeclmux',
                       'mkslow_peripheral',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
