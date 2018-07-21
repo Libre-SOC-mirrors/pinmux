@@ -306,7 +306,7 @@ class pwm(PBase):
         return "        Ifc_PWM_bus pwm{0} <- mkPWM_bus(sp_clock);"
 
     def _mk_connection(self, name=None, count=0):
-        return "pwm{0}_bus.axi4_slave"
+        return "pwm{0}.axi4_slave"
 
     def pinname_out(self, pname):
         return {'out': 'pwm_io.pwm_o'}.get(pname, '')
