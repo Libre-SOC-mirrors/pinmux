@@ -279,6 +279,15 @@ class eint(PBase):
         return "        Wire#(Bit#(%d)) wr_interrupt <- mkWire();" % size
 
 
+    def axi_slave_name(self, name, ifacenum):
+        return ''
+
+    def axi_slave_idx(self, idx, name, ifacenum):
+        return ('', 0)
+
+    def axi_addr_map(self, name, ifacenum):
+        return ''
+
     def _pinname_out(self, pname):
         return {'sda': 'out.sda_out',
                 'scl': 'out.scl_out'}.get(pname, '')
@@ -295,6 +304,19 @@ class eint(PBase):
         size = len(self.peripheral.pinspecs)
         ret = []
         ret.append(eint_pincon_template.format(size))
+
+        ret.append("    rule con_%s%d_io_out;" % (name, count))
+        for idx, p in enumerate(self.peripheral.pinspecs):
+            pname = p['name']
+            sname = self.peripheral.pname(pname).format(count)
+            ps = "pinmux.peripheral_side.%s_out" % sname
+            ret.append("        wr_interript[{0}] <= {1};".format(idx, ps))
+        for idx, p in enumerate(self.peripheral.pinspecs):
+            pname = p['name']
+            sname = self.peripheral.pname(pname).format(count)
+            ps = "pinmux.peripheral_side.%s_out_en" % sname
+            ret.append("        {0} = 1'b1;".format(ps))
+        ret.append("    endrule")
         return '\n'.join(ret)
 
 
