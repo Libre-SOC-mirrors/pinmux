@@ -360,9 +360,6 @@ package slow_peripherals;
     // NEEL EDIT
     interface iocell_side=pinmux.iocell_side;
     interface pad_config0= gpioa.pad_config;
-    method Action external_int(Bit#(`NUM_EINTS) in);
-      wr_interrupt<= in;
-    endmethod
     // NEEL EDIT OVER
 		/*===================================*/
 	endmodule
