@@ -69,7 +69,8 @@ class PBase(object):
                 if p.get('outen'):
                     fname = self.pinname_outen(pname)
                 if fname:
-                    fname = "{0}{1}.{2}".format(n, count, fname)
+                    if isinstance(fname, str):
+                        fname = "{0}{1}.{2}".format(n, count, fname)
                     fname = self.pinname_tweak(pname, 'outen', fname)
                     ret.append("      {0}_outen({1});".format(ps, fname))
                 ret.append("    endrule")
@@ -242,6 +243,46 @@ class qspi(PBase):
 
     def _mk_connection(self, name=None, count=0):
         return "qspi{0}.slave"
+
+    def pinname_out(self, pname):
+        return {'ck': 'out.clk_o',
+                'nss': 'out.ncs_o',
+                'io0': 'out.io_o[0]',
+                'io1': 'out.io_o[1]',
+                'io2': 'out.io_o[2]',
+                'io3': 'out.io_o[3]',
+                }.get(pname, '')
+
+    def pinname_outen(self, pname):
+        return {'ck': 1,
+                'nss': 1,
+                'io0': 'out.io_enable[0]',
+                'io1': 'out.io_enable[1]',
+                'io2': 'out.io_enable[2]',
+                'io3': 'out.io_enable[3]',
+                }.get(pname, '')
+
+    def mk_pincon(self, name, count):
+        ret = [PBase.mk_pincon(self, name, count)]
+        # special-case for gpio in, store in a temporary vector
+        plen = len(self.peripheral.pinspecs)
+        ret.append("    // XXX NSS and CLK are hard-coded master")
+        ret.append("    // TODO: must add qspi slave-mode")
+        ret.append("    rule con_%s%d_io_in" % (name, count))
+        ret.append("       {0}{1}.out.io_i(".format(name, count))
+        for p in self.peripheral.pinspecs:
+            typ = p['type']
+            pname = p['name']
+            if not pname.startswith('io'):
+                continue
+            idx = pname[1:]
+            n = name
+            sname = self.peripheral.pname(pname).format(count)
+            ps = "pinmux.peripheral_side.%s_in" % sname
+            ret.append("            {0},".format(ps))
+        ret.append("        });")
+        ret.append("    endrule")
+        return '\n'.join(ret)
 
 
 class pwm(PBase):
