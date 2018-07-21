@@ -309,7 +309,7 @@ class spi(PBase):
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s_in" % sname
             ret.append("            {0},".format(ps))
-        ret.append("            0,0")
+        ret.append("            1'b0,1'b0")
         ret.append("        });")
         ret.append("    endrule")
         return '\n'.join(ret)
