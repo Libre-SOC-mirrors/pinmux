@@ -315,7 +315,7 @@ class eint(PBase):
             pname = p['name']
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s_out_en" % sname
-            ret.append("        {0} = 1'b1;".format(ps))
+            ret.append("        {0} <= 1'b1;".format(ps))
         ret.append("    endrule")
         return '\n'.join(ret)
 
