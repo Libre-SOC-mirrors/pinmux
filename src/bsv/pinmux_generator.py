@@ -73,7 +73,16 @@ def pinmuxgen(pth=None, verify=True):
                     os.path.join(bp, 'Makefile'))
     cwd = os.path.join(cwd, 'bsv_lib')
     for fname in ['AXI4_Lite_Types.bsv', 'Semi_FIFOF.bsv',
-                  'gpio.bsv', 'mux.bsv']:
+                  'gpio.bsv', 'mux.bsv', 
+                  'AXI4_Types.bsv', 'defined_types.bsv', 
+                  'AXI4_Fabric.bsv', 'Uart16550.bsv', 
+                  'Uart_bs.bsv', 'RS232_modified.bsv', 
+                  'AXI4Lite_AXI4_Bridge.bsv',
+                  'I2C_top.bsv', 'I2C_Defs.bsv', 
+                  'plic.bsv', 'Cur_Cycle.bsv', 
+                  'ClockDiv.bsv', 'axi_addr_generator.bsv', 
+                  'pwm.bsv', 'qspi.bsv', 'qspi.defs', 
+                  ]:
         shutil.copyfile(os.path.join(cwd, fname),
                         os.path.join(bl, fname))
 
