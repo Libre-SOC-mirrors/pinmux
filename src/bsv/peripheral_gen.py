@@ -290,7 +290,7 @@ class spi(PBase):
                 }.get(pname, '')
 
     def pinname_outen(self, pname):
-        return {'ck': 1,
+        return {'clk': 1,
                 'nss': 1,
                 'mosi': 'out.io_enable[0]',
                 'miso': 'out.io_enable[1]',
