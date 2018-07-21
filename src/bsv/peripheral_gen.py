@@ -318,7 +318,7 @@ class eint(PBase):
             pname = p['name']
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s_out" % sname
-            ret.append("        wr_interript[{0}] <= {1};".format(idx, ps))
+            ret.append("        wr_interrupt[{0}] <= {1};".format(idx, ps))
         for idx, p in enumerate(self.peripheral.pinspecs):
             pname = p['name']
             sname = self.peripheral.pname(pname).format(count)
