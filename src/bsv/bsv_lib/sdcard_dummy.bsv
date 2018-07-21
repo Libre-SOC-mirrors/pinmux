@@ -37,7 +37,7 @@ package sdcard_dummy;
  	import AXI4_Lite_Types::*;
 
   interface Ifc_sdcard_dummy;
-	  interface AXI4_Lite_Slave_IFC#(`ADDR, `DATA, `USERSPACE) axi_slave;
+	  interface AXI4_Lite_Slave_IFC#(`ADDR, `DATA, `USERSPACE) slave;
     method  Bit#(1) cmd; 
     method  Bit#(1) clk;
     method  Bit#(1) d0_out;
@@ -56,7 +56,6 @@ package sdcard_dummy;
   (*synthesize*)
   module mksdcard_dummy(Ifc_sdcard_dummy);
 	  	AXI4_Lite_Slave_Xactor_IFC#(`ADDR,`DATA, `USERSPACE) s_xactor<-mkAXI4_Lite_Slave_Xactor();
-      interface axi_slave=s_xactor.axi_side;
       Reg#(Bit#(1)) rg_cmd <- mkReg(0);
       Reg#(Bit#(1)) rg_clk <- mkReg(0);
       Reg#(Bit#(1)) rg_d0_out <- mkReg(0);
@@ -93,5 +92,6 @@ package sdcard_dummy;
     method  Action d3_in(Bit#(1) in);
       rg_d3_in<= in;
     endmethod
+    interface slave=s_xactor.axi_side;
   endmodule
 endpackage
