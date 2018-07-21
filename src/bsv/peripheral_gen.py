@@ -350,14 +350,16 @@ class sdmmc(PBase):
         return "sd{0}.slave"
 
     def pinname_in(self, pname):
-        return "out.%s_in" % pname
+        return "%s_in" % pname
 
     def pinname_out(self, pname):
-        return "out.%s_out" % pname
+        if pname.startswith('d'):
+            return "%s_out" % pname
+        return pname
 
     def pinname_outen(self, pname):
         if pname.startswith('d'):
-            return "out.%s_outen" % pname
+            return "%s_outen" % pname
 
 
 class spi(PBase):
