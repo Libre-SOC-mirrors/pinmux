@@ -326,8 +326,11 @@ class gpio(PBase):
             GPIO also has a muxer per bank
         """
         name = name.upper()
+        mname = 'mux' + name[4:]
+        mname = mname.upper()
+        print "AXIslavenum", name,  mname
         (ret, x) = PBase.axi_slave_idx(self, idx, name, ifacenum)
-        (ret2, x) = PBase.axi_slave_idx(self, idx, "mux", ifacenum)
+        (ret2, x) = PBase.axi_slave_idx(self, idx, mname, ifacenum)
         return ("%s\n%s" % (ret, ret2), 2)
 
     def mkslow_peripheral(self, size=0):
