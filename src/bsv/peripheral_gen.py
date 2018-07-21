@@ -64,22 +64,22 @@ class PBase(object):
             if typ == 'out' or typ == 'inout':
                 ret.append("    rule con_%s%d_%s_out;" % (name, count, pname))
                 fname = self.pinname_out(pname)
+                if not n.startswith('gpio'): # XXX EURGH! horrible hack
+                  n_ = "{0}{1}".format(n, count)
+                else:
+                  n_ = n
                 if fname:
                     if p.get('outen'):
                         ps_ = ps + '_out'
                     else:
                         ps_ = ps
-                    if not n.startswith('gpio'): # XXX EURGH! horrible hack
-                      n_ = "{0}{1}".format(n, count)
-                    else:
-                      n_ = n
                     ret.append("      {0}({1}.{2});".format(ps_, n_, fname))
                 fname = None
                 if p.get('outen'):
                     fname = self.pinname_outen(pname)
                 if fname:
                     if isinstance(fname, str):
-                        fname = "{0}{1}.{2}".format(n, count, fname)
+                        fname = "{0}.{1}".format(n_, fname)
                     fname = self.pinname_tweak(pname, 'outen', fname)
                     ret.append("      {0}_outen({1});".format(ps, fname))
                 ret.append("    endrule")
