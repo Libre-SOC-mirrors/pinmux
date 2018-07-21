@@ -1,7 +1,7 @@
 ### Makefile for the cclass project
 
-TOP_MODULE:=mkbus
-TOP_FILE:=bus.bsv
+TOP_MODULE:=mkslow_peripherals
+TOP_FILE:=slow_peripherals.bsv
 TOP_DIR:=./
 WORKING_DIR := $(shell pwd)
 
