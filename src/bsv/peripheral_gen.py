@@ -268,6 +268,7 @@ class qspi(PBase):
         plen = len(self.peripheral.pinspecs)
         ret.append("    // XXX NSS and CLK are hard-coded master")
         ret.append("    // TODO: must add qspi slave-mode")
+        ret.append("    // all ins done in one rule from 4-bitfield")
         ret.append("    rule con_%s%d_io_in" % (name, count))
         ret.append("       {0}{1}.out.io_i({{".format(name, count))
         for p in self.peripheral.pinspecs:
