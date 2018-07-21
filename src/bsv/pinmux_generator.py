@@ -110,7 +110,7 @@ def write_slow(slow, template, p, ifaces, iocells):
     with open(template) as bsv_file:
         template = bsv_file.read()
     imports = ifaces.slowimport()
-    ifdecl = ifaces.slowifdecl()
+    ifdecl = ifaces.slowifdeclmux()
     regdef = ifaces.axi_reg_def()
     slavedecl = ifaces.axi_slave_idx()
     fnaddrmap = ifaces.axi_addr_map()

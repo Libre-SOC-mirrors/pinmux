@@ -6,6 +6,12 @@ class PBase(object):
     def __init__(self, name):
         self.name = name
 
+    def slowifdeclmux(self):
+        return ''
+
+    def slowifdecl(self):
+        return ''
+
     def axibase(self, name, ifacenum):
         name = name.upper()
         return "%(name)s%(ifacenum)dBase" % locals()
@@ -152,7 +158,7 @@ class uart(PBase):
 
     def mkslow_peripheral(self, size=0):
         return "        Ifc_Uart_bs uart{0} <- \n" + \
-               "                mkUart_bs(clocked_by uart_clock,\n" + \
+               "                mkUart_bs(clocked_by sp_clock,\n" + \
                "                    reset_by uart_reset, sp_clock, sp_reset);"
 
     def _mk_connection(self, name=None, count=0):
@@ -179,7 +185,7 @@ class qquart(PBase):
 
     def mkslow_peripheral(self, size=0):
         return "        Uart16550_AXI4_Lite_Ifc uart{0} <- \n" + \
-               "                mkUart16550(clocked_by uart_clock,\n" + \
+               "                mkUart16550(clocked_by sp_clock,\n" + \
                "                    reset_by uart_reset, sp_clock, sp_reset);"
 
     def _mk_connection(self, name=None, count=0):
@@ -347,9 +353,9 @@ class gpio(PBase):
                "     import mux::*;\n" + \
                "     import gpio::*;\n"
 
-    def slowifdecl(self):
+    def slowifdeclmux(self):
         size = len(self.peripheral.pinspecs)
-        return "        interface GPIO_config#(%d) pad_config{0};" % size
+        return "    interface GPIO_config#(%d) pad_config{0};" % size
 
     def num_axi_regs32(self):
         return 2
@@ -363,7 +369,7 @@ class gpio(PBase):
         mname = mname.upper()
         print "AXIslavenum", name,  mname
         (ret, x) = PBase.axi_slave_idx(self, idx, name, ifacenum)
-        (ret2, x) = PBase.axi_slave_idx(self, idx, mname, ifacenum)
+        (ret2, x) = PBase.axi_slave_idx(self, idx+1, mname, ifacenum)
         return ("%s\n%s" % (ret, ret2), 2)
 
     def mkslow_peripheral(self, size=0):
@@ -466,7 +472,8 @@ class PeripheralIface(object):
         if slow:
             self.slow = slow(ifacename)
             self.slow.peripheral = self
-        for fname in ['slowimport', 'slowifdecl', 'mkslow_peripheral',
+        for fname in ['slowimport', 'slowifdecl', 'slowifdeclmux', 
+                      'mkslow_peripheral',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
@@ -504,6 +511,13 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             #print "slowimport", name, self.data[name].slowimport
             ret.append(self.data[name].slowimport())
+        return '\n'.join(list(filter(None, ret)))
+
+    def slowifdeclmux(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                ret.append(self.data[name].slowifdeclmux().format(i, name))
         return '\n'.join(list(filter(None, ret)))
 
     def slowifdecl(self, *args):

@@ -39,8 +39,7 @@ package slow_peripherals;
 	/*=====================================*/
 	
 	/*===== interface declaration =====*/
-	interface SP_ios;
-{1}
+	interface SP_dedicated_ios;
 		`ifdef AXIEXP
 			interface Get#(Bit#(67)) axiexp1_out;
 			interface Put#(Bit#(67)) axiexp1_in;
@@ -48,7 +47,7 @@ package slow_peripherals;
 	endinterface
 	interface Ifc_slow_peripherals;
 		interface AXI4_Slave_IFC#(`ADDR,`DATA,`USERSPACE) axi_slave;
-		interface SP_ios slow_ios;
+		interface SP_dedicated_ios slow_ios;
     method Action external_int(Bit#(32) in);
 		`ifdef CLINT
 			method Bit#(1) msip_int;
@@ -57,6 +56,7 @@ package slow_peripherals;
 		`endif
 		`ifdef PLIC method ActionValue#(Tuple2#(Bool,Bool)) intrpt_note; `endif
     interface IOCellSide iocell_side; // mandatory interface
+{1}
 	endinterface
 	/*================================*/
 
@@ -271,7 +271,8 @@ package slow_peripherals;
 			end
         
 			`ifdef UART0 
-				SyncBitIfc#(Bit#(1)) uart0_interrupt <-mkSyncBitToCC(uart_clock,uart_reset); 
+				SyncBitIfc#(Bit#(1)) uart0_interrupt <-
+                                  mkSyncBitToCC(sp_clock, uart_reset); 
 				rule synchronize_the_uart0_interrupt;
 					uart0_interrupt.send(uart0.irq);		
 				endrule
@@ -335,7 +336,7 @@ package slow_peripherals;
 		`ifdef QSPI0 method	qspi0_isint=qspi0.interrupts[5]; `endif
 		`ifdef QSPI1 method	qspi1_isint=qspi1.interrupts[5]; `endif
 		`ifdef UART0 method uart0_intr=uart0.irq; `endif
-		interface SP_ios slow_ios;
+		interface SP_dedicated_ios slow_ios;
 /* template for dedicated peripherals
 			`ifdef UART0
 				interface uart0_coe=uart0.coe_rs232;
@@ -366,7 +367,7 @@ package slow_peripherals;
 		endinterface
     // NEEL EDIT
     interface iocell_side=pinmux.iocell_side;
-    //interface pad_config0= gpioa.pad_config;
+    interface pad_config0= gpioa.pad_config;
     method Action external_int(Bit#(32) in);
       wr_interrupt<= in;
     endmethod
