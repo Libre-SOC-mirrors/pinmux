@@ -93,8 +93,8 @@ def pinspec():
                       'TWI0': 'I2C 1',
                       'TWI1': 'I2C 2',
                       'TWI2': 'I2C 3',
-                      'UARTQ0': 'UART (TX/RX/CTS/RTS) 0',
-                      'UARTQ1': 'UART (TX/RX/CTS/RTS) 1',
+                      'QUART0': 'UART (TX/RX/CTS/RTS) 0',
+                      'QUART1': 'UART (TX/RX/CTS/RTS) 1',
                       'UART0': 'UART (TX/RX) 0',
                       'UART1': 'UART (TX/RX) 1',
                       'UART2': 'UART (TX/RX) 2',
@@ -250,7 +250,7 @@ def pinspec():
 
     industrial = ['D1:FB/17', 'E1:FB/8', 'B1:LCD/22', 'ULPI0/8', 'ULPI1/8',
                   'MMC', 'B2:SD0',
-                  'JTAG0', 'A3:UART0', 'E2:UARTQ1', 'C3:UARTQ0',
+                  'JTAG0', 'A3:UART0', 'E2:QUART1', 'C3:QUART0',
                   'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'SPI1', 'QSPI', 'F2:SD2']
     industrial_pwm = ['F2:PWM_0', 'F2:PWM_1', 'D1:PWM_2']
     industrial_eint = ['EINT_24', 'EINT_25', 'EINT_26', 'EINT_27',
@@ -270,7 +270,7 @@ def pinspec():
     industrial = ['D1:FB/17', 'E1:FB/8', 'B2:SPI0', 'ULPI0/8', 'ULPI1/8',
                   'MMC', 'B2:SD0',
                   'JTAG0',
-                  'A3:UART0', 'E2:UARTQ1', 'C3:UARTQ0', 'B2:UART2', 'B2:UART1',
+                  'A3:UART0', 'E2:QUART1', 'C3:QUART0', 'B2:UART2', 'B2:UART1',
                   'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'SPI1', 'QSPI', 'F2:SD2']
     industrial_pwm = ['F2:PWM_0', 'F2:PWM_1', 'D1:PWM_2']
     industrial_eint = ['EINT_24', 'EINT_25', 'EINT_26', 'EINT_27',
@@ -290,9 +290,9 @@ def pinspec():
               'MMC', 'SD0',
               'F1:IIS',  # I2C Audio
               'TWI1',   # I2C Audio
-              'E2:UARTQ1',  # WIFI/BT
+              'E2:QUART1',  # WIFI/BT
               'E2:SD1',   # WIFI
-              'C3:UARTQ0',  # GPS
+              'C3:QUART0',  # GPS
               'D2:UART1',
               'D2:UART2',
               'D3:TWI0', 'D2:TWI2', 'SPI1', 'QSPI']
@@ -324,7 +324,7 @@ def pinspec():
                'and UART0, for debug purposes',
         'F1:IIS': 'I2C Audio, connect to AC97 Audio IC',
         'TWI1': 'Connect to AC97 Audio IC',
-        'E2:UARTQ1': 'Connect to BT on AP6234/AP6335',
+        'E2:QUART1': 'Connect to BT on AP6234/AP6335',
         'E2:SD1': 'Connect to WIFI on AP6234/AP6335',
         'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
                 'Only actually needs MISO/MOSI, bootstrap loader v. small\n'
@@ -371,7 +371,7 @@ def pinspec():
               'MMC', 'SD0',
               'F1:IIS',  # I2C Audio
               'TWI1',   # I2C Audio
-              'E2:UARTQ1',  # WIFI/BT
+              'E2:QUART1',  # WIFI/BT
               'E2:SD2',   # WIFI
               'D2:TWI2', 'QSPI']
     laptop_pwm = ['F2:PWM_0',  # LCD_BACKLIGHT
@@ -400,7 +400,7 @@ def pinspec():
         'and UART0, for debug purposes',
         'F1:IIS': 'I2C Audio, connect to AC97 Audio IC',
         'TWI1': 'Connect to AC97 Audio IC',
-        'E2:UARTQ1': 'Connect to BT on AP6234/AP6335',
+        'E2:QUART1': 'Connect to BT on AP6234/AP6335',
         'E2:SD2': 'Connect to WIFI on AP6234/AP6335',
         'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
         'Only actually needs MISO/MOSI, bootstrap loader v. small\n'
@@ -426,8 +426,8 @@ def pinspec():
            'MMC', 'SD0',
            'F1:IIS',  # I2C Audio
            #'TWI1',   # I2C Audio
-           'C3:UARTQ0',  # HSPA UART
-           'E2:UARTQ1',  # BT UART
+           'C3:QUART0',  # HSPA UART
+           'E2:QUART1',  # BT UART
            'C2:SPI1',  # HSPI SPI
            'E2:SD2',   # WIFI
            'D3:TWI0',  # sensors CTP,
@@ -463,8 +463,8 @@ def pinspec():
         'ULPI0/8': 'USB2 Host, connect to ULPI PHY',
         'SD0': 'internal, multiplexed with JTAG0\n'
                'and UART0, for debug purposes',
-        'C3:UARTQ0': 'Connect to HSPA UART',
-        'E2:UARTQ1': 'Connect to BT UART',
+        'C3:QUART0': 'Connect to HSPA UART',
+        'E2:QUART1': 'Connect to BT UART',
         'E2:SD2': 'Connect to WIFI',
         'C2:SPI1': 'HSPA SPI',
         'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
