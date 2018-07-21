@@ -218,8 +218,8 @@ class twi(PBase):
                 'scl': 'out.scl_in'}.get(pname, '')
 
     def pinname_outen(self, pname):
-        return {'sda': 'out.sda_outen',
-                'scl': 'out.scl_outen'}.get(pname, '')
+        return {'sda': 'out.sda_out_en',
+                'scl': 'out.scl_out_en'}.get(pname, '')
 
     def pinname_tweak(self, pname, typ, txt):
         if typ == 'outen':
