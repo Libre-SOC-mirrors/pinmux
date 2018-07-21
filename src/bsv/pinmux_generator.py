@@ -393,6 +393,7 @@ def write_instances(idef, p, ifaces):
 `define USERSPACE 0
 
 // TODO: work out if these are needed
+`define PWM_AXI4Lite 
 `define PRFDEPTH 6
 `define VADDR 39
 `define DCACHE_BLOCK_SIZE 4
