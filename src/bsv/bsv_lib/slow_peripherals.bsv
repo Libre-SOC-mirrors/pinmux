@@ -302,6 +302,22 @@ package slow_peripherals;
 	  	temp[2]=pinmux.peripheral_side.gpioa_a2_in;
       gpioa.func.gpio_in(temp);
     endrule
+    rule connect_qspi0_out;
+      let outs=qspi0.out.io_o;
+      let outs_en=qspi0.out.io_enable;
+      pinmux.peripheral_side.qspi_io0_out(outs[0]);
+      pinmux.peripheral_side.qspi_io1_out(outs[1]);
+      pinmux.peripheral_side.qspi_io2_out(outs[2]);
+      pinmux.peripheral_side.qspi_io3_out(outs[3]);
+      pinmux.peripheral_side.qspi_io0_outen(outs_en[0]);
+      pinmux.peripheral_side.qspi_io1_outen(outs_en[1]);
+      pinmux.peripheral_side.qspi_io2_outen(outs_en[2]);
+      pinmux.peripheral_side.qspi_io3_outen(outs_en[3]);
+    endrule
+    rule connect_qspi0_in;
+      qspi0.out.io_i({pinmux.peripheral_side.qspi_io3_in,pinmux.peripheral_side.qspi_io2_in,
+          pinmux.peripheral_side.qspi_io1_in, pinmux.peripheral_side.qspi_io0_in  });
+    endrule
     for(Integer i=0;i<32;i=i+ 1)begin
       rule connect_int_to_plic(wr_interrupt[i]==1);
 				ff_gateway_queue[i].enq(1);

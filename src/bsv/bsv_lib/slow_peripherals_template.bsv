@@ -33,6 +33,9 @@ package slow_peripherals;
 	`ifdef AXIEXP
 		import axiexpansion	::*;
 	`endif
+	`ifdef QSPI 
+		import qspi				 :: *; 
+	`endif
 	/*=====================================*/
 	
 	/*===== interface declaration =====*/
