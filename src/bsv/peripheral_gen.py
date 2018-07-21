@@ -9,6 +9,9 @@ class PBase(object):
     def slowifdeclmux(self):
         return ''
 
+    def slowifinstance(self):
+        return ''
+
     def slowimport(self):
         return ''
 
@@ -331,6 +334,39 @@ eint_pincon_template = '''\
 '''
 
 
+class jtag(PBase):
+
+    def axi_slave_name(self, name, ifacenum):
+        return ''
+
+    def axi_slave_idx(self, idx, name, ifacenum):
+        return ('', 0)
+
+    def axi_addr_map(self, name, ifacenum):
+        return ''
+
+    def slowifdeclmux(self):
+        return "            method  Action jtag_ms (Bit#(1) in);\n" +  \
+               "            method  Bit#(1) jtag_di;\n" + \
+               "            method  Action jtag_do (Bit#(1) in);\n" + \
+               "            method  Action jtag_ck (Bit#(1) in);"
+
+    def slowifinstance(self):
+        return jtag_method_template # bit of a lazy hack this...
+
+jtag_method_template = """\
+    method  Action jtag_ms (Bit#(1) in);
+      pinmux.peripheral_side.jtag_ms(in);
+    endmethod
+    method  Bit#(1) jtag_di=pinmux.peripheral_side.jtag_di;
+    method  Action jtag_do (Bit#(1) in);
+      pinmux.peripheral_side.jtag_do(in);
+    endmethod
+    method  Action jtag_ck (Bit#(1) in);
+      pinmux.peripheral_side.jtag_ck(in);
+    endmethod
+"""
+
 class sdmmc(PBase):
 
     def slowimport(self):
@@ -620,7 +656,8 @@ class PeripheralIface(object):
         if slow:
             self.slow = slow(ifacename)
             self.slow.peripheral = self
-        for fname in ['slowimport', 'slowifdecl', 'slowifdeclmux',
+        for fname in ['slowimport', 
+                      'slowifinstance', 'slowifdecl', 'slowifdeclmux',
                       'mkslow_peripheral',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
@@ -659,6 +696,13 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             #print "slowimport", name, self.data[name].slowimport
             ret.append(self.data[name].slowimport())
+        return '\n'.join(list(filter(None, ret)))
+
+    def slowifinstance(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            #print "slowimport", name, self.data[name].slowimport
+            ret.append(self.data[name].slowifinstance())
         return '\n'.join(list(filter(None, ret)))
 
     def slowifdeclmux(self, *args):
@@ -762,6 +806,7 @@ class PFactory(object):
                      'pwm': pwm,
                      'eint': eint,
                      'sd': sdmmc,
+                     'jtag': jtag,
                      'gpio': gpio
                      }.items():
             if name.startswith(k):

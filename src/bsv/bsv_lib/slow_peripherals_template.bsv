@@ -360,6 +360,7 @@ package slow_peripherals;
     // NEEL EDIT
     interface iocell_side=pinmux.iocell_side;
     interface pad_config0= gpioa.pad_config;
+{9}
     // NEEL EDIT OVER
 		/*===================================*/
 	endmodule

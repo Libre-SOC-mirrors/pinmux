@@ -33,8 +33,7 @@ def pinspec():
     function_names = {'EINT': 'External Interrupt',
                       'FB': 'MC68k FlexBus',
                       'IIS': 'I2S Audio',
-                      'JTAG0': 'JTAG (same as JTAG1, JTAG_SEL=LOW)',
-                      'JTAG1': 'JTAG (same as JTAG0, JTAG_SEL=HIGH)',
+                      'JTAG': 'JTAG (JTAG_SEL=HI/LO)',
                       'LCD': '24-pin RGB/TTL LCD',
                       'RG': 'RGMII Ethernet',
                       'MMC': 'eMMC 1/2/4/8 pin',
@@ -73,10 +72,10 @@ def pinspec():
     ps.eint("", ('A', 20), 2, 4, 1)
     ps.eint("", ('A', 23), 1, 5, 1)
     ps.sdmmc("1", ('A', 4), 3)
-    ps.jtag("1", ('A', 10), 3)
+    ps.jtag("", ('A', 10), 3)
     ps.uartfull("0", ('A', 14), 3)
     ps.uartfull("1", ('A', 18), 3)
-    ps.jtag("0", ('A', 24), 2)
+    ps.jtag("", ('A', 24), 2)
     ps.spi("1", ('A', 24), 1)
     ps.i2c("0", ('A', 0), 2)
     ps.uart("1", ('A', 2), 2)
@@ -95,7 +94,7 @@ def pinspec():
     minitest_pwm = ['B2:PWM_0']
     descriptions = {
         'MMC': 'internal (on Card)',
-        'SD0': 'user-facing: internal (on Card), multiplexed with JTAG1\n'
+        'SD0': 'user-facing: internal (on Card), multiplexed with JTAG\n'
         'and UART2, for debug purposes',
         'TWI2': 'I2C.\n',
         'E2:SD1': '',
