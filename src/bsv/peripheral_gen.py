@@ -21,8 +21,8 @@ class PBase(object):
         bname = self.axibase(name, ifacenum)
         bend = self.axiend(name, ifacenum)
         comment = "%d 32-bit regs" % self.num_axi_regs32()
-        return ("    `define%(bname)s 'h%(start)08X\n"
-                "    `define%(bend)s  'h%(end)08X // %(comment)s" % locals(),
+        return ("    `define %(bname)s 'h%(start)08X\n"
+                "    `define %(bend)s  'h%(end)08X // %(comment)s" % locals(),
                 offs)
 
     def axi_slave_name(self, name, ifacenum):
@@ -56,7 +56,7 @@ class PBase(object):
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s" % sname
             if typ == 'out' or typ == 'inout':
-                ret.append("    rule con_%s%d_%s_out" % (name, count, pname))
+                ret.append("    rule con_%s%d_%s_out;" % (name, count, pname))
                 fname = self.pinname_out(pname)
                 if fname:
                     if p.get('outen'):
@@ -82,7 +82,7 @@ class PBase(object):
                     else:
                         ps_ = ps
                     ret.append(
-                        "    rule con_%s%d_%s_in" %
+                        "    rule con_%s%d_%s_in;" %
                         (name, count, pname))
                     ret.append("      {1}.{2}({0});".format(ps_, n, fname))
                     ret.append("    endrule")
@@ -91,7 +91,7 @@ class PBase(object):
     def mk_cellconn(self, *args):
         return ''
 
-    def mkslow_peripheral(self):
+    def mkslow_peripheral(self, size=0):
         return ''
 
     def mksuffix(self, name, i):
@@ -145,7 +145,7 @@ class uart(PBase):
     def num_axi_regs32(self):
         return 8
 
-    def mkslow_peripheral(self):
+    def mkslow_peripheral(self, size=0):
         return "        Uart16550_AXI4_Lite_Ifc uart{0} <- \n" + \
                "                mkUart16550(clocked_by uart_clock,\n" + \
                "                    reset_by uart_reset, sp_clock, sp_reset);"
@@ -172,7 +172,7 @@ class rs232(PBase):
     def num_axi_regs32(self):
         return 2
 
-    def mkslow_peripheral(self):
+    def mkslow_peripheral(self, size=0):
         return "        //Ifc_Uart_bs uart{0} <-" + \
                "        //       mkUart_bs(clocked_by uart_clock,\n" + \
                "        //          reset_by uart_reset,sp_clock, sp_reset);" +\
@@ -202,7 +202,7 @@ class twi(PBase):
     def num_axi_regs32(self):
         return 8
 
-    def mkslow_peripheral(self):
+    def mkslow_peripheral(self, size=0):
         return "        I2C_IFC twi{0} <- mkI2CController();"
 
     def _mk_connection(self, name=None, count=0):
@@ -238,7 +238,7 @@ class qspi(PBase):
     def num_axi_regs32(self):
         return 13
 
-    def mkslow_peripheral(self):
+    def mkslow_peripheral(self, size=0):
         return "        Ifc_qspi qspi{0} <-  mkqspi();"
 
     def _mk_connection(self, name=None, count=0):
@@ -269,7 +269,7 @@ class qspi(PBase):
         ret.append("    // XXX NSS and CLK are hard-coded master")
         ret.append("    // TODO: must add qspi slave-mode")
         ret.append("    // all ins done in one rule from 4-bitfield")
-        ret.append("    rule con_%s%d_io_in" % (name, count))
+        ret.append("    rule con_%s%d_io_in;" % (name, count))
         ret.append("       {0}{1}.out.io_i({{".format(name, count))
         for p in self.peripheral.pinspecs:
             typ = p['type']
@@ -297,7 +297,7 @@ class pwm(PBase):
     def num_axi_regs32(self):
         return 4
 
-    def mkslow_peripheral(self):
+    def mkslow_peripheral(self, size=0):
         return "        Ifc_PWM_bus pwm{0}_bus <- mkPWM_bus(sp_clock);"
 
     def _mk_connection(self, name=None, count=0):
@@ -329,10 +329,11 @@ class gpio(PBase):
         (ret2, x) = PBase.axi_slave_idx(self, idx, "mux", ifacenum)
         return ("%s\n%s" % (ret, ret2), 2)
 
-    def mkslow_peripheral(self):
-        return "        MUX#(%(name)s) mux{0} <- mkmux();\n" + \
-               "        GPIO#(%(name)s) gpio{0} <- mkgpio();" % \
-            {'name': self.name}
+    def mkslow_peripheral(self, size=0):
+        print "gpioslow", self.peripheral,  dir(self.peripheral)
+        size = len(self.peripheral.pinspecs)
+        return "        MUX#(%d) mux{0} <- mkmux();\n" % size + \
+               "        GPIO#(%d) gpio{0} <- mkgpio();" % size
 
     def mk_connection(self, count):
         print "GPIO mk_conn", self.name, count
@@ -374,7 +375,7 @@ class gpio(PBase):
         ret = [PBase.mk_pincon(self, name, count)]
         # special-case for gpio in, store in a temporary vector
         plen = len(self.peripheral.pinspecs)
-        ret.append("    rule con_%s%d_in" % (name, count))
+        ret.append("    rule con_%s%d_in;" % (name, count))
         ret.append("       Vector#({0},Bit#(1)) temp;".format(plen))
         for p in self.peripheral.pinspecs:
             typ = p['type']
@@ -496,7 +497,7 @@ class PeripheralInterfaces(object):
                 #print ("ifc", name, rdef, offs)
                 ret.append(rdef)
                 start += offs
-        ret.append("typedef %d LastGen_slave_num" % (start - 1))
+        ret.append("typedef %d LastGen_slave_num;" % (start - 1))
         decls = '\n'.join(list(filter(None, ret)))
         return axi_slave_declarations.format(decls)
 

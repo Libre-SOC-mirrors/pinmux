@@ -47,13 +47,13 @@ package slow_peripherals;
 		`endif
 	endinterface
 	interface Ifc_slow_peripherals;
-		interface AXI4_Slave_IFC#(`PADDR,`Reg_width,`USERSPACE) axi_slave;
+		interface AXI4_Slave_IFC#(`ADDR,`DATA,`USERSPACE) axi_slave;
 		interface SP_ios slow_ios;
     method Action external_int(Bit#(32) in);
 		`ifdef CLINT
 			method Bit#(1) msip_int;
 			method Bit#(1) mtip_int;
-			method Bit#(`Reg_width) mtime;
+			method Bit#(`DATA) mtime;
 		`endif
 		`ifdef PLIC method ActionValue#(Tuple2#(Bool,Bool)) intrpt_note; `endif
     interface IOCellSide iocell_side; // mandatory interface
@@ -61,7 +61,7 @@ package slow_peripherals;
 	/*================================*/
 
 	function Tuple2#(Bool, Bit#(TLog#(Num_Slow_Slaves)))
-                     fn_address_mapping (Bit#(`PADDR) addr);
+                     fn_address_mapping (Bit#(`ADDR) addr);
 		`ifdef CLINT
 			if(addr>=`ClintBase && addr<=`ClintEnd)
 				return tuple2(True,fromInteger(valueOf(CLINT_slave_num)));
@@ -106,7 +106,7 @@ package slow_peripherals;
     Wire#(Bit#(32)) wr_interrupt <- mkWire();
 		/*=======================================================*/
 
-   	AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `PADDR, `Reg_width,`USERSPACE)
+   	AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `ADDR, `DATA,`USERSPACE)
             slow_fabric <- mkAXI4_Lite_Fabric(fn_address_mapping);
 		Ifc_AXI4Lite_AXI4_Bridge
             bridge<-mkAXI4Lite_AXI4_Bridge(fast_clock,fast_reset);
