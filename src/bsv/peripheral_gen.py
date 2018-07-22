@@ -453,16 +453,16 @@ class jtag(PBase):
         return jtag_method_template # bit of a lazy hack this...
 
 jtag_method_template = """\
-    method  Action jtag_ms (Bit#(1) in);
-      pinmux.peripheral_side.jtag_ms(in);
-    endmethod
-    method  Bit#(1) jtag_di=pinmux.peripheral_side.jtag_di;
-    method  Action jtag_do (Bit#(1) in);
-      pinmux.peripheral_side.jtag_do(in);
-    endmethod
-    method  Action jtag_ck (Bit#(1) in);
-      pinmux.peripheral_side.jtag_ck(in);
-    endmethod
+        method  Action jtag_ms (Bit#(1) in);
+          pinmux.peripheral_side.jtag_ms(in);
+        endmethod
+        method  Bit#(1) jtag_di=pinmux.peripheral_side.jtag_di;
+        method  Action jtag_do (Bit#(1) in);
+          pinmux.peripheral_side.jtag_do(in);
+        endmethod
+        method  Action jtag_ck (Bit#(1) in);
+          pinmux.peripheral_side.jtag_ck(in);
+        endmethod
 """
 
 class sdmmc(PBase):

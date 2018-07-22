@@ -175,7 +175,7 @@ package slow_peripherals;
     end
 				
 `endif
-			/*======================================================= */
+        /*======================================================= */
 
 		/* ===== interface definition =======*/
 		interface axi_slave=bridge.axi_slave;
@@ -189,7 +189,7 @@ package slow_peripherals;
 {12}
 `endif
 		interface SP_dedicated_ios slow_ios;
-/* template for dedicated peripherals
+        /* template for dedicated peripherals
 			`ifdef UART0
 				interface uart0_coe=uart0.coe_rs232;
 			`endif
@@ -212,16 +212,14 @@ package slow_peripherals;
 				interface axiexp1_out=axiexp1.slave_out;
 				interface axiexp1_in=axiexp1.slave_in;
 			`endif
-      `ifdef PWM_AXI4Lite
-        interface pwm_o = pwm_bus.pwm_io;
-      `endif
-*/
+            `ifdef PWM_AXI4Lite
+                interface pwm_o = pwm_bus.pwm_io;
+            `endif
+       */
 		endinterface
-    // NEEL EDIT
-    interface iocell_side=pinmux.iocell_side;
-    interface pad_config0= gpioa.pad_config;
+        interface iocell_side=pinmux.iocell_side;
+        interface pad_config0= gpioa.pad_config;
 {9}
-    // NEEL EDIT OVER
 		/*===================================*/
 	endmodule
 endpackage
