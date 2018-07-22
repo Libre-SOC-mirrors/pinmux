@@ -5,9 +5,6 @@ class rgbttl(PBase):
     def slowimport(self):
         return "    import rgbttl_dummy              :: *;"
 
-    def slowifdecl(self):
-        return "            interface RGBTTL_out lcd{0}_out;"
-
     def num_axi_regs32(self):
         return 10
 

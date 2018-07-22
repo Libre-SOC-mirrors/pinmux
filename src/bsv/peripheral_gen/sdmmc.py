@@ -5,10 +5,6 @@ class sdmmc(PBase):
     def slowimport(self):
         return "    import sdcard_dummy              :: *;"
 
-    def slowifdecl(self):
-        return "            interface QSPI_out sd{0}_out;\n" + \
-               "            method Bit#(1) sd{0}_isint;"
-
     def num_axi_regs32(self):
         return 13
 
