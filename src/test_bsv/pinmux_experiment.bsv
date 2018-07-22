@@ -124,7 +124,7 @@ package pinmux;
       Wire#(Bit#(1)) wr_a2_outen<-mkDWire(0);
       Wire#(Bit#(1)) wr_a2_in<-mkDWire(0);
 
-    interface gpioa = interface PeripheralSideGPIOA
+    interface out = interface PeripheralSideGPIOA
 
       method Action  a0_out(Bit#(1) in);
          wr_a0_out<=in;
@@ -156,7 +156,7 @@ package pinmux;
       Wire#(Bit#(1)) wr_tx<-mkDWire(0);
       Wire#(Bit#(1)) wr_rx<-mkDWire(0);
 
-    interface uart = interface PeripheralSideUART
+    interface out = interface PeripheralSideUART
 
       method Action  tx(Bit#(1) in);
          wr_tx<=in;
@@ -179,7 +179,7 @@ package pinmux;
       Wire#(Bit#(1)) wr_scl_in<-mkDWire(0);
 
 
-    interface twi = interface PeripheralSideTWI
+    interface out = interface PeripheralSideTWI
 
       method Action  sda_out(Bit#(1) in);
          wr_sda_out<=in;
@@ -201,7 +201,25 @@ package pinmux;
    endmodule
 
 
+   module mkperipherals(PeripheralSide);
+
+      PeripheralSideUART uart = uart.mkuart();
+      PeripheralSideGPIOA gpioa = gpioa.mkgpioa();
+      PeripheralSideTWI twi = twi.mktwi();
+
+    interface out = interface PeripheralSide
+
+      interface uart = uart.out;
+      interface gpioa = gpioa.out;
+      interface twi = twi.out;
+
+     endinterface;
+
+   endmodule
+
    module mkpinmux(Ifc_pinmux);
+
+      PeripheralSide peripherals = mkperipherals();
 
       // the followins wires capture the pin-mux selection
       // values for each mux assigned to a CELL
@@ -374,63 +392,11 @@ package pinmux;
 
      endinterface;
 
-    interface peripheral_side_uart = interface PeripheralSideUART
-
-      method Action  tx(Bit#(1) in);
-         wruart_tx<=in;
-      endmethod
-      method rx=wruart_rx;
-     endinterface
-
-    interface peripheral_side_gpioa = interface PeripheralSideGPIOA
-
-      method Action  a0_out(Bit#(1) in);
-         wrgpioa_a0_out<=in;
-      endmethod
-      method Action  a0_outen(Bit#(1) in);
-         wrgpioa_a0_outen<=in;
-      endmethod
-      method a0_in=wrgpioa_a0_in;
-      method Action  a1_out(Bit#(1) in);
-         wrgpioa_a1_out<=in;
-      endmethod
-      method Action  a1_outen(Bit#(1) in);
-         wrgpioa_a1_outen<=in;
-      endmethod
-      method a1_in=wrgpioa_a1_in;
-      method Action  a2_out(Bit#(1) in);
-         wrgpioa_a2_out<=in;
-      endmethod
-      method Action  a2_outen(Bit#(1) in);
-         wrgpioa_a2_outen<=in;
-      endmethod
-      method a2_in=wrgpioa_a2_in;
-    endinterface
-
-    interface peripheral_side_twi = interface PeripheralSideTWI
-
-      method Action  sda_out(Bit#(1) in);
-         wrtwi_sda_out<=in;
-      endmethod
-      method Action  sda_outen(Bit#(1) in);
-         wrtwi_sda_outen<=in;
-      endmethod
-      method sda_in=wrtwi_sda_in;
-      method Action  scl_out(Bit#(1) in);
-         wrtwi_scl_out<=in;
-      endmethod
-      method Action  scl_outen(Bit#(1) in);
-         wrtwi_scl_outen<=in;
-      endmethod
-      method scl_in=wrtwi_scl_in;
-
-     endinterface;
-
     interface peripheral_side = interface PeripheralSide
 
-      interface uart = uart.mkuart();
-      interface gpioa = gpioa.mkgpioa();
-      interface twi = twi.mktwi();
+      interface uart = peripherals.uart.out;
+      interface gpioa = peripherals.gpioa.out;
+      interface twi = peripherals.twi.out;
 
      endinterface;
    endmodule
