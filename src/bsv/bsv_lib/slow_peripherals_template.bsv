@@ -56,7 +56,7 @@ package slow_peripherals;
 			method Bit#(`DATA) mtime;
 		`endif
 		`ifdef PLIC method ActionValue#(Tuple2#(Bool,Bool)) intrpt_note; `endif
-    interface IOCellSide iocell_side; // mandatory interface
+        interface IOCellSide iocell_side; // mandatory interface
 {1}
 	endinterface
 	/*================================*/
@@ -183,15 +183,7 @@ package slow_peripherals;
 			method mtip_int=clint.mtip_int;
 			method mtime=clint.mtime;
 		`endif
-		`ifdef I2C0
-			method i2c0_isint=i2c0.isint;
-		`endif
-		`ifdef I2C1
-			method i2c1_isint=i2c1.isint;
-		`endif
-		`ifdef QSPI0 method	qspi0_isint=qspi0.interrupts[5]; `endif
-		`ifdef QSPI1 method	qspi1_isint=qspi1.interrupts[5]; `endif
-		`ifdef UART0 method uart0_intr=uart0.irq; `endif
+{12}
 		interface SP_dedicated_ios slow_ios;
 /* template for dedicated peripherals
 			`ifdef UART0

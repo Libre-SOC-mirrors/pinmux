@@ -21,6 +21,9 @@ class PBase(object):
     def slowifdecl(self):
         return ''
 
+    def get_iname(self, inum):
+        return "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
+
     def axibase(self, name, ifacenum):
         name = name.upper()
         return "%(name)s%(ifacenum)dBase" % locals()
@@ -167,7 +170,7 @@ class PBase(object):
         niq = self.num_irqs()
         if niq == 0:
             return ('', irq_offs)
-        name = "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
+        name = self.get_iname(inum)
         res.append("    // PLIC rules for {0}".format(name))
         for idx in range(niq):
             plic_obj = self.plic_object(name, idx)
@@ -176,6 +179,10 @@ class PBase(object):
             res.append(plic)
             irq_offs += 1 # increment to next irq
         return ('\n'.join(res), irq_offs)
+
+    def mk_ext_ifacedef(self, iname, inum):
+        return ''
+
 
 mkplic_rule = """\
      rule rl_connect_{0}_to_plic_{2};
@@ -265,11 +272,18 @@ class quart(PBase):
         return "{0}_interrupt.read".format(pname)
 
     def mk_plic(self, inum, irq_offs):
-        name = "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
+        name = self.get_iname(inum)
         ret = [uart_plic_template.format(name, irq_offs)]
         (ret2, irq_offs) = PBase.mk_plic(self, inum, irq_offs)
         ret.append(ret2)
         return ('\n'.join(ret), irq_offs)
+
+    def mk_ext_ifacedef(self, iname, inum):
+        name = self.get_iname(inum)
+        return "        method {0}_intr = {0}.irq;".format(name)
+
+    def slowifdeclmux(self):
+        return "        method Bit#(1) {1}{0}_intr;"
 
 uart_plic_template = """\
      // PLIC {0} synchronisation with irq {1}
@@ -354,6 +368,13 @@ class twi(PBase):
                 "{0}.isber()"
                ][idx].format(pname)
 
+    def mk_ext_ifacedef(self, iname, inum):
+        name = self.get_iname(inum)
+        return "        method {0}_isint = {0}.isint;".format(name)
+
+    def slowifdeclmux(self):
+        return "        method Bit#(1) {1}{0}_isint;"
+
 
 class eint(PBase):
 
@@ -421,10 +442,10 @@ class jtag(PBase):
         return ''
 
     def slowifdeclmux(self):
-        return "            method  Action jtag_ms (Bit#(1) in);\n" +  \
-               "            method  Bit#(1) jtag_di;\n" + \
-               "            method  Action jtag_do (Bit#(1) in);\n" + \
-               "            method  Action jtag_ck (Bit#(1) in);"
+        return "        method  Action jtag_ms (Bit#(1) in);\n" +  \
+               "        method  Bit#(1) jtag_di;\n" + \
+               "        method  Action jtag_do (Bit#(1) in);\n" + \
+               "        method  Action jtag_ck (Bit#(1) in);"
 
     def slowifinstance(self):
         return jtag_method_template # bit of a lazy hack this...
@@ -523,6 +544,13 @@ class spi(PBase):
         ret.append("    endrule")
         return '\n'.join(ret)
 
+    def mk_ext_ifacedef(self, iname, inum):
+        name = self.get_iname(inum)
+        return "        method {0}_isint = {0}.interrupts[5];".format(name)
+
+    def slowifdeclmux(self):
+        return "        method Bit#(1) {1}{0}_isint;"
+
 
 class qspi(PBase):
 
@@ -590,6 +618,14 @@ class qspi(PBase):
     def plic_object(self, pname, idx):
         return "{0}.interrupts()[{1}]".format(pname, idx)
 
+    def mk_ext_ifacedef(self, iname, inum):
+        name = self.get_iname(inum)
+        return "        method {0}_isint = {0}.interrupts[5];".format(name)
+
+    def slowifdeclmux(self):
+        return "        method Bit#(1) {1}{0}_isint;"
+
+
 
 class pwm(PBase):
 
@@ -621,7 +657,7 @@ class gpio(PBase):
 
     def slowifdeclmux(self):
         size = len(self.peripheral.pinspecs)
-        return "    interface GPIO_config#(%d) pad_config{0};" % size
+        return "        interface GPIO_config#(%d) pad_config{0};" % size
 
     def num_axi_regs32(self):
         return 2
@@ -739,7 +775,7 @@ class PeripheralIface(object):
             self.slow.peripheral = self
         for fname in ['slowimport', 
                       'slowifinstance', 'slowifdecl', 'slowifdeclmux',
-                      'mkslow_peripheral', 'mk_plic',
+                      'mkslow_peripheral', 'mk_plic', 'mk_ext_ifacedef',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
@@ -873,6 +909,14 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 txt = self.data[name].mk_pincon(name, i)
+                ret.append(txt)
+        return '\n'.join(list(filter(None, ret)))
+
+    def mk_ext_ifacedef(self):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                txt = self.data[name].mk_ext_ifacedef(name, i)
                 ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
 
