@@ -61,7 +61,7 @@ def pinspec():
 
     # Bank A, 0-27
     ps.gpio("", ('A', 0), 0, 0, 28)
-    ps.rgbttl("", ('A', 0), 1, limit=23)
+    ps.rgbttl("", ('A', 0), 1, limit=22)
     ps.spi("0", ('A', 10), 2)
     ps.quadspi("", ('A', 4), 2)
     ps.uart("0", ('A', 16), 2)
