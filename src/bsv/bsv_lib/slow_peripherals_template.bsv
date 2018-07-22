@@ -96,7 +96,7 @@ package slow_peripherals;
 		`ifdef PLIC
 			Ifc_PLIC_AXI	plic <- mkplicperipheral();
          Wire#(Bit#(TLog#(`INTERRUPT_PINS))) interrupt_id <- mkWire();
-			  Vector#(32, FIFO#(bit)) ff_gateway_queue <- replicateM(mkFIFO);
+			  Vector#(`INTERRUPT_PINS, FIFO#(bit)) ff_gateway_queue <- replicateM(mkFIFO);
 		`endif
 		`ifdef AXIEXP
 			Ifc_AxiExpansion		axiexp1			<- mkAxiExpansion();	
@@ -137,7 +137,7 @@ package slow_peripherals;
       `ifdef verbose $display("Dequeing the FIFO -- PLIC Interrupt Serviced id: %d",id); `endif
 		endrule
 
-    for(Integer i=0; i <32; i=i+1) begin
+    for(Integer i=0; i <`NUM_INTERRUPTS; i=i+1) begin
 	    rule deq_gateway_queue;
 		    if(interrupt_id==fromInteger(i)) begin
 			    ff_gateway_queue[i].deq;
@@ -145,11 +145,6 @@ package slow_peripherals;
         end
       endrule
     end
-    /* for connectin inputs from pinmux as itnerrupts
-      rule connect_pinmux_eint;
-        wr_interrupt<= pinmux.peripheral_side.eint_input;
-      endrule
-    */
     // NEEL EDIT OVER
 		/*=======================================================*/
 		/*=================== PLIC Connections ==================== */
@@ -170,72 +165,7 @@ package slow_peripherals;
           `endif
          end
 			*/
-         rule rl_connect_i2c0_to_plic;
-				`ifdef I2C0
-					if(i2c0.isint()==1'b1) begin
-						ff_gateway_queue[8].enq(1);
-						plic.ifc_external_irq[8].irq_frm_gateway(True);
-					end
-				`else
-					ff_gateway_queue[8].enq(0);
-            `endif
-         endrule
-
-			rule rl_connect_i2c1_to_plic;
-				`ifdef I2C1
-					if(i2c1.isint()==1'b1) begin
-						ff_gateway_queue[9].enq(1);
-						plic.ifc_external_irq[9].irq_frm_gateway(True);
-					end
-            `else
-					ff_gateway_queue[9].enq(0);
-            `endif
-			endrule
-
-         rule rl_connect_i2c0_timerint_to_plic;
-				`ifdef I2C0
-					if(i2c0.timerint()==1'b1) begin
-						ff_gateway_queue[10].enq(1);
-						plic.ifc_external_irq[10].irq_frm_gateway(True);
-					end
-            `else
-					ff_gateway_queue[10].enq(0);
-            `endif
-			endrule
-
-         rule rl_connect_i2c1_timerint_to_plic;
-				`ifdef I2C1
-					if(i2c1.timerint()==1'b1) begin
-						ff_gateway_queue[11].enq(1);
-						plic.ifc_external_irq[11].irq_frm_gateway(True);
-					end
-            `else
-					ff_gateway_queue[11].enq(0);
-            `endif
-         endrule
-
-         rule rl_connect_i2c0_isber_to_plic;
-				`ifdef I2C0
-					if(i2c0.isber()==1'b1) begin
-						ff_gateway_queue[12].enq(1);
-						plic.ifc_external_irq[12].irq_frm_gateway(True);
-					end
-            `else
-					ff_gateway_queue[12].enq(0);
-            `endif
-         endrule
-
-         rule rl_connect_i2c1_isber_to_plic;
-				`ifdef I2C1
-					if(i2c1.isber()==1'b1) begin
-						ff_gateway_queue[13].enq(1);
-						plic.ifc_external_irq[13].irq_frm_gateway(True);
-               end
-            `else
-					ff_gateway_queue[13].enq(0);
-            `endif
-         endrule
-
+{10}
          for(Integer i = 14; i < 20; i=i+1) begin
 				rule rl_connect_qspi0_to_plic;
 					`ifdef QSPI0

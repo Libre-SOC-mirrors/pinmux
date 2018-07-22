@@ -158,6 +158,33 @@ class PBase(object):
     def pinname_tweak(self, pname, typ, txt):
         return txt
 
+    def num_irqs(self):
+        return 0
+
+    def mk_plic(self, inum, irq_offs):
+        res = []
+        print "mk_plic", self.name, inum, irq_offs
+        niq = self.num_irqs()
+        if niq == 0:
+            return ('', irq_offs)
+        for idx in range(niq):
+            name = "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
+            plic_obj = self.plic_object(name, idx)
+            print "plic_obj", name, idx, plic_obj
+            plic = mkplic_rule.format(self.name, plic_obj, irq_offs)
+            res.append(plic)
+            irq_offs += 1 # increment to next irq
+        return ('\n'.join(res), irq_offs)
+
+mkplic_rule = \
+"""
+         rule rl_connect_{0}_to_plic_{2};
+            if({1} == 1'b1) begin
+                ff_gateway_queue[{2}].enq(1);
+                plic.ifc_external_irq[{2}].irq_frm_gateway(True);
+            end
+         endrule
+"""
 
 class uart(PBase):
 
@@ -273,6 +300,9 @@ class twi(PBase):
         return "            interface I2C_out twi{0}_out;\n" + \
                "            method Bit#(1) twi{0}_isint;"
 
+    def num_irqs(self):
+        return 3
+
     def num_axi_regs32(self):
         return 8
 
@@ -298,6 +328,12 @@ class twi(PBase):
         if typ == 'outen':
             return "pack({0})".format(txt)
         return txt
+
+    def plic_object(self, pname, idx):
+        return ["{0}.isint()",
+                "{0}.timerint()",
+                "{0}.isber()"
+               ][idx].format(pname)
 
 
 class eint(PBase):
@@ -678,7 +714,7 @@ class PeripheralIface(object):
             self.slow.peripheral = self
         for fname in ['slowimport', 
                       'slowifinstance', 'slowifdecl', 'slowifdeclmux',
-                      'mkslow_peripheral',
+                      'mkslow_peripheral', 'mk_plic',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
@@ -812,6 +848,19 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 txt = self.data[name].mk_pincon(name, i)
+                ret.append(txt)
+        return '\n'.join(list(filter(None, ret)))
+
+
+    def mk_plic(self):
+        ret = []
+        irq_offs = 8 # XXX: DMA scovers 0-7?
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                res = self.data[name].mk_plic(i, irq_offs)
+                if not res:
+                    continue
+                (txt, irq_offs) = res
                 ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
 
