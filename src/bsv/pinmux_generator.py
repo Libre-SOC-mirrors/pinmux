@@ -72,20 +72,7 @@ def pinmuxgen(pth=None, verify=True):
     shutil.copyfile(os.path.join(cwd, 'Makefile.template'),
                     os.path.join(bp, 'Makefile'))
     cwd = os.path.join(cwd, 'bsv_lib')
-    for fname in ['AXI4_Lite_Types.bsv', 'Semi_FIFOF.bsv',
-                  'gpio.bsv', 'mux.bsv',
-                  'AXI4_Types.bsv', 'defined_types.bsv',
-                  'AXI4_Fabric.bsv', 'Uart16550.bsv',
-                  'AXI4_Lite_Fabric.bsv', 'ConcatReg.bsv',
-                  'Uart_bs.bsv', 'RS232_modified.bsv',
-                  'AXI4Lite_AXI4_Bridge.bsv',
-                  'I2C_top.bsv', 'I2C_Defs.bsv',
-                  'plic.bsv', 'Cur_Cycle.bsv',
-                  'ClockDiv.bsv', 'axi_addr_generator.bsv',
-                  'jtagdtm_new.bsv', 'jtagdefines.bsv',
-                  'sdcard_dummy.bsv',
-                  'pwm.bsv', 'qspi.bsv', 'qspi.defs',
-                  ]:
+    for fname in [ ]:
         shutil.copyfile(os.path.join(cwd, fname),
                         os.path.join(bl, fname))
 
@@ -123,6 +110,7 @@ def write_slow(slow, template, p, ifaces, iocells):
     inst = ifaces.slowifinstance()
     mkplic = ifaces.mk_plic()
     numsloirqs = ifaces.mk_sloirqsdef()
+    ifacedef = ifaces.mk_ext_ifacedef()
     ifacedef = ifaces.mk_ext_ifacedef()
     with open(slow, "w") as bsv_file:
         bsv_file.write(template.format(imports, ifdecl, regdef, slavedecl,
