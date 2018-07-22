@@ -174,7 +174,7 @@ package slow_peripherals;
       endrule
     end
 				
-`endif
+`endif // end PLIC
         /*======================================================= */
 
 		/* ===== interface definition =======*/
@@ -187,7 +187,7 @@ package slow_peripherals;
 		`endif
 `ifdef PLIC
 {12}
-`endif
+`endif // end PLIC
 		interface SP_dedicated_ios slow_ios;
         /* template for dedicated peripherals
 			`ifdef UART0
