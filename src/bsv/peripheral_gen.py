@@ -258,6 +258,27 @@ class quart(PBase):
 
         return '\n'.join(ret)
 
+    def num_irqs(self):
+        return 1
+
+    def plic_object(self, pname, idx):
+        return "{0}_interrupt.read".format(pname)
+
+    def mk_plic(self, inum, irq_offs):
+        name = "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
+        ret = [uart_plic_template.format(name, irq_offs)]
+        (ret2, irq_offs) = PBase.mk_plic(self, inum, irq_offs)
+        ret.append(ret2)
+        return ('\n'.join(ret), irq_offs)
+
+uart_plic_template = """\
+         // PLIC {0} synchronisation with irq {1}
+         SyncBitIfc#(Bit#(1)) {0}_interrupt <-
+                              mkSyncBitToCC(sp_clock, uart_reset);
+         rule plic_synchronize_{0}_interrupt_{1};
+             {0}_interrupt.send({0}.irq);
+         endrule
+"""
 
 class rs232(PBase):
 
