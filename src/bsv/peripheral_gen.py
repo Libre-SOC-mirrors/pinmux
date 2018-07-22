@@ -246,8 +246,6 @@ class quart(PBase):
 
     def mk_pincon(self, name, count):
         ret = [PBase.mk_pincon(self, name, count)]
-        size = len(self.peripheral.pinspecs)
-        ret.append(eint_pincon_template.format(size))
         ret.append("    rule con_%s%d_io_in;" % (name, count))
         ret.append("       {0}{1}.coe_rs232.modem_input(".format(name, count))
         for idx, pname in enumerate(['rx', 'cts']):
@@ -380,11 +378,11 @@ class eint(PBase):
 
 
 eint_pincon_template = '''\
-    // TODO: offset i by the number of eints already used
+    // EINT is offset at end of other peripheral interrupts
     for(Integer i=0;i<{0};i=i+ 1)begin
       rule connect_int_to_plic(wr_interrupt[i]==1);
-                ff_gateway_queue[i].enq(1);
-                plic.ifc_external_irq[i].irq_frm_gateway(True);
+                ff_gateway_queue[i+`NUM_SLOW_IRQS].enq(1);
+                plic.ifc_external_irq[i+`NUM_SLOW_IRQS].irq_frm_gateway(True);
       endrule
     end
 '''
@@ -862,7 +860,11 @@ class PeripheralInterfaces(object):
                     continue
                 (txt, irq_offs) = res
                 ret.append(txt)
+        self.num_slow_irqs = irq_offs
         return '\n'.join(list(filter(None, ret)))
+
+    def mk_sloirqsdef(self):
+        return "    `define NUM_SLOW_IRQS {0}".format(self.num_slow_irqs)
 
 
 class PFactory(object):

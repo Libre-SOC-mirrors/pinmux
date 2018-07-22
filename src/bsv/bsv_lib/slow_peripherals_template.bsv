@@ -10,6 +10,8 @@ package slow_peripherals;
 	`include "instance_defines.bsv"
     /* ==== define the AXI Addresses ==== */
 {2}
+    /* ==== define the number of slow peripheral irqs ==== */
+{11}
     /*====== AXI4 Lite slave declarations =======*/
 
 {3}
