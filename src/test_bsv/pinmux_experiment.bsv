@@ -43,6 +43,35 @@ package pinmux;
       endinterface
 
 
+      interface PeripheralSideUART;
+          // interface declaration between UART and pinmux
+    (*always_ready,always_enabled*) method  Action tx (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Bit#(1) rx;
+      endinterface
+
+      interface PeripheralSideGPIOA;
+          // interface declaration between GPIOA-0 and pinmux
+    (*always_ready,always_enabled*) method  Action a0_out (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Action a0_outen (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Bit#(1) a0_in;
+    (*always_ready,always_enabled*) method  Action a1_out (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Action a1_outen (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Bit#(1) a1_in;
+    (*always_ready,always_enabled*) method  Action a2_out (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Action a2_outen (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Bit#(1) a2_in;
+        endinterface
+
+      interface PeripheralSideTWI;
+          // interface declaration between TWI and pinmux
+    (*always_ready,always_enabled*) method  Action sda_out (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Action sda_outen (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Bit#(1) sda_in;
+    (*always_ready,always_enabled*) method  Action scl_out (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Action scl_outen (Bit#(1) in);
+    (*always_ready,always_enabled*) method  Bit#(1) scl_in;
+      endinterface
+
       interface PeripheralSide;
       // declare the interface to the peripherals
       // Each peripheral's function will be either an input, output
@@ -51,25 +80,9 @@ package pinmux;
       // Bi-directional functions also have an output-enable (which
       // again comes *in* from the peripheral)
           // interface declaration between UART-0 and pinmux
-    (*always_ready,always_enabled*) method  Action uart_tx (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) uart_rx;
-          // interface declaration between GPIOA-0 and pinmux
-    (*always_ready,always_enabled*) method  Action gpioa_a0_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action gpioa_a0_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) gpioa_a0_in;
-    (*always_ready,always_enabled*) method  Action gpioa_a1_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action gpioa_a1_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) gpioa_a1_in;
-    (*always_ready,always_enabled*) method  Action gpioa_a2_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action gpioa_a2_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) gpioa_a2_in;
-          // interface declaration between TWI-0 and pinmux
-    (*always_ready,always_enabled*) method  Action twi_sda_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action twi_sda_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) twi_sda_in;
-    (*always_ready,always_enabled*) method  Action twi_scl_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action twi_scl_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) twi_scl_in;
+            interface PeripheralSideUART uart;
+            interface PeripheralSideGPIOA gpioa;
+            interface PeripheralSideTWI twi;
       endinterface
 
 
@@ -247,6 +260,7 @@ package pinmux;
       endmethod
 
     endinterface;
+
     interface iocell_side = interface IOCellSide
 
       method io0_cell_out=cell0_mux_out;
@@ -268,49 +282,64 @@ package pinmux;
       endmethod
 
      endinterface;
-    interface peripheral_side = interface PeripheralSide
 
-      method Action  uart_tx(Bit#(1) in);
+    interface peripheral_side_uart = interface PeripheralSideUART
+
+      method Action  tx(Bit#(1) in);
          wruart_tx<=in;
       endmethod
-      method uart_rx=wruart_rx;
+      method rx=wruart_rx;
+     endinterface
 
-      method Action  gpioa_a0_out(Bit#(1) in);
+    interface peripheral_side_gpioa = interface PeripheralSideGPIOA
+
+      method Action  a0_out(Bit#(1) in);
          wrgpioa_a0_out<=in;
       endmethod
-      method Action  gpioa_a0_outen(Bit#(1) in);
+      method Action  a0_outen(Bit#(1) in);
          wrgpioa_a0_outen<=in;
       endmethod
-      method gpioa_a0_in=wrgpioa_a0_in;
-      method Action  gpioa_a1_out(Bit#(1) in);
+      method a0_in=wrgpioa_a0_in;
+      method Action  a1_out(Bit#(1) in);
          wrgpioa_a1_out<=in;
       endmethod
-      method Action  gpioa_a1_outen(Bit#(1) in);
+      method Action  a1_outen(Bit#(1) in);
          wrgpioa_a1_outen<=in;
       endmethod
-      method gpioa_a1_in=wrgpioa_a1_in;
-      method Action  gpioa_a2_out(Bit#(1) in);
+      method a1_in=wrgpioa_a1_in;
+      method Action  a2_out(Bit#(1) in);
          wrgpioa_a2_out<=in;
       endmethod
-      method Action  gpioa_a2_outen(Bit#(1) in);
+      method Action  a2_outen(Bit#(1) in);
          wrgpioa_a2_outen<=in;
       endmethod
-      method gpioa_a2_in=wrgpioa_a2_in;
+      method a2_in=wrgpioa_a2_in;
+    endinterface
 
-      method Action  twi_sda_out(Bit#(1) in);
+    interface peripheral_side_twi = interface PeripheralSideTWI
+
+      method Action  sda_out(Bit#(1) in);
          wrtwi_sda_out<=in;
       endmethod
-      method Action  twi_sda_outen(Bit#(1) in);
+      method Action  sda_outen(Bit#(1) in);
          wrtwi_sda_outen<=in;
       endmethod
-      method twi_sda_in=wrtwi_sda_in;
-      method Action  twi_scl_out(Bit#(1) in);
+      method sda_in=wrtwi_sda_in;
+      method Action  scl_out(Bit#(1) in);
          wrtwi_scl_out<=in;
       endmethod
-      method Action  twi_scl_outen(Bit#(1) in);
+      method Action  scl_outen(Bit#(1) in);
          wrtwi_scl_outen<=in;
       endmethod
-      method twi_scl_in=wrtwi_scl_in;
+      method scl_in=wrtwi_scl_in;
+
+     endinterface;
+
+    interface peripheral_side = interface PeripheralSide
+
+      interface uart = uart.mkuart();
+      interface gpioa = gpioa.mkgpioa();
+      interface twi = twi.mktwi();
 
      endinterface;
    endmodule
