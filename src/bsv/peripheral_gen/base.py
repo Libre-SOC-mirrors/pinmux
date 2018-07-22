@@ -410,6 +410,7 @@ class PFactory(object):
         from spi import spi
         from qspi import qspi
         from gpio import gpio
+        from rgbttl import rgbttl
 
         for k, v in {'uart': uart,
                      'rs232': rs232,
@@ -421,6 +422,7 @@ class PFactory(object):
                      'eint': eint,
                      'sd': sdmmc,
                      'jtag': jtag,
+                     'lcd': rgbttl,
                      'gpio': gpio
                      }.items():
             if name.startswith(k):
