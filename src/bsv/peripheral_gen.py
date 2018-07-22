@@ -196,8 +196,8 @@ mkplic_rule = """\
 class uart(PBase):
 
     def slowimport(self):
-        return "          import Uart_bs         :: *;\n" + \
-               "          import RS232_modified::*;"
+        return "    import Uart_bs         :: *;\n" + \
+               "    import RS232_modified::*;"
 
     def slowifdecl(self):
         return "            interface RS232 uart{0}_coe;\n" + \
@@ -224,7 +224,7 @@ class uart(PBase):
 class quart(PBase):
 
     def slowimport(self):
-        return "          import Uart16550         :: *;"
+        return "    import Uart16550         :: *;"
 
     def slowifdecl(self):
         return "            interface RS232_PHY_Ifc quart{0}_coe;\n" + \
@@ -297,8 +297,8 @@ uart_plic_template = """\
 class rs232(PBase):
 
     def slowimport(self):
-        return "        import Uart_bs::*;\n" + \
-               "        import RS232_modified::*;"
+        return "    import Uart_bs::*;\n" + \
+               "    import RS232_modified::*;"
 
     def slowifdecl(self):
         return "            interface RS232 uart{0}_coe;"
@@ -327,7 +327,7 @@ class rs232(PBase):
 class twi(PBase):
 
     def slowimport(self):
-        return "        import I2C_top           :: *;"
+        return "    import I2C_top           :: *;"
 
     def slowifdecl(self):
         return "            interface I2C_out twi{0}_out;\n" + \
@@ -421,12 +421,14 @@ class eint(PBase):
 
 eint_pincon_template = '''\
     // EINT is offset at end of other peripheral interrupts
+`ifdef PLIC
     for(Integer i=0;i<{0};i=i+ 1)begin
       rule connect_int_to_plic(wr_interrupt[i]==1);
                 ff_gateway_queue[i+`NUM_SLOW_IRQS].enq(1);
                 plic.ifc_external_irq[i+`NUM_SLOW_IRQS].irq_frm_gateway(True);
       endrule
     end
+`endif
 '''
 
 
@@ -466,7 +468,7 @@ jtag_method_template = """\
 class sdmmc(PBase):
 
     def slowimport(self):
-        return "        import sdcard_dummy              :: *;"
+        return "    import sdcard_dummy              :: *;"
 
     def slowifdecl(self):
         return "            interface QSPI_out sd{0}_out;\n" + \
@@ -497,7 +499,7 @@ class sdmmc(PBase):
 class spi(PBase):
 
     def slowimport(self):
-        return "        import qspi              :: *;"
+        return "    import qspi              :: *;"
 
     def slowifdecl(self):
         return "            interface QSPI_out spi{0}_out;\n" + \
@@ -555,7 +557,7 @@ class spi(PBase):
 class qspi(PBase):
 
     def slowimport(self):
-        return "        import qspi              :: *;"
+        return "    import qspi              :: *;"
 
     def slowifdecl(self):
         return "            interface QSPI_out qspi{0}_out;\n" + \
@@ -630,7 +632,7 @@ class qspi(PBase):
 class pwm(PBase):
 
     def slowimport(self):
-        return "        import pwm::*;"
+        return "    import pwm::*;"
 
     def slowifdecl(self):
         return "        interface PWMIO pwm{0}_io;"
@@ -651,9 +653,9 @@ class pwm(PBase):
 class gpio(PBase):
 
     def slowimport(self):
-        return "     import pinmux::*;\n" + \
-               "     import mux::*;\n" + \
-               "     import gpio::*;\n"
+        return "    import pinmux::*;\n" + \
+               "    import mux::*;\n" + \
+               "    import gpio::*;\n"
 
     def slowifdeclmux(self):
         size = len(self.peripheral.pinspecs)
