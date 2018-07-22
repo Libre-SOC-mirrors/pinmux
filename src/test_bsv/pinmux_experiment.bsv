@@ -110,6 +110,97 @@ package pinmux;
       interface IOCellSide iocell_side;
    endinterface
    (*synthesize*)
+
+   module mkgpioa(PeripheralSideGPIOA);
+
+      // allotted to it
+      Wire#(Bit#(1)) wr_a0_out<-mkDWire(0);
+      Wire#(Bit#(1)) wr_a0_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wr_a0_in<-mkDWire(0);
+      Wire#(Bit#(1)) wr_a1_out<-mkDWire(0);
+      Wire#(Bit#(1)) wr_a1_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wr_a1_in<-mkDWire(0);
+      Wire#(Bit#(1)) wr_a2_out<-mkDWire(0);
+      Wire#(Bit#(1)) wr_a2_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wr_a2_in<-mkDWire(0);
+
+    interface gpioa = interface PeripheralSideGPIOA
+
+      method Action  a0_out(Bit#(1) in);
+         wr_a0_out<=in;
+      endmethod
+      method Action  a0_outen(Bit#(1) in);
+         wr_a0_outen<=in;
+      endmethod
+      method a0_in=wr_a0_in;
+      method Action  a1_out(Bit#(1) in);
+         wr_a1_out<=in;
+      endmethod
+      method Action  a1_outen(Bit#(1) in);
+         wr_a1_outen<=in;
+      endmethod
+      method a1_in=wr_a1_in;
+      method Action  a2_out(Bit#(1) in);
+         wr_a2_out<=in;
+      endmethod
+      method Action  a2_outen(Bit#(1) in);
+         wr_a2_outen<=in;
+      endmethod
+      method a2_in=wr_a2_in;
+    endinterface
+
+   endmodule
+
+   module mkuart(PeripheralSideUART);
+
+      Wire#(Bit#(1)) wr_tx<-mkDWire(0);
+      Wire#(Bit#(1)) wr_rx<-mkDWire(0);
+
+    interface uart = interface PeripheralSideUART
+
+      method Action  tx(Bit#(1) in);
+         wr_tx<=in;
+      endmethod
+      method rx=wr_rx;
+     endinterface
+
+   endmodule
+
+
+   module mktwi(PeripheralSideTWI);
+
+      // following wires capture signals to IO CELL if twi-0 is
+      // allotted to it
+      Wire#(Bit#(1)) wr_sda_out<-mkDWire(0);
+      Wire#(Bit#(1)) wr_sda_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wr_sda_in<-mkDWire(0);
+      Wire#(Bit#(1)) wr_scl_out<-mkDWire(0);
+      Wire#(Bit#(1)) wr_scl_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wr_scl_in<-mkDWire(0);
+
+
+    interface twi = interface PeripheralSideTWI
+
+      method Action  sda_out(Bit#(1) in);
+         wr_sda_out<=in;
+      endmethod
+      method Action  sda_outen(Bit#(1) in);
+         wr_sda_outen<=in;
+      endmethod
+      method sda_in=wr_sda_in;
+      method Action  scl_out(Bit#(1) in);
+         wr_scl_out<=in;
+      endmethod
+      method Action  scl_outen(Bit#(1) in);
+         wr_scl_outen<=in;
+      endmethod
+      method scl_in=wr_scl_in;
+
+     endinterface;
+
+   endmodule
+
+
    module mkpinmux(Ifc_pinmux);
 
       // the followins wires capture the pin-mux selection
