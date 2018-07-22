@@ -167,8 +167,9 @@ class PBase(object):
         niq = self.num_irqs()
         if niq == 0:
             return ('', irq_offs)
+        name = "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
+        res.append("        // PLIC rules for {0}".format(name))
         for idx in range(niq):
-            name = "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
             plic_obj = self.plic_object(name, idx)
             print "plic_obj", name, idx, plic_obj
             plic = mkplic_rule.format(name, plic_obj, irq_offs)
@@ -176,8 +177,7 @@ class PBase(object):
             irq_offs += 1 # increment to next irq
         return ('\n'.join(res), irq_offs)
 
-mkplic_rule = \
-"""
+mkplic_rule = """\
          rule rl_connect_{0}_to_plic_{2};
             if({1} == 1'b1) begin
                 ff_gateway_queue[{2}].enq(1);
