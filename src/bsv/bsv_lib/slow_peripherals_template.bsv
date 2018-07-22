@@ -139,7 +139,7 @@ package slow_peripherals;
       `ifdef verbose $display("Dequeing the FIFO -- PLIC Interrupt Serviced id: %d",id); `endif
 		endrule
 
-    for(Integer i=0; i <`NUM_INTERRUPTS; i=i+1) begin
+    for(Integer i=0; i <`INTERRUPT_PINS; i=i+1) begin
 	    rule deq_gateway_queue;
 		    if(interrupt_id==fromInteger(i)) begin
 			    ff_gateway_queue[i].deq;

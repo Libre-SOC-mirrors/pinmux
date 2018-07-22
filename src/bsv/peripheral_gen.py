@@ -171,7 +171,7 @@ class PBase(object):
             name = "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
             plic_obj = self.plic_object(name, idx)
             print "plic_obj", name, idx, plic_obj
-            plic = mkplic_rule.format(self.name, plic_obj, irq_offs)
+            plic = mkplic_rule.format(name, plic_obj, irq_offs)
             res.append(plic)
             irq_offs += 1 # increment to next irq
         return ('\n'.join(res), irq_offs)
@@ -298,9 +298,6 @@ class twi(PBase):
         return "            interface I2C_out twi{0}_out;\n" + \
                "            method Bit#(1) twi{0}_isint;"
 
-    def num_irqs(self):
-        return 3
-
     def num_axi_regs32(self):
         return 8
 
@@ -326,6 +323,9 @@ class twi(PBase):
         if typ == 'outen':
             return "pack({0})".format(txt)
         return txt
+
+    def num_irqs(self):
+        return 3
 
     def plic_object(self, pname, idx):
         return ["{0}.isint()",
@@ -562,6 +562,12 @@ class qspi(PBase):
         ret.append("        });")
         ret.append("    endrule")
         return '\n'.join(ret)
+
+    def num_irqs(self):
+        return 6
+
+    def plic_object(self, pname, idx):
+        return "{0}.interrupts()[{1}]".format(pname, idx)
 
 
 class pwm(PBase):
