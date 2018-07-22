@@ -6,6 +6,19 @@ TOP_DIR:=./
 WORKING_DIR := $(shell pwd)
 
 BSVINCDIR:= .:%/Prelude:%/Libraries:%/Libraries/BlueNoC:./bsv_lib/
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/core
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/uncore/axi4
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/uncore/axi4lite
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/lib
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/gpio
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/i2c
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/mux
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/plic
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/pwm
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/qspi
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/sdmmc
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/uart
+
 default: gen_verilog
 
 check-blue:
