@@ -133,25 +133,30 @@ package slow_peripherals;
     /*========== pinmux connections ============*/
 {7}
 {8}
+
+    /*=================== PLIC Connections ==================== */
+{10}
+
     rule rl_completion_msg_from_plic;
-		  let id <- plic.intrpt_completion;
+	  let id <- plic.intrpt_completion;
       interrupt_id <= id;
-      `ifdef verbose $display("Dequeing the FIFO -- PLIC Interrupt Serviced id: %d",id); `endif
-		endrule
+      `ifdef verbose
+        $display("Dequeing the FIFO -- PLIC Interrupt Serviced id: %d",id);
+       `endif
+	endrule
 
     for(Integer i=0; i <`INTERRUPT_PINS; i=i+1) begin
 	    rule deq_gateway_queue;
 		    if(interrupt_id==fromInteger(i)) begin
 			    ff_gateway_queue[i].deq;
-          `ifdef $display($time,"Dequeing the Interrupt request for ID: %d",i); `endif
+          `ifdef verbose
+            $display($time,"Dequeing the Interrupt request for ID: %d",i);
+          `endif
         end
       endrule
     end
-    // NEEL EDIT OVER
-		/*=======================================================*/
-		/*=================== PLIC Connections ==================== */
 		`ifdef PLIC_main
-			/*TODO DMA interrupt need to be connected to the plic
+			/*TODO DMA interrupt need to be connected to the plic */
 			for(Integer i=1; i<8; i=i+1) begin
          `ifdef DMA
              rule rl_connect_dma_interrupts_to_plic;
@@ -166,53 +171,6 @@ package slow_peripherals;
              endrule
           `endif
          end
-			*/
-{10}
-			`ifdef UART0 
-				SyncBitIfc#(Bit#(1)) uart0_interrupt <-
-                                  mkSyncBitToCC(sp_clock, uart_reset); 
-				rule synchronize_the_uart0_interrupt;
-					uart0_interrupt.send(uart0.irq);		
-				endrule
-			`endif
-			rule rl_connect_uart_to_plic;
-				`ifdef UART0
-					if(uart0_interrupt.read==1'b1) begin
-						ff_gateway_queue[27].enq(1);
-			  			plic.ifc_external_irq[27].irq_frm_gateway(True);
-               end
-			  	
-            `else
-					ff_gateway_queue[27].enq(0);
-            `endif
-         endrule
-             
-			for(Integer i = 28; i<`INTERRUPT_PINS; i=i+1) begin
-				rule rl_raise_interrupts;
-					if((i-28)<`IONum) begin	//Peripheral interrupts
-						if(gpio.to_plic[i-28]==1'b1) begin
-							plic.ifc_external_irq[i].irq_frm_gateway(True);
-								ff_gateway_queue[i].enq(1);	
-                  end
-					end
-				endrule
-			end
-			
-         rule rl_completion_msg_from_plic;
-				let id <- plic.intrpt_completion;
-            interrupt_id <= id;
-            `ifdef verbose $display("Dequeing the FIFO -- PLIC Interrupt Serviced id: %d",id); `endif
-			endrule
-
-         for(Integer i=0; i <`INTERRUPT_PINS; i=i+1) begin
-				rule deq_gateway_queue;
-					if(interrupt_id==fromInteger(i)) begin
-						ff_gateway_queue[i].deq;
-                  `ifdef $display($time,"Dequeing the Interrupt request for ID: %d",i); `endif
-               end
-            endrule
-         end
-
 				
 		`endif
 			/*======================================================= */

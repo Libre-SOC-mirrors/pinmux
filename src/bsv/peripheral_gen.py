@@ -168,7 +168,7 @@ class PBase(object):
         if niq == 0:
             return ('', irq_offs)
         name = "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
-        res.append("        // PLIC rules for {0}".format(name))
+        res.append("    // PLIC rules for {0}".format(name))
         for idx in range(niq):
             plic_obj = self.plic_object(name, idx)
             print "plic_obj", name, idx, plic_obj
@@ -178,12 +178,12 @@ class PBase(object):
         return ('\n'.join(res), irq_offs)
 
 mkplic_rule = """\
-         rule rl_connect_{0}_to_plic_{2};
-            if({1} == 1'b1) begin
-                ff_gateway_queue[{2}].enq(1);
-                plic.ifc_external_irq[{2}].irq_frm_gateway(True);
-            end
-         endrule
+     rule rl_connect_{0}_to_plic_{2};
+        if({1} == 1'b1) begin
+            ff_gateway_queue[{2}].enq(1);
+            plic.ifc_external_irq[{2}].irq_frm_gateway(True);
+        end
+     endrule
 """
 
 class uart(PBase):
@@ -272,12 +272,12 @@ class quart(PBase):
         return ('\n'.join(ret), irq_offs)
 
 uart_plic_template = """\
-         // PLIC {0} synchronisation with irq {1}
-         SyncBitIfc#(Bit#(1)) {0}_interrupt <-
-                              mkSyncBitToCC(sp_clock, uart_reset);
-         rule plic_synchronize_{0}_interrupt_{1};
-             {0}_interrupt.send({0}.irq);
-         endrule
+     // PLIC {0} synchronisation with irq {1}
+     SyncBitIfc#(Bit#(1)) {0}_interrupt <-
+                                mkSyncBitToCC(sp_clock, uart_reset);
+     rule plic_synchronize_{0}_interrupt_{1};
+         {0}_interrupt.send({0}.irq);
+     endrule
 """
 
 class rs232(PBase):
