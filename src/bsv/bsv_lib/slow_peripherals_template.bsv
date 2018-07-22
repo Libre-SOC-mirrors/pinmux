@@ -168,32 +168,6 @@ package slow_peripherals;
          end
 			*/
 {10}
-         for(Integer i = 14; i < 20; i=i+1) begin
-				rule rl_connect_qspi0_to_plic;
-					`ifdef QSPI0
-						if(qspi0.interrupts()[i-14]==1'b1) begin
-							ff_gateway_queue[i].enq(1);
-							plic.ifc_external_irq[i].irq_frm_gateway(True);
-						end
-               `else
-						ff_gateway_queue[i].enq(0);
-               `endif
-            endrule
-         end
-
-         for(Integer i = 20; i<26; i=i+1) begin
-				rule rl_connect_qspi1_to_plic;
-					`ifdef QSPI1
-						if(qspi1.interrupts()[i-20]==1'b1) begin
-							ff_gateway_queue[i].enq(1);
-							plic.ifc_external_irq[i].irq_frm_gateway(True);
-						end
-               `else
-						ff_gateway_queue[i].enq(0);
-               `endif
-            endrule
-			end
-        
 			`ifdef UART0 
 				SyncBitIfc#(Bit#(1)) uart0_interrupt <-
                                   mkSyncBitToCC(sp_clock, uart_reset); 
