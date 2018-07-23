@@ -177,7 +177,10 @@ class Interface(PeripheralIface):
                     #{'name': 'twi_sda_in', 'action': False}
                     # NOTice - outen key is removed
             else:
-                _p['name_'] = p['name']
+                name = p['name']
+                if self.single:
+                    name = self.pname(name)
+                _p['name_'] = name
                 _p['name'] = self.pname(p['name'])
                 self.pins.append(Pin(**_p))
 
