@@ -9,6 +9,8 @@
 
 package pinmux_experiment;
 
+import GetPut::*;
+
    interface MuxSelectionLines;
 
       // declare the method which will capture the user pin-mux
@@ -53,25 +55,25 @@ package pinmux_experiment;
 
       interface PeripheralSideGPIOA;
           // interface declaration between GPIOA-0 and pinmux
-    (*always_ready,always_enabled*) method  Action a0_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action a0_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) a0_in;
-    (*always_ready,always_enabled*) method  Action a1_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action a1_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) a1_in;
-    (*always_ready,always_enabled*) method  Action a2_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action a2_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) a2_in;
+          interface Put#(Bit#(1)) a0_out;
+          interface Put#(Bit#(1)) a0_outen;
+          interface Get#(Bit#(1)) a0_in;
+          interface Put#(Bit#(1)) a1_out;
+          interface Put#(Bit#(1)) a1_outen;
+          interface Get#(Bit#(1)) a1_in;
+          interface Put#(Bit#(1)) a2_out;
+          interface Put#(Bit#(1)) a2_outen;
+          interface Get#(Bit#(1)) a2_in;
         endinterface
 
       interface PeripheralSideTWI;
           // interface declaration between TWI and pinmux
-    (*always_ready,always_enabled*) method  Action sda_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action sda_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) sda_in;
-    (*always_ready,always_enabled*) method  Action scl_out (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Action scl_outen (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) scl_in;
+          interface Put#(Bit#(1)) sda_out;
+          interface Put#(Bit#(1)) sda_outen;
+          interface Get#(Bit#(1)) sda_in;
+          interface Put#(Bit#(1)) scl_out;
+          interface Put#(Bit#(1)) scl_outen;
+          interface Get#(Bit#(1)) scl_in;
       endinterface
 
       interface PeripheralSide;
@@ -112,112 +114,6 @@ package pinmux_experiment;
       interface IOCellSide iocell_side;
    endinterface
    (*synthesize*)
-
-//   module mkgpioa(PeripheralSideGPIOA);
-//
-//      // allotted to it
-//      Wire#(Bit#(1)) wr_a0_out<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_a0_outen<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_a0_in<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_a1_out<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_a1_outen<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_a1_in<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_a2_out<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_a2_outen<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_a2_in<-mkDWire(0);
-//
-//    interface out = interface PeripheralSideGPIOA
-//
-//      method Action  a0_out(Bit#(1) in);
-//         wr_a0_out<=in;
-//      endmethod
-//      method Action  a0_outen(Bit#(1) in);
-//         wr_a0_outen<=in;
-//      endmethod
-//      method a0_in=wr_a0_in;
-//      method Action  a1_out(Bit#(1) in);
-//         wr_a1_out<=in;
-//      endmethod
-//      method Action  a1_outen(Bit#(1) in);
-//         wr_a1_outen<=in;
-//      endmethod
-//      method a1_in=wr_a1_in;
-//      method Action  a2_out(Bit#(1) in);
-//         wr_a2_out<=in;
-//      endmethod
-//      method Action  a2_outen(Bit#(1) in);
-//         wr_a2_outen<=in;
-//      endmethod
-//      method a2_in=wr_a2_in;
-//    endinterface;
-//
-//   endmodule
-//
-//   module mkuart(PeripheralSideUART);
-//
-//      Wire#(Bit#(1)) wr_tx<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_rx<-mkDWire(0);
-//
-//    interface out = interface PeripheralSideUART
-//
-//      method Action  tx(Bit#(1) in);
-//         wr_tx<=in;
-//      endmethod
-//      method rx=wr_rx;
-//     endinterface;
-//
-//   endmodule
-//
-//
-//   module mktwi(PeripheralSideTWI);
-//
-//      // following wires capture signals to IO CELL if twi-0 is
-//      // allotted to it
-//      Wire#(Bit#(1)) wr_sda_out<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_sda_outen<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_sda_in<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_scl_out<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_scl_outen<-mkDWire(0);
-//      Wire#(Bit#(1)) wr_scl_in<-mkDWire(0);
-//
-//
-//    interface out = interface PeripheralSideTWI
-//
-//      method Action  sda_out(Bit#(1) in);
-//         wr_sda_out<=in;
-//      endmethod
-//      method Action  sda_outen(Bit#(1) in);
-//         wr_sda_outen<=in;
-//      endmethod
-//      method sda_in=wr_sda_in;
-//      method Action  scl_out(Bit#(1) in);
-//         wr_scl_out<=in;
-//      endmethod
-//      method Action  scl_outen(Bit#(1) in);
-//         wr_scl_outen<=in;
-//      endmethod
-//      method scl_in=wr_scl_in;
-//
-//     endinterface;
-//
-//   endmodule
-//
-//
-//   module mkperipherals(PeripheralSide);
-//
-//      PeripheralSideUART uart = mkuart();
-//      PeripheralSideGPIOA gpioa = mkgpioa();
-//      PeripheralSideTWI twi = mktwi();
-//
-//    interface out = interface PeripheralSide
-//
-//      interface uart = uart.out;
-//      interface gpioa = gpioa.out;
-//      interface twi = twi.out;
-//
-//     endinterface;
-//
-//   endmodule
 
    module mkpinmux(Ifc_pinmux);
 
@@ -405,6 +301,91 @@ package pinmux_experiment;
               endmethod
             endinterface;
         endinterface;
+
+        interface twi = interface PeripheralSideTWI
+            // interface declaration between TWI and pinmux
+            interface sda_out = interface Put
+              method Action put(Bit#(1) in);
+                wrtwi_sda_out<=in;
+              endmethod
+            endinterface;
+            interface sda_outen = interface Put
+              method Action put(Bit#(1) in);
+                wrtwi_sda_outen<=in;
+              endmethod
+            endinterface;
+            interface  sda_in = interface Get
+              method ActionValue#(Bit#(1)) get;
+                return wrtwi_sda_in;
+              endmethod
+            endinterface;
+            interface scl_out = interface Put
+              method Action put(Bit#(1) in);
+                wrtwi_scl_out<=in;
+              endmethod
+            endinterface;
+            interface scl_outen = interface Put
+              method Action put(Bit#(1) in);
+                wrtwi_scl_outen<=in;
+              endmethod
+            endinterface;
+            interface  scl_in = interface Get
+              method ActionValue#(Bit#(1)) get;
+                return wrtwi_scl_in;
+              endmethod
+            endinterface;
+         endinterface;
+
+        interface gpioa = interface PeripheralSideGPIOA
+
+            interface a0_out = interface Put
+              method Action put(Bit#(1) in);
+                wrgpioa_a0_out<=in;
+              endmethod
+            endinterface;
+            interface a0_outen = interface Put
+              method Action put(Bit#(1) in);
+                wrgpioa_a0_outen<=in;
+              endmethod
+            endinterface;
+            interface  a0_in = interface Get
+              method ActionValue#(Bit#(1)) get;
+                return wrgpioa_a0_in;
+              endmethod
+            endinterface;
+            interface a1_out = interface Put
+              method Action put(Bit#(1) in);
+                wrgpioa_a1_out<=in;
+              endmethod
+            endinterface;
+            interface a1_outen = interface Put
+              method Action put(Bit#(1) in);
+                wrgpioa_a1_outen<=in;
+              endmethod
+            endinterface;
+            interface  a1_in = interface Get
+              method ActionValue#(Bit#(1)) get;
+                return wrgpioa_a1_in;
+              endmethod
+            endinterface;
+            interface a2_out = interface Put
+              method Action put(Bit#(1) in);
+                wrgpioa_a2_out<=in;
+              endmethod
+            endinterface;
+            interface a2_outen = interface Put
+              method Action put(Bit#(1) in);
+                wrgpioa_a2_outen<=in;
+              endmethod
+            endinterface;
+            interface  a2_in = interface Get
+              method ActionValue#(Bit#(1)) get;
+                return wrgpioa_a2_in;
+              endmethod
+            endinterface;
+        endinterface;
+
+
       endinterface;
 //    interface peripheral_side = interface PeripheralSide
 //
