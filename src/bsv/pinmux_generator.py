@@ -40,6 +40,7 @@ header = copyright + '''
 package pinmux;
 
 import GetPut::*;
+import Vector::*;
 
 '''
 footer = '''

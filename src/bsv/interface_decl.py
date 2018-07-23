@@ -141,16 +141,17 @@ class Pin(object):
 
     def ifacedef3(self, fmtoutfn, fmtinfn, fmtdecfn):
         if self.action:
+            fmtname = fmtinfn(self.name)
             if self.name.endswith('outen'):
                 name = "tputen"
             else:
                 name = "tput"
-            fmtname = fmtinfn(self.name)
-            res = "              %s <= %s[%d];" % (fmtname, name, self.idx)
+            res = "                   %s <= in[%d];" % (fmtname, self.idx)
         else:
             fmtname = fmtoutfn(self.name)
-            res = "              tget[%d] = %s;" % (self.idx, fmtname)
-        return res
+            res = "                   tget[%d] <= %s;" % (self.idx, fmtname)
+            name = 'tget'
+        return (name, res)
 
 class Interface(PeripheralIface):
     """ create an interface from a list of pinspecs.
@@ -370,32 +371,40 @@ class IOInterface(Interface):
 class InterfaceGPIO(Interface):
 
     def ifacedef2(self, *args):
-        res = '\n'.join(map(self.ifacedef2pin, self.pins))
-        res = res.format(*args)
+        tput = []
+        tget = []
+        tputen = []
+        for (typ, txt) in map(self.ifacedef2pin, self.pins):
+            if typ == 'tput':
+                tput.append(txt)
+            elif typ == 'tget':
+                tget.append(txt)
+            elif typ == 'tputen':
+                tputen.append(txt)
+        tput = '\n'.join(tput).format(*args)
+        tget = '\n'.join(tget).format(*args)
+        tputen = '\n'.join(tputen).format(*args)
 
-        tdecl = """\
-              Vector#({0},Bit#(1)) tput;
-              Vector#({0},Bit#(1)) tputen;
-              Vector#({0},Bit#(1)) tget;
-""".format(len(self.pinspecs))
         template = """\
-              interface gpio_out = interface Put#
+              interface gpio_out = interface Put#({0})
                  method Action put(Vector#({0},Bit#(1)) in);
-                   tput<=in;
+{1}
                  endmethod
                endinterface;
-               interface gpio_outen = interface Put#
+               interface gpio_outen = interface Put#({0})
                  method Action put(Vector#({0},Bit#(1)) in);
-                   tputen<=in;
+{2}
                  endmethod
                endinterface;
-               interface gpio_in = interface Get#
+               interface gpio_in = interface Get#({0})
                  method ActionValue#(Vector#({0},Bit#(1))) get;
+                   Vector#({0},Bit#(1)) tputen;
+{3}
                    return tget;
                  endmethod
                endinterface;
-""".format(len(self.pinspecs))
-        return '\n' + tdecl + res + '\n' + template + '\n'
+""".format(len(self.pinspecs), tput, tputen, tget)
+        return '\n' + template + '\n'
 
     def ifacedef2pin(self, pin):
         decfn = self.ifacefmtdecfn2
