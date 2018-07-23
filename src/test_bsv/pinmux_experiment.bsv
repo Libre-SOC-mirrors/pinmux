@@ -11,6 +11,7 @@ package pinmux_experiment;
 
 import GetPut::*;
 
+      (*always_ready,always_enabled*)
    interface MuxSelectionLines;
 
       // declare the method which will capture the user pin-mux
@@ -45,6 +46,7 @@ import GetPut::*;
       endinterface
 
 
+      (*always_ready,always_enabled*)
       interface PeripheralSideUART;
           // interface declaration between UART and pinmux
           interface Put#(Bit#(1)) tx;
@@ -53,6 +55,7 @@ import GetPut::*;
 //    (*always_ready,always_enabled*) method  Bit#(1) rx;
       endinterface
 
+      (*always_ready,always_enabled*)
       interface PeripheralSideGPIOA;
           // interface declaration between GPIOA-0 and pinmux
           interface Put#(Bit#(1)) a0_out;
@@ -66,6 +69,7 @@ import GetPut::*;
           interface Get#(Bit#(1)) a2_in;
         endinterface
 
+      (*always_ready,always_enabled*)
       interface PeripheralSideTWI;
           // interface declaration between TWI and pinmux
           interface Put#(Bit#(1)) sda_out;
@@ -76,6 +80,7 @@ import GetPut::*;
           interface Get#(Bit#(1)) scl_in;
       endinterface
 
+      (*always_ready,always_enabled*)
       interface PeripheralSide;
       // declare the interface to the peripherals
       // Each peripheral's function will be either an input, output
