@@ -81,7 +81,7 @@ def i2c(suffix, bank):
 
 
 def jtag(suffix, bank):
-    return (['MS+', 'DI-', 'DO+', 'CK+'], [])
+    return (['TMS+', 'TDI-', 'TDO+', 'TCK+'], [])
 
 
 def uart(suffix, bank):
