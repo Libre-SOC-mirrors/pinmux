@@ -178,7 +178,7 @@ class Interface(PeripheralIface):
                     # NOTice - outen key is removed
             else:
                 name = p['name']
-                if self.single:
+                if name.isdigit(): # HACK!  deals with EINT case
                     name = self.pname(name)
                 _p['name_'] = name
                 _p['name'] = self.pname(p['name'])
