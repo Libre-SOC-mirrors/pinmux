@@ -21,16 +21,16 @@ class quart(PBase):
         return "quart{0}.slave_axi_uart"
 
     def pinname_out(self, pname):
-        return {'tx' : 'coe_rs232.modem_output_stx',
-                'rts': 'coe_rs232.modem_output_rts',
+        return {'tx' : 'coe_rs232.stx_out',
+                'rts': 'coe_rs232.rts_out',
                }.get(pname, '')
 
     def _pinname_in(self, pname):
-        return {'rx': 'coe_rs232.modem_input.srx', 
-                'cts': 'coe_rs232.modem_input.cts'
+        return {'rx': 'coe_rs232.srx_in', 
+                'cts': 'coe_rs232.cts_in'
                }.get(pname, '')
 
-    def mk_pincon(self, name, count):
+    def __disabled_mk_pincon(self, name, count):
         ret = [PBase.mk_pincon(self, name, count)]
         ret.append("    rule con_%s%d_io_in;" % (name, count))
         ret.append("       {0}{1}.coe_rs232.modem_input(".format(name, count))
