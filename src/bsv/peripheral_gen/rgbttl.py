@@ -10,7 +10,7 @@ class rgbttl(PBase):
 
     def mkslow_peripheral(self):
         sz = len(self.peripheral.pinspecs) - 4 # subtract CK, DE, HS, VS
-        return "        Ifc_rgbttl_dummy lcd{0} <-  mkrgbttl_dummy(%d);" % sz
+        return "        Ifc_rgbttl_dummy lcd{0} <-  mkrgbttl_dummy();" % sz
 
     def _mk_connection(self, name=None, count=0):
         return "lcd{0}.slave"
