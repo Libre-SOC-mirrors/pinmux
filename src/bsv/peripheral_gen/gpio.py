@@ -72,7 +72,7 @@ class gpio(PBase):
         # special-case for gpio in, store in a temporary vector
         ret = []
         plen = len(self.peripheral.pinspecs)
-        template = "      mkConnection({0}_{1},\n\t\t\t{2}_{1});"
+        template = "      mkConnection({0}.{1},\n\t\t\t{2}_{1});"
         ps = "pinmux.peripheral_side.%s" % name
         n = "{0}.func.gpio".format(name)
         for ptype in ['out', 'out_en', 'in']:
