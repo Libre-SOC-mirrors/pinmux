@@ -10,9 +10,11 @@ class InterfacesBase(UserDict):
     """ contains a list of interface definitions
     """
 
-    def __init__(self, ifacekls, pth=None):
+    def __init__(self, ifacekls, pth=None, ifaceklsdict=None):
         self.pth = pth
         self.ifacecount = []
+        if ifaceklsdict is None:
+            ifaceklsdict = {}
         UserDict.__init__(self, {})
         if not pth:
             return
@@ -31,16 +33,21 @@ class InterfacesBase(UserDict):
                  {'name': 'scl', 'outen': True},
                 ]
                 """
+                ikls = ifacekls
+                for k, v in ifaceklsdict.items():
+                    if name.startswith(k):
+                        ikls = v
+                        break
                 spec, ganged = self.read_spec(pth, name)
                 # XXX HORRIBLE hack!!!
                 if name == 'pwm' and count == 1 and len(spec) != 1:
                     #print "read", name, count, spec, ganged
                     #print "multi pwm", spec[:1], len(spec)
                     spec[0]['name'] = 'out'
-                    iface = ifacekls(name, spec[:1], ganged, False)
+                    iface = ikls(name, spec[:1], ganged, False)
                     self.ifaceadd(name, len(spec), iface)
                 else:
-                    iface = ifacekls(name, spec, ganged, count == 1)
+                    iface = ikls(name, spec, ganged, count == 1)
                     self.ifaceadd(name, count, iface)
 
     def getifacetype(self, fname):

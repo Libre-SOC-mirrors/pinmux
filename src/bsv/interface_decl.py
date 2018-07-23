@@ -350,13 +350,16 @@ class IOInterface(Interface):
     def wirefmt(self, *args):
         return generic_io.format(*args)
 
+class InterfaceGPIO(Interface):
+    pass
 
 class Interfaces(InterfacesBase, PeripheralInterfaces):
     """ contains a list of interface definitions
     """
 
     def __init__(self, pth=None):
-        InterfacesBase.__init__(self, Interface, pth)
+        InterfacesBase.__init__(self, Interface, pth,
+                                            {'gpio': InterfaceGPIO })
         PeripheralInterfaces.__init__(self)
 
     def ifacedef(self, f, *args):
