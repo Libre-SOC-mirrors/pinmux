@@ -16,7 +16,7 @@ class uart(PBase):
     def mkslow_peripheral(self, size=0):
         return "        Ifc_Uart_bs uart{0} <- \n" + \
                "                mkUart_bs(clocked_by sp_clock,\n" + \
-               "                    reset_by uart_reset, sp_clock, sp_reset);"
+               "                    reset_by sp_reset, sp_clock, sp_reset);"
 
     def _mk_connection(self, name=None, count=0):
         return "uart{0}.slave_axi_uart"
