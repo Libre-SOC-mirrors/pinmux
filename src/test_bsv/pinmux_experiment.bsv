@@ -291,55 +291,19 @@ import GetPut::*;
 
      interface peripheral_side = interface PeripheralSide
         interface uart = interface PeripheralSideUART
-            // interface declaration between UART and pinmux
             interface tx = interface Put
               method Action put(Bit#(1) in);
                 wruart_tx<=in;
               endmethod
             endinterface;
-            interface  rx = interface Get
+            interface rx = interface Get
               method ActionValue#(Bit#(1)) get;
                 return wruart_rx;
               endmethod
             endinterface;
         endinterface;
 
-        interface twi = interface PeripheralSideTWI
-            // interface declaration between TWI and pinmux
-            interface sda_out = interface Put
-              method Action put(Bit#(1) in);
-                wrtwi_sda_out<=in;
-              endmethod
-            endinterface;
-            interface sda_outen = interface Put
-              method Action put(Bit#(1) in);
-                wrtwi_sda_outen<=in;
-              endmethod
-            endinterface;
-            interface  sda_in = interface Get
-              method ActionValue#(Bit#(1)) get;
-                return wrtwi_sda_in;
-              endmethod
-            endinterface;
-            interface scl_out = interface Put
-              method Action put(Bit#(1) in);
-                wrtwi_scl_out<=in;
-              endmethod
-            endinterface;
-            interface scl_outen = interface Put
-              method Action put(Bit#(1) in);
-                wrtwi_scl_outen<=in;
-              endmethod
-            endinterface;
-            interface  scl_in = interface Get
-              method ActionValue#(Bit#(1)) get;
-                return wrtwi_scl_in;
-              endmethod
-            endinterface;
-         endinterface;
-
         interface gpioa = interface PeripheralSideGPIOA
-
             interface a0_out = interface Put
               method Action put(Bit#(1) in);
                 wrgpioa_a0_out<=in;
@@ -350,7 +314,7 @@ import GetPut::*;
                 wrgpioa_a0_outen<=in;
               endmethod
             endinterface;
-            interface  a0_in = interface Get
+            interface a0_in = interface Get
               method ActionValue#(Bit#(1)) get;
                 return wrgpioa_a0_in;
               endmethod
@@ -365,7 +329,7 @@ import GetPut::*;
                 wrgpioa_a1_outen<=in;
               endmethod
             endinterface;
-            interface  a1_in = interface Get
+            interface a1_in = interface Get
               method ActionValue#(Bit#(1)) get;
                 return wrgpioa_a1_in;
               endmethod
@@ -380,9 +344,42 @@ import GetPut::*;
                 wrgpioa_a2_outen<=in;
               endmethod
             endinterface;
-            interface  a2_in = interface Get
+            interface a2_in = interface Get
               method ActionValue#(Bit#(1)) get;
                 return wrgpioa_a2_in;
+              endmethod
+            endinterface;
+        endinterface;
+
+        interface twi = interface PeripheralSideTWI
+            interface sda_out = interface Put
+              method Action put(Bit#(1) in);
+                wrtwi_sda_out<=in;
+              endmethod
+            endinterface;
+            interface sda_outen = interface Put
+              method Action put(Bit#(1) in);
+                wrtwi_sda_outen<=in;
+              endmethod
+            endinterface;
+            interface sda_in = interface Get
+              method ActionValue#(Bit#(1)) get;
+                return wrtwi_sda_in;
+              endmethod
+            endinterface;
+            interface scl_out = interface Put
+              method Action put(Bit#(1) in);
+                wrtwi_scl_out<=in;
+              endmethod
+            endinterface;
+            interface scl_outen = interface Put
+              method Action put(Bit#(1) in);
+                wrtwi_scl_outen<=in;
+              endmethod
+            endinterface;
+            interface scl_in = interface Get
+              method ActionValue#(Bit#(1)) get;
+                return wrtwi_scl_in;
               endmethod
             endinterface;
         endinterface;

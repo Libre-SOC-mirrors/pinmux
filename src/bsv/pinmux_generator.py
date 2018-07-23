@@ -256,7 +256,7 @@ def write_pmp(pmp, p, ifaces, iocells):
 
      interface peripheral_side = interface PeripheralSide
 ''')
-        ifaces.ifacedef(bsv_file)
+        ifaces.ifacedef2(bsv_file)
         bsv_file.write("\n      endinterface;")
 
         bsv_file.write(footer)

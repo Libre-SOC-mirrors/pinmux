@@ -82,13 +82,6 @@ class Pin(object):
         res += ";"
         return res
 
-    # sample bsv method definition :
-    """
-    method Action  cell0_mux(Bit#(2) in);
-        wrcell0_mux<=in;
-    endmethod
-    """
-
     def ifacedef(self, fmtoutfn, fmtinfn, fmtdecfn):
         res = '      method '
         if self.action:
@@ -102,6 +95,13 @@ class Pin(object):
             fmtname = fmtoutfn(self.name)
             res += "%s=%s;" % (self.name, fmtname)
         return res
+    # sample bsv method definition :
+    """
+    method Action  cell0_mux(Bit#(2) in);
+        wrcell0_mux<=in;
+    endmethod
+    """
+
     # sample bsv wire (wire definiton):
     """
     Wire#(Bit#(2)) wrcell0_mux<-mkDWire(0);
@@ -116,6 +116,26 @@ class Pin(object):
         res += "<-mkDWire(0);"
         return res
 
+    def ifacedef2(self, fmtoutfn, fmtinfn, fmtdecfn):
+        if self.action:
+            fmtname = fmtinfn(self.name)
+            res =  "            interface %s = interface Put\n" % self.name_
+            res += '              method '
+            res += "Action put"
+            #res += fmtdecfn(self.name)
+            res += '(%s in);\n' % self.bitspec
+            res += '                %s<=in;\n' % fmtname
+            res += '              endmethod\n'
+            res += '            endinterface;'
+        else:
+            fmtname = fmtoutfn(self.name)
+            res =  "            interface %s = interface Get\n" % self.name_
+            res += '              method ActionValue#'
+            res += '(%s) get;\n' % self.bitspec
+            res += "                return %s;\n" % (fmtname)
+            res += '              endmethod\n'
+            res += '            endinterface;'
+        return res
 
 class Interface(PeripheralIface):
     """ create an interface from a list of pinspecs.
@@ -285,8 +305,23 @@ class Interface(PeripheralIface):
         return pin.ifacedef(outfn, self.ifacefmtinfn,
                             decfn)
 
+    def ifacedef2pin(self, pin):
+        decfn = self.ifacefmtdecfn2
+        outfn = self.ifacefmtoutfn
+        # print pin, pin.outenmode
+        if pin.outenmode:
+            decfn = self.ifacefmtdecfn3
+            outfn = self.ifacefmtoutenfn
+        return pin.ifacedef2(outfn, self.ifacefmtinfn,
+                            decfn)
+
     def ifacedef(self, *args):
         res = '\n'.join(map(self.ifacefmtpin, self.pins))
+        res = res.format(*args)
+        return '\n' + res + '\n'
+
+    def ifacedef2(self, *args):
+        res = '\n'.join(map(self.ifacedef2pin, self.pins))
         res = res.format(*args)
         return '\n' + res + '\n'
 
@@ -325,6 +360,15 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 f.write(self.data[name].ifacedef(i))
+
+    def ifacedef2(self, f, *args):
+        c = "        interface {0} = interface PeripheralSide{1}"
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                iname = self.data[name].iname().format(i)
+                f.write(c.format(iname, name.upper()))
+                f.write(self.data[name].ifacedef2(i))
+                f.write("        endinterface;\n\n")
 
     def busfmt(self, f, *args):
         f.write("import BUtils::*;\n\n")
