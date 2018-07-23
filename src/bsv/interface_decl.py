@@ -21,6 +21,7 @@ class Pin(object):
 
     def __init__(self, name,
                  name_ = None,
+                 idx=None,
                  ready=True,
                  enabled=True,
                  io=False,
@@ -29,6 +30,7 @@ class Pin(object):
                  outenmode=False):
         self.name = name
         self.name_ = name_
+        self.idx = idx
         self.ready = ready
         self.enabled = enabled
         self.io = io
@@ -137,6 +139,19 @@ class Pin(object):
             res += '            endinterface;'
         return res
 
+    def ifacedef3(self, fmtoutfn, fmtinfn, fmtdecfn):
+        if self.action:
+            if self.name.endswith('outen'):
+                name = "tputen"
+            else:
+                name = "tput"
+            fmtname = fmtinfn(self.name)
+            res = "              %s <= %s[%d];" % (fmtname, name, self.idx)
+        else:
+            fmtname = fmtoutfn(self.name)
+            res = "              tget[%d] = %s;" % (self.idx, fmtname)
+        return res
+
 class Interface(PeripheralIface):
     """ create an interface from a list of pinspecs.
         each pinspec is a dictionary, see Pin class arguments
@@ -159,7 +174,7 @@ class Interface(PeripheralIface):
         self.pinspecs = pinspecs  # a list of dictionary
         self.single = single
 
-        for p in pinspecs:
+        for idx, p in enumerate(pinspecs):
             _p = {}
             _p.update(p)
             if 'type' in _p:
@@ -171,6 +186,7 @@ class Interface(PeripheralIface):
                     _p['name_'] = "%s_%s" % (p['name'], psuffix)
                     _p['name'] = "%s_%s" % (self.pname(p['name']), psuffix)
                     _p['action'] = psuffix != 'in'
+                    _p['idx'] = idx
                     self.pins.append(Pin(**_p))
                     # will look like {'name': 'twi_sda_out', 'action': True}
                     # {'name': 'twi_sda_outen', 'action': True}
@@ -181,6 +197,7 @@ class Interface(PeripheralIface):
                 if name.isdigit(): # HACK!  deals with EINT case
                     name = self.pname(name)
                 _p['name_'] = name
+                _p['idx'] = idx
                 _p['name'] = self.pname(p['name'])
                 self.pins.append(Pin(**_p))
 
@@ -351,7 +368,45 @@ class IOInterface(Interface):
         return generic_io.format(*args)
 
 class InterfaceGPIO(Interface):
-    pass
+
+    def ifacedef2(self, *args):
+        res = '\n'.join(map(self.ifacedef2pin, self.pins))
+        res = res.format(*args)
+
+        tdecl = """\
+              Vector#({0},Bit#(1)) tput;
+              Vector#({0},Bit#(1)) tputen;
+              Vector#({0},Bit#(1)) tget;
+""".format(len(self.pinspecs))
+        template = """\
+              interface gpio_out = interface Put#
+                 method Action put(Vector#({0},Bit#(1)) in);
+                   tput<=in;
+                 endmethod
+               endinterface;
+               interface gpio_outen = interface Put#
+                 method Action put(Vector#({0},Bit#(1)) in);
+                   tputen<=in;
+                 endmethod
+               endinterface;
+               interface gpio_in = interface Get#
+                 method ActionValue#(Vector#({0},Bit#(1))) get;
+                   return tget;
+                 endmethod
+               endinterface;
+""".format(len(self.pinspecs))
+        return '\n' + tdecl + res + '\n' + template + '\n'
+
+    def ifacedef2pin(self, pin):
+        decfn = self.ifacefmtdecfn2
+        outfn = self.ifacefmtoutfn
+        # print pin, pin.outenmode
+        if pin.outenmode:
+            decfn = self.ifacefmtdecfn3
+            outfn = self.ifacefmtoutenfn
+        return pin.ifacedef3(outfn, self.ifacefmtinfn,
+                            decfn)
+
 
 class Interfaces(InterfacesBase, PeripheralInterfaces):
     """ contains a list of interface definitions
