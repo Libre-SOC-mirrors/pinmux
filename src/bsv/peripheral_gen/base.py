@@ -71,10 +71,10 @@ class PBase(object):
             #n = "{0}{1}".format(self.name, self.mksuffix(name, count))
             n = name  # "{0}{1}".format(self.name, self.mksuffix(name, count))
             ret.append("    //%s %s" % (n, str(p)))
-            sname = self.peripheral.pname(pname).format(count)
+            sname = self.peripheral.iname().format(count)
+            sname = "{0}.{1}".format(sname, pname)
             ps = "pinmux.peripheral_side.%s" % sname
             if typ == 'out' or typ == 'inout':
-                ret.append("    rule con_%s%d_%s_out;" % (name, count, pname))
                 fname = self.pinname_out(pname)
                 if not n.startswith('gpio'):  # XXX EURGH! horrible hack
                     n_ = "{0}{1}".format(n, count)
@@ -85,7 +85,8 @@ class PBase(object):
                         ps_ = ps + '_out'
                     else:
                         ps_ = ps
-                    ret.append("      {0}({1}.{2});".format(ps_, n_, fname))
+                    ret.append("      mkConnection({0},\n\t\t\t{1}.{2});" \
+                                .format(ps_, n_, fname))
                 fname = None
                 if p.get('outen'):
                     fname = self.pinname_outen(pname)
@@ -93,8 +94,8 @@ class PBase(object):
                     if isinstance(fname, str):
                         fname = "{0}.{1}".format(n_, fname)
                     fname = self.pinname_tweak(pname, 'outen', fname)
-                    ret.append("      {0}_outen({1});".format(ps, fname))
-                ret.append("    endrule")
+                    ret.append("      mkConnection({0}_outen,\n\t\t\t{1});"\
+                                .format(ps, fname))
             if typ == 'in' or typ == 'inout':
                 fname = self.pinname_in(pname)
                 if fname:
@@ -102,14 +103,10 @@ class PBase(object):
                         ps_ = ps + '_in'
                     else:
                         ps_ = ps
-                    ret.append(
-                        "    rule con_%s%d_%s_in;" %
-                        (name, count, pname))
                     n_ = "{0}{1}".format(n, count)
                     n_ = '{0}.{1}'.format(n_, fname)
                     n_ = self.ifname_tweak(pname, 'in', n_)
-                    ret.append("      {1}({0});".format(ps_, n_))
-                    ret.append("    endrule")
+                    ret.append("      mkConnection({1}, {0});".format(ps_, n_))
         return '\n'.join(ret)
 
     def mk_cellconn(self, *args):
