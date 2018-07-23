@@ -45,8 +45,10 @@ package pinmux_experiment;
 
       interface PeripheralSideUART;
           // interface declaration between UART and pinmux
-    (*always_ready,always_enabled*) method  Action tx (Bit#(1) in);
-    (*always_ready,always_enabled*) method  Bit#(1) rx;
+          interface Put#(Bit#(1)) tx;
+          interface Get#(Bit#(1)) rx;
+//    (*always_ready,always_enabled*) method  Action tx (Bit#(1) in);
+//    (*always_ready,always_enabled*) method  Bit#(1) rx;
       endinterface
 
       interface PeripheralSideGPIOA;
@@ -111,115 +113,113 @@ package pinmux_experiment;
    endinterface
    (*synthesize*)
 
-   module mkgpioa(PeripheralSideGPIOA);
-
-      // allotted to it
-      Wire#(Bit#(1)) wr_a0_out<-mkDWire(0);
-      Wire#(Bit#(1)) wr_a0_outen<-mkDWire(0);
-      Wire#(Bit#(1)) wr_a0_in<-mkDWire(0);
-      Wire#(Bit#(1)) wr_a1_out<-mkDWire(0);
-      Wire#(Bit#(1)) wr_a1_outen<-mkDWire(0);
-      Wire#(Bit#(1)) wr_a1_in<-mkDWire(0);
-      Wire#(Bit#(1)) wr_a2_out<-mkDWire(0);
-      Wire#(Bit#(1)) wr_a2_outen<-mkDWire(0);
-      Wire#(Bit#(1)) wr_a2_in<-mkDWire(0);
-
-    interface out = interface PeripheralSideGPIOA
-
-      method Action  a0_out(Bit#(1) in);
-         wr_a0_out<=in;
-      endmethod
-      method Action  a0_outen(Bit#(1) in);
-         wr_a0_outen<=in;
-      endmethod
-      method a0_in=wr_a0_in;
-      method Action  a1_out(Bit#(1) in);
-         wr_a1_out<=in;
-      endmethod
-      method Action  a1_outen(Bit#(1) in);
-         wr_a1_outen<=in;
-      endmethod
-      method a1_in=wr_a1_in;
-      method Action  a2_out(Bit#(1) in);
-         wr_a2_out<=in;
-      endmethod
-      method Action  a2_outen(Bit#(1) in);
-         wr_a2_outen<=in;
-      endmethod
-      method a2_in=wr_a2_in;
-    endinterface;
-
-   endmodule
-
-   module mkuart(PeripheralSideUART);
-
-      Wire#(Bit#(1)) wr_tx<-mkDWire(0);
-      Wire#(Bit#(1)) wr_rx<-mkDWire(0);
-
-    interface out = interface PeripheralSideUART
-
-      method Action  tx(Bit#(1) in);
-         wr_tx<=in;
-      endmethod
-      method rx=wr_rx;
-     endinterface;
-
-   endmodule
-
-
-   module mktwi(PeripheralSideTWI);
-
-      // following wires capture signals to IO CELL if twi-0 is
-      // allotted to it
-      Wire#(Bit#(1)) wr_sda_out<-mkDWire(0);
-      Wire#(Bit#(1)) wr_sda_outen<-mkDWire(0);
-      Wire#(Bit#(1)) wr_sda_in<-mkDWire(0);
-      Wire#(Bit#(1)) wr_scl_out<-mkDWire(0);
-      Wire#(Bit#(1)) wr_scl_outen<-mkDWire(0);
-      Wire#(Bit#(1)) wr_scl_in<-mkDWire(0);
-
-
-    interface out = interface PeripheralSideTWI
-
-      method Action  sda_out(Bit#(1) in);
-         wr_sda_out<=in;
-      endmethod
-      method Action  sda_outen(Bit#(1) in);
-         wr_sda_outen<=in;
-      endmethod
-      method sda_in=wr_sda_in;
-      method Action  scl_out(Bit#(1) in);
-         wr_scl_out<=in;
-      endmethod
-      method Action  scl_outen(Bit#(1) in);
-         wr_scl_outen<=in;
-      endmethod
-      method scl_in=wr_scl_in;
-
-     endinterface;
-
-   endmodule
-
-
-   module mkperipherals(PeripheralSide);
-
-      PeripheralSideUART uart = mkuart();
-      PeripheralSideGPIOA gpioa = mkgpioa();
-      PeripheralSideTWI twi = mktwi();
-
-    interface out = interface PeripheralSide
-
-      interface uart = uart.out;
-      interface gpioa = gpioa.out;
-      interface twi = twi.out;
-
-     endinterface;
-
-   endmodule
+//   module mkgpioa(PeripheralSideGPIOA);
+//
+//      // allotted to it
+//      Wire#(Bit#(1)) wr_a0_out<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_a0_outen<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_a0_in<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_a1_out<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_a1_outen<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_a1_in<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_a2_out<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_a2_outen<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_a2_in<-mkDWire(0);
+//
+//    interface out = interface PeripheralSideGPIOA
+//
+//      method Action  a0_out(Bit#(1) in);
+//         wr_a0_out<=in;
+//      endmethod
+//      method Action  a0_outen(Bit#(1) in);
+//         wr_a0_outen<=in;
+//      endmethod
+//      method a0_in=wr_a0_in;
+//      method Action  a1_out(Bit#(1) in);
+//         wr_a1_out<=in;
+//      endmethod
+//      method Action  a1_outen(Bit#(1) in);
+//         wr_a1_outen<=in;
+//      endmethod
+//      method a1_in=wr_a1_in;
+//      method Action  a2_out(Bit#(1) in);
+//         wr_a2_out<=in;
+//      endmethod
+//      method Action  a2_outen(Bit#(1) in);
+//         wr_a2_outen<=in;
+//      endmethod
+//      method a2_in=wr_a2_in;
+//    endinterface;
+//
+//   endmodule
+//
+//   module mkuart(PeripheralSideUART);
+//
+//      Wire#(Bit#(1)) wr_tx<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_rx<-mkDWire(0);
+//
+//    interface out = interface PeripheralSideUART
+//
+//      method Action  tx(Bit#(1) in);
+//         wr_tx<=in;
+//      endmethod
+//      method rx=wr_rx;
+//     endinterface;
+//
+//   endmodule
+//
+//
+//   module mktwi(PeripheralSideTWI);
+//
+//      // following wires capture signals to IO CELL if twi-0 is
+//      // allotted to it
+//      Wire#(Bit#(1)) wr_sda_out<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_sda_outen<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_sda_in<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_scl_out<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_scl_outen<-mkDWire(0);
+//      Wire#(Bit#(1)) wr_scl_in<-mkDWire(0);
+//
+//
+//    interface out = interface PeripheralSideTWI
+//
+//      method Action  sda_out(Bit#(1) in);
+//         wr_sda_out<=in;
+//      endmethod
+//      method Action  sda_outen(Bit#(1) in);
+//         wr_sda_outen<=in;
+//      endmethod
+//      method sda_in=wr_sda_in;
+//      method Action  scl_out(Bit#(1) in);
+//         wr_scl_out<=in;
+//      endmethod
+//      method Action  scl_outen(Bit#(1) in);
+//         wr_scl_outen<=in;
+//      endmethod
+//      method scl_in=wr_scl_in;
+//
+//     endinterface;
+//
+//   endmodule
+//
+//
+//   module mkperipherals(PeripheralSide);
+//
+//      PeripheralSideUART uart = mkuart();
+//      PeripheralSideGPIOA gpioa = mkgpioa();
+//      PeripheralSideTWI twi = mktwi();
+//
+//    interface out = interface PeripheralSide
+//
+//      interface uart = uart.out;
+//      interface gpioa = gpioa.out;
+//      interface twi = twi.out;
+//
+//     endinterface;
+//
+//   endmodule
 
    module mkpinmux(Ifc_pinmux);
-
-      PeripheralSide peripherals = mkperipherals();
 
       // the followins wires capture the pin-mux selection
       // values for each mux assigned to a CELL
@@ -245,79 +245,106 @@ package pinmux_experiment;
       Wire#(Bit#(1)) cell2_mux_outen<-mkDWire(0);
       Wire#(Bit#(1)) cell2_mux_in<-mkDWire(0);
 
+      // following wires capture signals to IO CELL if uart-0 is
+      // allotted to it
+      Wire#(Bit#(1)) wruart_tx<-mkDWire(0);
+      Wire#(Bit#(1)) wruart_rx<-mkDWire(0);
+
+      // following wires capture signals to IO CELL if gpioa-0 is
+      // allotted to it
+      Wire#(Bit#(1)) wrgpioa_a0_out<-mkDWire(0);
+      Wire#(Bit#(1)) wrgpioa_a0_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wrgpioa_a0_in<-mkDWire(0);
+      Wire#(Bit#(1)) wrgpioa_a1_out<-mkDWire(0);
+      Wire#(Bit#(1)) wrgpioa_a1_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wrgpioa_a1_in<-mkDWire(0);
+      Wire#(Bit#(1)) wrgpioa_a2_out<-mkDWire(0);
+      Wire#(Bit#(1)) wrgpioa_a2_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wrgpioa_a2_in<-mkDWire(0);
+
+      // following wires capture signals to IO CELL if twi-0 is
+      // allotted to it
+      Wire#(Bit#(1)) wrtwi_sda_out<-mkDWire(0);
+      Wire#(Bit#(1)) wrtwi_sda_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wrtwi_sda_in<-mkDWire(0);
+      Wire#(Bit#(1)) wrtwi_scl_out<-mkDWire(0);
+      Wire#(Bit#(1)) wrtwi_scl_outen<-mkDWire(0);
+      Wire#(Bit#(1)) wrtwi_scl_in<-mkDWire(0);
+
+
       /*====== This where the muxing starts for each io-cell======*/
       Wire#(Bit#(1)) val0<-mkDWire(0); // need a zero
        // output muxer for cell idx 0
       cell0_mux_out=
-			wrcell0_mux==0?peripherals.gpioa.a0_out:
-			wrcell0_mux==1?peripherals.uart.tx:
+			wrcell0_mux==0?wrgpioa_a0_out:
+			wrcell0_mux==1?wruart_tx:
 			wrcell0_mux==2?val0: // unused
-			twi.wr_sda_out;
+			wrtwi_sda_out;
 
       // outen muxer for cell idx 0
       cell0_mux_outen=
-			wrcell0_mux==0?peripherals.gpioa.a0_outen: // bi-directional
-			wrcell0_mux==1?peripherals.gpioa.a0_outen: // uart_tx is an output
+			wrcell0_mux==0?wrgpioa_a0_outen: // bi-directional
+			wrcell0_mux==1?wrgpioa_a0_outen: // uart_tx is an output
 			wrcell0_mux==2?val0: // unused
-			twi.wr_sda_outen; // bi-directional
+			wrtwi_sda_outen; // bi-directional
 
       // priority-in-muxer for cell idx 0
       rule assign_wrgpioa_a0_in_on_cell0(wrcell0_mux==0);
-        peripherals.gpioa.a0_in(cell0_mux_in);
+        wrgpioa_a0_in<=cell0_mux_in;
       endrule
 
       rule assign_wrtwi_sda_in_on_cell0(wrcell0_mux==3);
-        peripherals.twi.sda_in(cell0_mux_in);
+        wrtwi_sda_in<=cell0_mux_in;
       endrule
 
       // output muxer for cell idx 1
       cell1_mux_out=
-			wrcell1_mux==0?peripherals.gpioa.a1_out:
+			wrcell1_mux==0?wrgpioa_a1_out:
 			wrcell1_mux==1?val0: // uart_rx is an input
-			wrcell1_mux==2?peripherals.twi.sda_out:
+			wrcell1_mux==2?wrtwi_sda_out:
 			val0; // unused
 
       // outen muxer for cell idx 1
       cell1_mux_outen=
-			wrcell1_mux==0?peripherals.gpioa.a1_outen: // bi-directional
+			wrcell1_mux==0?wrgpioa_a1_outen: // bi-directional
 			wrcell1_mux==1?val0: // uart_rx is an input
-			wrcell1_mux==2?peripherals.twi.sda_outen: // bi-directional
+			wrcell1_mux==2?wrtwi_sda_outen: // bi-directional
 			val0; // unused
 
       // priority-in-muxer for cell idx 1
       rule assign_wrgpioa_a1_in_on_cell1(wrcell1_mux==0);
-        peripherals.gpioa.a1_in(cell1_mux_in);
+        wrgpioa_a1_in<=cell1_mux_in;
       endrule
 
       rule assign_wruart_rx_on_cell1(wrcell1_mux==1);
-        peripherals.uart.rx(cell1_mux_in);
+        wruart_rx<=cell1_mux_in;
       endrule
 
       rule assign_wrtwi_sda_in_on_cell1(wrcell1_mux==2);
-        peripherals.twi.sda_in(cell1_mux_in);
+        wrtwi_sda_in<=cell1_mux_in;
       endrule
 
       // output muxer for cell idx 2
       cell2_mux_out=
-			wrcell2_mux==0?peripherals.gpioa.a2_out:
+			wrcell2_mux==0?wrgpioa_a2_out:
 			wrcell2_mux==1?val0: // unused
-			wrcell2_mux==2?peripherals.twi.scl_out:
+			wrcell2_mux==2?wrtwi_scl_out:
 			val0; // unused
 
       // outen muxer for cell idx 2
       cell2_mux_outen=
-			wrcell2_mux==0?peripherals.gpioa.a2_outen: // bi-directional
+			wrcell2_mux==0?wrgpioa_a2_outen: // bi-directional
 			wrcell2_mux==1?val0: // unused
-			wrcell2_mux==2?peripherals.twi.scl_outen: // bi-directional
+			wrcell2_mux==2?wrtwi_scl_outen: // bi-directional
 			val0; // unused
 
       // priority-in-muxer for cell idx 2
       rule assign_wrgpioa_a2_in_on_cell2(wrcell2_mux==0);
-        peripherals.gpioa.a2_in(cell2_mux_in);
+        wrgpioa_a2_in<=cell2_mux_in;
       endrule
 
       rule assign_wrtwi_scl_in_on_cell2(wrcell2_mux==2);
-        peripherals.twi.scl_in(cell2_mux_in);
+        wrtwi_scl_in<=cell2_mux_in;
       endrule
 
 
@@ -364,13 +391,27 @@ package pinmux_experiment;
       endmethod
 
      endinterface;
-
-    interface peripheral_side = interface PeripheralSide
-
-      interface uart = peripherals.uart;
-      interface gpioa = peripherals.gpioa;
-      interface twi = peripherals.twi;
-
-     endinterface;
+      interface peripheral_side= interface PeripheralSide
+        interface uart = interface PeripheralSideUART
+            // interface declaration between UART and pinmux
+            interface tx = interface Put
+              method Action put(Bit#(1) in);
+                wruart_tx<=in;
+              endmethod
+            endinterface;
+            interface  rx = interface Get
+              method ActionValue#(Bit#(1)) get;
+                return wruart_rx;
+              endmethod
+            endinterface;
+        endinterface;
+      endinterface;
+//    interface peripheral_side = interface PeripheralSide
+//
+//      interface uart = peripherals.uart;
+//      interface gpioa = peripherals.gpioa;
+//      interface twi = peripherals.twi;
+//
+//     endinterface;
    endmodule
 endpackage

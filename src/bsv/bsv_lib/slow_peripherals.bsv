@@ -209,7 +209,8 @@ package slow_peripherals;
     Wire#(Bit#(32)) wr_interrupt <- mkWire();
     // NEEL EDIT OVER
 		/*=======================================================*/
-
+    mkConnection(pinmux.peripheral_side.uart.tx, uart0.io.tx);
+    mkConnection(pinmux.peripheral_side.uart.rx, uart0.io.rx);
    	AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `PADDR, `Reg_width,`USERSPACE)	slow_fabric <- 
                                                             mkAXI4_Lite_Fabric(fn_address_mapping);
 		Ifc_AXI4Lite_AXI4_Bridge bridge	<-mkAXI4Lite_AXI4_Bridge(fast_clock,fast_reset);
