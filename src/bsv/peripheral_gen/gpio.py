@@ -68,19 +68,13 @@ class gpio(PBase):
         return "func.gpio_out_en[{0}]".format(pname[1:])
 
     def mk_pincon(self, name, count):
-        ret = [PBase.mk_pincon(self, name, count)]
+        #ret = [PBase.mk_pincon(self, name, count)]
         # special-case for gpio in, store in a temporary vector
+        ret = []
         plen = len(self.peripheral.pinspecs)
-        ret.append("    rule con_%s%d_in;" % (name, count))
-        ret.append("       Vector#({0},Bit#(1)) temp;".format(plen))
-        for p in self.peripheral.pinspecs:
-            typ = p['type']
-            pname = p['name']
-            idx = pname[1:]
-            n = name
-            sname = self.peripheral.pname(pname).format(count)
-            ps = "pinmux.peripheral_side.%s_in" % sname
-            ret.append("        temp[{0}]={1};".format(idx, ps))
-        ret.append("        {0}.func.gpio_in(temp);".format(name))
-        ret.append("    endrule")
+        template = "      mkConnection({0}_{1},\n\t\t\t{2}_{1});"
+        ps = "pinmux.peripheral_side.%s" % name
+        n = "{0}.func.gpio".format(name)
+        for ptype in ['out', 'out_en', 'in']:
+            ret.append(template.format(ps, ptype, n))
         return '\n'.join(ret)

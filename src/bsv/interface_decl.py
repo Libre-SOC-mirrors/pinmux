@@ -373,7 +373,7 @@ class InterfaceGPIO(Interface):
     def ifacepfmt(self, *args):
         return """
           interface Put#(Vector#({0}, Bit#(1))) out;
-          interface Put#(Vector#({0}, Bit#(1))) outen;
+          interface Put#(Vector#({0}, Bit#(1))) out_en;
           interface Get#(Vector#({0}, Bit#(1))) in;
 """.format(len(self.pinspecs))
 
@@ -398,7 +398,7 @@ class InterfaceGPIO(Interface):
 {1}
                  endmethod
                endinterface;
-               interface outen = interface Put#({0})
+               interface out_en = interface Put#({0})
                  method Action put(Vector#({0},Bit#(1)) in);
 {2}
                  endmethod
