@@ -85,7 +85,6 @@ import GetPut::*;
       // peripheral and an output field will be an input to the peripheral.
       // Bi-directional functions also have an output-enable (which
       // again comes *in* from the peripheral)
-          // interface declaration between UART-0 and pinmux
             interface PeripheralSideUART uart;
             interface PeripheralSideGPIOA gpioa;
             interface PeripheralSideTWI twi;
@@ -115,8 +114,8 @@ import GetPut::*;
       // the I/O from the IOcell actually goes.
       interface IOCellSide iocell_side;
    endinterface
-   (*synthesize*)
 
+   (*synthesize*)
    module mkpinmux(Ifc_pinmux);
 
       // the followins wires capture the pin-mux selection
@@ -289,7 +288,8 @@ import GetPut::*;
       endmethod
 
      endinterface;
-      interface peripheral_side= interface PeripheralSide
+
+     interface peripheral_side = interface PeripheralSide
         interface uart = interface PeripheralSideUART
             // interface declaration between UART and pinmux
             interface tx = interface Put

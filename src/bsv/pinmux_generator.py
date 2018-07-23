@@ -176,7 +176,7 @@ def write_pmp(pmp, p, ifaces, iocells):
         # ==============================================================
 
         # == create method definitions for all peripheral interfaces ==#
-        ifaces.ifacefmt(bsv_file)
+        ifaces.ifacefmt2(bsv_file)
         bsv_file.write("\n      endinterface\n")
 
         # ===== finish interface definition and start module definition=======
@@ -205,6 +205,7 @@ def write_pmp(pmp, p, ifaces, iocells):
       // the I/O from the IOcell actually goes.
       interface IOCellSide iocell_side;
    endinterface
+
    (*synthesize*)
    module mkpinmux(Ifc_pinmux);
 ''')
@@ -245,16 +246,18 @@ def write_pmp(pmp, p, ifaces, iocells):
         bsv_file.write("\n    endinterface;")
 
         bsv_file.write('''
+
     interface iocell_side = interface IOCellSide
 ''')
         iocells.ifacedef(bsv_file)
         bsv_file.write("\n     endinterface;")
 
         bsv_file.write('''
-    interface peripheral_side = interface PeripheralSide
+
+     interface peripheral_side = interface PeripheralSide
 ''')
         ifaces.ifacedef(bsv_file)
-        bsv_file.write("\n     endinterface;")
+        bsv_file.write("\n      endinterface;")
 
         bsv_file.write(footer)
         print("BSV file successfully generated: bsv_src/pinmux.bsv")

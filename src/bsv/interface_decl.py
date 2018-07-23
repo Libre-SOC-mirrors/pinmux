@@ -186,7 +186,7 @@ class Interface(PeripheralIface):
                 return 'input'
         return None
 
-    def pname(self, name):
+    def iname(self):
         """ generates the interface spec e.g. flexbus_ale
             if there is only one flexbus interface, or
             sd{0}_cmd if there are several.  string format
@@ -194,8 +194,17 @@ class Interface(PeripheralIface):
             appropriate.  single mode stops the numerical extension.
         """
         if self.single:
-            return '%s_%s' % (self.ifacename, name)
-        return '%s{0}_%s' % (self.ifacename, name)
+            return self.ifacename
+        return '%s{0}' % self.ifacename
+
+    def pname(self, name):
+        """ generates the interface spec e.g. flexbus_ale
+            if there is only one flexbus interface, or
+            sd{0}_cmd if there are several.  string format
+            function turns this into sd0_cmd, sd1_cmd as
+            appropriate.  single mode stops the numerical extension.
+        """
+        return "%s_%s" % (self.iname(), name)
 
     def busfmt(self, *args):
         """ this function creates a bus "ganging" system based
@@ -342,6 +351,14 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
                 c = comment % name.upper()
                 f.write(c.format(i))
                 f.write(self.data[name].ifacefmt(i))
+
+    def ifacefmt2(self, f, *args):
+        comment = '''
+            interface PeripheralSide{0} {1};'''
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                iname = self.data[name].iname().format(i)
+                f.write(comment.format(name.upper(), iname))
 
     def wirefmt(self, f, *args):
         comment = '\n      // following wires capture signals ' \
