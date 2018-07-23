@@ -149,7 +149,7 @@ class Pin(object):
             res = "                   %s <= in[%d];" % (fmtname, self.idx)
         else:
             fmtname = fmtoutfn(self.name)
-            res = "                   tget[%d] <= %s;" % (self.idx, fmtname)
+            res = "                   tget[%d] = %s;" % (self.idx, fmtname)
             name = 'tget'
         return (name, res)
 
@@ -370,6 +370,13 @@ class IOInterface(Interface):
 
 class InterfaceGPIO(Interface):
 
+    def ifacepfmt(self, *args):
+        return """
+          interface Put#(Vector#({0}, Bit#(1))) out;
+          interface Put#(Vector#({0}, Bit#(1))) outen;
+          interface Get#(Vector#({0}, Bit#(1))) in;
+""".format(len(self.pinspecs))
+
     def ifacedef2(self, *args):
         tput = []
         tget = []
@@ -386,19 +393,19 @@ class InterfaceGPIO(Interface):
         tputen = '\n'.join(tputen).format(*args)
 
         template = """\
-              interface gpio_out = interface Put#({0})
+              interface out = interface Put#({0})
                  method Action put(Vector#({0},Bit#(1)) in);
 {1}
                  endmethod
                endinterface;
-               interface gpio_outen = interface Put#({0})
+               interface outen = interface Put#({0})
                  method Action put(Vector#({0},Bit#(1)) in);
 {2}
                  endmethod
                endinterface;
-               interface gpio_in = interface Get#({0})
+               interface in = interface Get#({0})
                  method ActionValue#(Vector#({0},Bit#(1))) get;
-                   Vector#({0},Bit#(1)) tputen;
+                   Vector#({0},Bit#(1)) tget;
 {3}
                    return tget;
                  endmethod
