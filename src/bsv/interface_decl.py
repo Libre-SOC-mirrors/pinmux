@@ -20,6 +20,7 @@ class Pin(object):
     """
 
     def __init__(self, name,
+                 name_ = None,
                  ready=True,
                  enabled=True,
                  io=False,
@@ -27,6 +28,7 @@ class Pin(object):
                  bitspec=None,
                  outenmode=False):
         self.name = name
+        self.name_ = name_
         self.ready = ready
         self.enabled = enabled
         self.io = io
@@ -40,6 +42,18 @@ class Pin(object):
     (*always_ready,always_enabled,result="io"*) method
                        Action io0_inputval (Bit#(1) in);
     """
+
+    def ifacepfmt(self, fmtfn):
+        res = '          '
+        status = []
+        res += "interface "
+        name = fmtfn(self.name_)
+        if self.action:
+            res += "Put"
+        else:
+            res += "Get"
+        res += "#(%s) %s;" % (self.bitspec, name)
+        return res
 
     def ifacefmt(self, fmtfn):
         res = '    '
@@ -134,6 +148,7 @@ class Interface(PeripheralIface):
                 del _p['outen']
                 for psuffix in ['out', 'outen', 'in']:
                     # changing the name (like sda) to (twi_sda_out)
+                    _p['name_'] = "%s_%s" % (p['name'], psuffix)
                     _p['name'] = "%s_%s" % (self.pname(p['name']), psuffix)
                     _p['action'] = psuffix != 'in'
                     self.pins.append(Pin(**_p))
@@ -142,6 +157,7 @@ class Interface(PeripheralIface):
                     #{'name': 'twi_sda_in', 'action': False}
                     # NOTice - outen key is removed
             else:
+                _p['name_'] = p['name']
                 _p['name'] = self.pname(p['name'])
                 self.pins.append(Pin(**_p))
 
@@ -213,9 +229,16 @@ class Interface(PeripheralIface):
         res += '\n'
         return '\n' + res
 
+    def ifacepfmt(self, *args):
+        res = '\n'.join(map(self.ifacepfmtdecpin, self.pins)).format(*args)
+        return '\n' + res  # pins is a list
+
     def ifacefmt(self, *args):
         res = '\n'.join(map(self.ifacefmtdecpin, self.pins)).format(*args)
         return '\n' + res  # pins is a list
+
+    def ifacepfmtdecfn(self, name):
+        return name
 
     def ifacefmtdecfn(self, name):
         return name  # like: uart
@@ -236,6 +259,9 @@ class Interface(PeripheralIface):
     def wirefmtpin(self, pin):
         return pin.wirefmt(self.ifacefmtoutfn, self.ifacefmtinfn,
                            self.ifacefmtdecfn2)
+
+    def ifacepfmtdecpin(self, pin):
+        return pin.ifacepfmt(self.ifacepfmtdecfn)
 
     def ifacefmtdecpin(self, pin):
         return pin.ifacefmt(self.ifacefmtdecfn)
@@ -297,6 +323,16 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
             for i in range(count):
                 bf = self.data[name].busfmt(i)
                 f.write(bf)
+
+    def ifacepfmt(self, f, *args):
+        comment = '''
+      // interface declaration between {0} and pinmux
+      (*always_ready,always_enabled*)
+      interface PeripheralSide{0};'''
+        for (name, count) in self.ifacecount:
+            f.write(comment.format(name.upper()))
+            f.write(self.data[name].ifacepfmt(0))
+            f.write("\n      endinterface\n")
 
     def ifacefmt(self, f, *args):
         comment = '''

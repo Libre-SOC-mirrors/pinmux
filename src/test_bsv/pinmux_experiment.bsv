@@ -12,7 +12,7 @@ package pinmux_experiment;
 import GetPut::*;
 
       (*always_ready,always_enabled*)
-   interface MuxSelectionLines;
+      interface MuxSelectionLines;
 
       // declare the method which will capture the user pin-mux
       // selection values.The width of the input is dependent on the number
@@ -45,19 +45,16 @@ import GetPut::*;
                        Action io2_cell_in (Bit#(1) in);
       endinterface
 
-
+      // interface declaration between UART and pinmux
       (*always_ready,always_enabled*)
       interface PeripheralSideUART;
-          // interface declaration between UART and pinmux
           interface Put#(Bit#(1)) tx;
           interface Get#(Bit#(1)) rx;
-//    (*always_ready,always_enabled*) method  Action tx (Bit#(1) in);
-//    (*always_ready,always_enabled*) method  Bit#(1) rx;
       endinterface
 
+      // interface declaration between GPIOA and pinmux
       (*always_ready,always_enabled*)
       interface PeripheralSideGPIOA;
-          // interface declaration between GPIOA-0 and pinmux
           interface Put#(Bit#(1)) a0_out;
           interface Put#(Bit#(1)) a0_outen;
           interface Get#(Bit#(1)) a0_in;
@@ -67,11 +64,11 @@ import GetPut::*;
           interface Put#(Bit#(1)) a2_out;
           interface Put#(Bit#(1)) a2_outen;
           interface Get#(Bit#(1)) a2_in;
-        endinterface
+      endinterface
 
+      // interface declaration between TWI and pinmux
       (*always_ready,always_enabled*)
       interface PeripheralSideTWI;
-          // interface declaration between TWI and pinmux
           interface Put#(Bit#(1)) sda_out;
           interface Put#(Bit#(1)) sda_outen;
           interface Get#(Bit#(1)) sda_in;
@@ -392,12 +389,5 @@ import GetPut::*;
 
 
       endinterface;
-//    interface peripheral_side = interface PeripheralSide
-//
-//      interface uart = peripherals.uart;
-//      interface gpioa = peripherals.gpioa;
-//      interface twi = peripherals.twi;
-//
-//     endinterface;
    endmodule
 endpackage

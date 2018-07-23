@@ -39,6 +39,8 @@ copyright = '''
 header = copyright + '''
 package pinmux;
 
+import GetPut::*;
+
 '''
 footer = '''
    endmodule
@@ -134,7 +136,8 @@ def write_pmp(pmp, p, ifaces, iocells):
 
         cell_bit_width = 'Bit#(%d)' % p.cell_bitwidth
         bsv_file.write('''\
-   interface MuxSelectionLines;
+      (*always_ready,always_enabled*)
+      interface MuxSelectionLines;
 
       // declare the method which will capture the user pin-mux
       // selection values.The width of the input is dependent on the number
@@ -159,9 +162,10 @@ def write_pmp(pmp, p, ifaces, iocells):
         # ===== finish interface definition and start module definition=======
         bsv_file.write("\n      endinterface\n")
 
+        ifaces.ifacepfmt(bsv_file)
         # ===== io cell definition =======
         bsv_file.write('''
-
+      (*always_ready,always_enabled*)
       interface PeripheralSide;
       // declare the interface to the peripherals
       // Each peripheral's function will be either an input, output
