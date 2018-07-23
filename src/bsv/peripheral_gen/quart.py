@@ -25,7 +25,7 @@ class quart(PBase):
                 'rts': 'coe_rs232.rts_out',
                }.get(pname, '')
 
-    def _pinname_in(self, pname):
+    def pinname_in(self, pname):
         return {'rx': 'coe_rs232.srx_in', 
                 'cts': 'coe_rs232.cts_in'
                }.get(pname, '')
