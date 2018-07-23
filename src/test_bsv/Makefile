@@ -1,7 +1,7 @@
 ### Makefile for the cclass project
 
 TOP_MODULE:=mkpinmux
-TOP_FILE:=pinmux.bsv
+TOP_FILE:=pinmux_experiment.bsv
 TOP_DIR:=./
 WORKING_DIR := $(shell pwd)
 
