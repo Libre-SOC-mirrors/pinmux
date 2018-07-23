@@ -30,11 +30,6 @@ class twi(PBase):
         return {'sda': 'out.sda_out_en',
                 'scl': 'out.scl_out_en'}.get(pname, '')
 
-    def pinname_tweak(self, pname, typ, txt):
-        if typ == 'outen':
-            return "pack({0})".format(txt)
-        return txt
-
     def num_irqs(self):
         return 3
 
