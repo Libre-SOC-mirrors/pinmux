@@ -379,7 +379,7 @@ class Interface(PeripheralIface):
                  endmethod
                endinterface;
                interface {7} = interface Get#({0})
-                 method ActionValue#({4})) get;
+                 method ActionValue#({4}) get;
                    {4} tget;
 {3}
                    return tget;
