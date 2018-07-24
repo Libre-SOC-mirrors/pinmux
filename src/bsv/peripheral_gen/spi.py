@@ -1,5 +1,6 @@
 from bsv.peripheral_gen.base import PBase
 
+
 class spi(PBase):
 
     def slowimport(self):
@@ -56,5 +57,3 @@ class spi(PBase):
 
     def slowifdeclmux(self):
         return "        method Bit#(1) {1}{0}_isint;"
-
-

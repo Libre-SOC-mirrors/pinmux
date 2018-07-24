@@ -1,5 +1,6 @@
 from bsv.peripheral_gen.base import PBase
 
+
 class qspi(PBase):
 
     def slowimport(self):

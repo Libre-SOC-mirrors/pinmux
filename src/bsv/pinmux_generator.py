@@ -75,7 +75,7 @@ def pinmuxgen(pth=None, verify=True):
     shutil.copyfile(os.path.join(cwd, 'Makefile.template'),
                     os.path.join(bp, 'Makefile'))
     cwd = os.path.join(cwd, 'bsv_lib')
-    for fname in [ ]:
+    for fname in []:
         shutil.copyfile(os.path.join(cwd, fname),
                         os.path.join(bl, fname))
 
@@ -117,9 +117,9 @@ def write_slow(slow, slowt, p, ifaces, iocells):
     ifacedef = ifaces.mk_ext_ifacedef()
     with open(slow, "w") as bsv_file:
         bsv_file.write(slowt.format(imports, ifdecl, regdef, slavedecl,
-                                       fnaddrmap, mkslow, mkcon, mkcellcon,
-                                       pincon, inst, mkplic,
-                                       numsloirqs, ifacedef))
+                                    fnaddrmap, mkslow, mkcon, mkcellcon,
+                                    pincon, inst, mkplic,
+                                    numsloirqs, ifacedef))
 
 
 def write_bus(bus, p, ifaces):

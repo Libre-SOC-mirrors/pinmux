@@ -1,5 +1,6 @@
 from bsv.peripheral_gen.base import PBase
 
+
 class twi(PBase):
 
     def slowimport(self):
@@ -37,7 +38,7 @@ class twi(PBase):
         return ["{0}.isint()",
                 "{0}.timerint()",
                 "{0}.isber()"
-               ][idx].format(pname)
+                ][idx].format(pname)
 
     def mk_ext_ifacedef(self, iname, inum):
         name = self.get_iname(inum)
@@ -45,5 +46,3 @@ class twi(PBase):
 
     def slowifdeclmux(self):
         return "        method Bit#(1) {1}{0}_isint;"
-
-

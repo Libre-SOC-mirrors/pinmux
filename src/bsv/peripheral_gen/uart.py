@@ -1,5 +1,6 @@
 from bsv.peripheral_gen.base import PBase
 
+
 class uart(PBase):
 
     def slowimport(self):

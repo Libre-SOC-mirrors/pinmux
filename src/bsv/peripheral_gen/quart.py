@@ -1,5 +1,6 @@
 from bsv.peripheral_gen.base import PBase
 
+
 class quart(PBase):
 
     def slowimport(self):
@@ -21,14 +22,14 @@ class quart(PBase):
         return "quart{0}.slave_axi_uart"
 
     def pinname_out(self, pname):
-        return {'tx' : 'coe_rs232.stx_out',
+        return {'tx': 'coe_rs232.stx_out',
                 'rts': 'coe_rs232.rts_out',
-               }.get(pname, '')
+                }.get(pname, '')
 
     def pinname_in(self, pname):
-        return {'rx': 'coe_rs232.srx_in', 
+        return {'rx': 'coe_rs232.srx_in',
                 'cts': 'coe_rs232.cts_in'
-               }.get(pname, '')
+                }.get(pname, '')
 
     def __disabled_mk_pincon(self, name, count):
         ret = [PBase.mk_pincon(self, name, count)]
@@ -64,6 +65,7 @@ class quart(PBase):
     def slowifdeclmux(self):
         return "        method Bit#(1) {1}{0}_intr;"
 
+
 uart_plic_template = """\
      // PLIC {0} synchronisation with irq {1}
      SyncBitIfc#(Bit#(1)) {0}_interrupt <-
@@ -72,4 +74,3 @@ uart_plic_template = """\
          {0}_interrupt.send({0}.irq);
      endrule
 """
-

@@ -1,5 +1,6 @@
 from bsv.peripheral_gen.base import PBase
 
+
 class pwm(PBase):
 
     def slowimport(self):

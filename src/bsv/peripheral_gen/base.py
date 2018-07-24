@@ -1,5 +1,6 @@
 import types
 
+
 class PBase(object):
     def __init__(self, name):
         self.name = name
@@ -85,8 +86,8 @@ class PBase(object):
                         ps_ = ps + '_out'
                     else:
                         ps_ = ps
-                    ret.append("      mkConnection({0},\n\t\t\t{1}.{2});" \
-                                .format(ps_, n_, fname))
+                    ret.append("      mkConnection({0},\n\t\t\t{1}.{2});"
+                               .format(ps_, n_, fname))
                 fname = None
                 if p.get('outen'):
                     fname = self.pinname_outen(pname)
@@ -94,8 +95,8 @@ class PBase(object):
                     if isinstance(fname, str):
                         fname = "{0}.{1}".format(n_, fname)
                     fname = self.pinname_tweak(pname, 'outen', fname)
-                    ret.append("      mkConnection({0}_outen,\n\t\t\t{1});"\
-                                .format(ps, fname))
+                    ret.append("      mkConnection({0}_outen,\n\t\t\t{1});"
+                               .format(ps, fname))
             if typ == 'in' or typ == 'inout':
                 fname = self.pinname_in(pname)
                 if fname:
@@ -172,7 +173,7 @@ class PBase(object):
             print "plic_obj", name, idx, plic_obj
             plic = mkplic_rule.format(name, plic_obj, irq_offs)
             res.append(plic)
-            irq_offs += 1 # increment to next irq
+            irq_offs += 1  # increment to next irq
         return ('\n'.join(res), irq_offs)
 
     def mk_ext_ifacedef(self, iname, inum):
@@ -228,7 +229,7 @@ class PeripheralIface(object):
         if slow:
             self.slow = slow(ifacename)
             self.slow.peripheral = self
-        for fname in ['slowimport', 
+        for fname in ['slowimport',
                       'slowifinstance', 'slowifdecl', 'slowifdeclmux',
                       'mkslow_peripheral', 'mk_plic', 'mk_ext_ifacedef',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
@@ -375,10 +376,9 @@ class PeripheralInterfaces(object):
                 ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
 
-
     def mk_plic(self):
         ret = []
-        irq_offs = 8 # XXX: DMA scovers 0-7?
+        irq_offs = 8  # XXX: DMA scovers 0-7?
         for (name, count) in self.ifacecount:
             for i in range(count):
                 res = self.data[name].mk_plic(i, irq_offs)
@@ -425,6 +425,7 @@ class PFactory(object):
             if name.startswith(k):
                 return v
         return None
+
 
 slowfactory = PFactory()
 

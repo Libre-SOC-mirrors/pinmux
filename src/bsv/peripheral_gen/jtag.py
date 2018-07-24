@@ -1,5 +1,6 @@
 from bsv.peripheral_gen.base import PBase
 
+
 class jtag(PBase):
 
     def axi_slave_name(self, name, ifacenum):
@@ -18,7 +19,8 @@ class jtag(PBase):
                "        method  Action jtag_ck (Bit#(1) in);"
 
     def slowifinstance(self):
-        return jtag_method_template # bit of a lazy hack this...
+        return jtag_method_template  # bit of a lazy hack this...
+
 
 jtag_method_template = """\
         method  Action jtag_ms (Bit#(1) in);

@@ -1,5 +1,6 @@
 from bsv.peripheral_gen.base import PBase
 
+
 class rs232(PBase):
 
     def slowimport(self):

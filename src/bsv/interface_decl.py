@@ -20,7 +20,7 @@ class Pin(object):
     """
 
     def __init__(self, name,
-                 name_ = None,
+                 name_=None,
                  idx=None,
                  ready=True,
                  enabled=True,
@@ -121,7 +121,7 @@ class Pin(object):
     def ifacedef2(self, fmtoutfn, fmtinfn, fmtdecfn):
         if self.action:
             fmtname = fmtinfn(self.name)
-            res =  "            interface %s = interface Put\n" % self.name_
+            res = "            interface %s = interface Put\n" % self.name_
             res += '              method '
             res += "Action put"
             #res += fmtdecfn(self.name)
@@ -131,7 +131,7 @@ class Pin(object):
             res += '            endinterface;'
         else:
             fmtname = fmtoutfn(self.name)
-            res =  "            interface %s = interface Get\n" % self.name_
+            res = "            interface %s = interface Get\n" % self.name_
             res += '              method ActionValue#'
             res += '(%s) get;\n' % self.bitspec
             res += "                return %s;\n" % (fmtname)
@@ -152,6 +152,7 @@ class Pin(object):
             res = "                   tget[%d] = %s;" % (self.idx, fmtname)
             name = 'tget'
         return (name, res)
+
 
 class Interface(PeripheralIface):
     """ create an interface from a list of pinspecs.
@@ -195,7 +196,7 @@ class Interface(PeripheralIface):
                     # NOTice - outen key is removed
             else:
                 name = p['name']
-                if name.isdigit(): # HACK!  deals with EINT case
+                if name.isdigit():  # HACK!  deals with EINT case
                     name = self.pname(name)
                 _p['name_'] = name
                 _p['idx'] = idx
@@ -334,7 +335,7 @@ class Interface(PeripheralIface):
             decfn = self.ifacefmtdecfn3
             outfn = self.ifacefmtoutenfn
         return pin.ifacedef2(outfn, self.ifacefmtinfn,
-                            decfn)
+                             decfn)
 
     def ifacedef(self, *args):
         res = '\n'.join(map(self.ifacefmtpin, self.pins))
@@ -367,6 +368,7 @@ class IOInterface(Interface):
 
     def wirefmt(self, *args):
         return generic_io.format(*args)
+
 
 class InterfaceGPIO(Interface):
 
@@ -421,7 +423,7 @@ class InterfaceGPIO(Interface):
             decfn = self.ifacefmtdecfn3
             outfn = self.ifacefmtoutenfn
         return pin.ifacedef3(outfn, self.ifacefmtinfn,
-                            decfn)
+                             decfn)
 
 
 class Interfaces(InterfacesBase, PeripheralInterfaces):
@@ -430,7 +432,7 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
 
     def __init__(self, pth=None):
         InterfacesBase.__init__(self, Interface, pth,
-                                            {'gpio': InterfaceGPIO })
+                                {'gpio': InterfaceGPIO})
         PeripheralInterfaces.__init__(self)
 
     def ifacedef(self, f, *args):
