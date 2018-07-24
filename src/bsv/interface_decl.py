@@ -139,17 +139,17 @@ class Pin(object):
             res += '            endinterface;'
         return res
 
-    def ifacedef3(self, fmtoutfn, fmtinfn, fmtdecfn):
+    def ifacedef3(self, idx, fmtoutfn, fmtinfn, fmtdecfn):
         if self.action:
             fmtname = fmtinfn(self.name)
             if self.name.endswith('outen'):
                 name = "tputen"
             else:
                 name = "tput"
-            res = "                   %s <= in[%d];" % (fmtname, self.idx)
+            res = "                   %s <= in[%d];" % (fmtname, idx)
         else:
             fmtname = fmtoutfn(self.name)
-            res = "                   tget[%d] = %s;" % (self.idx, fmtname)
+            res = "                   tget[%d] = %s;" % (idx, fmtname)
             name = 'tget'
         return (name, res)
 
@@ -347,6 +347,48 @@ class Interface(PeripheralIface):
         res = res.format(*args)
         return '\n' + res + '\n'
 
+    def vectorifacedef2(self, pins, count, names, bitfmt, *args):
+        tput = []
+        tget = []
+        tputen = []
+        # XXX HACK! assume in, out and inout, create set of indices
+        # that are repeated three times.
+        plens = []
+        for i in range(0, len(pins), 3):
+            plens += [i/3, i/3, i/3]
+        for (typ, txt) in map(self.ifacedef3pin, plens, pins):
+            if typ == 'tput':
+                tput.append(txt)
+            elif typ == 'tget':
+                tget.append(txt)
+            elif typ == 'tputen':
+                tputen.append(txt)
+        tput = '\n'.join(tput).format(*args)
+        tget = '\n'.join(tget).format(*args)
+        tputen = '\n'.join(tputen).format(*args)
+        bitfmt = bitfmt.format(count)
+        template = """\
+              interface {5} = interface Put#({0})
+                 method Action put({4}) in);
+{1}
+                 endmethod
+               endinterface;
+               interface {6} = interface Put#({0})
+                 method Action put({4}) in);
+{2}
+                 endmethod
+               endinterface;
+               interface {7} = interface Get#({0})
+                 method ActionValue#({4})) get;
+                   Vector#({0},Bit#(1)) tget;
+{3}
+                   return tget;
+                 endmethod
+               endinterface;
+""".format(count, tput, tputen, tget, 
+           bitfmt, names[0], names[1], names[2])
+        return '\n' + template + '\n'
+
 
 class MuxInterface(Interface):
 
@@ -370,6 +412,40 @@ class IOInterface(Interface):
         return generic_io.format(*args)
 
 
+class InterfaceQSPI(Interface):
+
+    def ifacepfmt(self, *args):
+        pins = filter(lambda x: not x.name_.startswith('io'), self.pins)
+        res = '\n'.join(map(self.ifacepfmtdecpin, pins)).format(*args)
+        res = res.format(*args)
+
+        return "\n" + res + """
+          interface Put#(Bit#(4)) io_out;
+          interface Put#(Bit#(4)) io_out_en;
+          interface Get#(Bit#(4)) io_in;
+""".format(len(self.pinspecs))
+
+    def ifacedef2(self, *args):
+        pins = filter(lambda x: not x.name_.startswith('io'), self.pins)
+        res = '\n'.join(map(self.ifacedef2pin, pins))
+        res = res.format(*args)
+
+        pins = filter(lambda x: x.name_.startswith('io'), self.pins)
+        return '\n' + res + self.vectorifacedef2(pins, 4,
+                        ['io_out', 'io_out_en', 'io_in'],
+                                    "Bit#(4)", *args) + '\n'
+
+    def ifacedef3pin(self, idx, pin):
+        decfn = self.ifacefmtdecfn2
+        outfn = self.ifacefmtoutfn
+        # print pin, pin.outenmode
+        if pin.outenmode:
+            decfn = self.ifacefmtdecfn3
+            outfn = self.ifacefmtoutenfn
+        return pin.ifacedef3(idx, outfn, self.ifacefmtinfn,
+                             decfn)
+
+
 class InterfaceGPIO(Interface):
 
     def ifacepfmt(self, *args):
@@ -380,49 +456,18 @@ class InterfaceGPIO(Interface):
 """.format(len(self.pinspecs))
 
     def ifacedef2(self, *args):
-        tput = []
-        tget = []
-        tputen = []
-        for (typ, txt) in map(self.ifacedef2pin, self.pins):
-            if typ == 'tput':
-                tput.append(txt)
-            elif typ == 'tget':
-                tget.append(txt)
-            elif typ == 'tputen':
-                tputen.append(txt)
-        tput = '\n'.join(tput).format(*args)
-        tget = '\n'.join(tget).format(*args)
-        tputen = '\n'.join(tputen).format(*args)
+        return self.vectorifacedef2(self.pins, len(self.pinspecs),
+                        ['out', 'out_en', 'in'],
+                                    "Vector#({0},Bit#(1)", *args)
 
-        template = """\
-              interface out = interface Put#({0})
-                 method Action put(Vector#({0},Bit#(1)) in);
-{1}
-                 endmethod
-               endinterface;
-               interface out_en = interface Put#({0})
-                 method Action put(Vector#({0},Bit#(1)) in);
-{2}
-                 endmethod
-               endinterface;
-               interface in = interface Get#({0})
-                 method ActionValue#(Vector#({0},Bit#(1))) get;
-                   Vector#({0},Bit#(1)) tget;
-{3}
-                   return tget;
-                 endmethod
-               endinterface;
-""".format(len(self.pinspecs), tput, tputen, tget)
-        return '\n' + template + '\n'
-
-    def ifacedef2pin(self, pin):
+    def ifacedef3pin(self, idx, pin):
         decfn = self.ifacefmtdecfn2
         outfn = self.ifacefmtoutfn
         # print pin, pin.outenmode
         if pin.outenmode:
             decfn = self.ifacefmtdecfn3
             outfn = self.ifacefmtoutenfn
-        return pin.ifacedef3(outfn, self.ifacefmtinfn,
+        return pin.ifacedef3(idx, outfn, self.ifacefmtinfn,
                              decfn)
 
 
@@ -432,7 +477,8 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
 
     def __init__(self, pth=None):
         InterfacesBase.__init__(self, Interface, pth,
-                                {'gpio': InterfaceGPIO})
+                                {'gpio': InterfaceGPIO,
+                                 'qspi': InterfaceQSPI})
         PeripheralInterfaces.__init__(self)
 
     def ifacedef(self, f, *args):
