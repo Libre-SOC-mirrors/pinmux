@@ -404,8 +404,8 @@ class PFactory(object):
         from twi import twi
         from eint import eint
         from jtag import jtag
-        from spi import spi
-        from qspi import qspi
+        from spi import spi, mspi
+        from qspi import qspi, mqspi
         from gpio import gpio
         from rgbttl import rgbttl
 
@@ -413,6 +413,8 @@ class PFactory(object):
                      'rs232': rs232,
                      'twi': twi,
                      'quart': quart,
+                     'mqspi': mqspi,
+                     'mspi': mspi,
                      'qspi': qspi,
                      'spi': spi,
                      'pwm': pwm,

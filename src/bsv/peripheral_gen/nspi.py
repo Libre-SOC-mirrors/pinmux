@@ -3,9 +3,13 @@ from bsv.peripheral_gen.base import PBase
 
 class nspi(PBase):
 
-    def __init__(self, name):
+    def __init__(self, name, masteronly):
         PBase.__init__(self, name)
+        if masteronly:
+            name = "m" + name
         self.ifndict = {'N': name.upper(), 'n': name}
+        self.masteronly = masteronly
+        assert masteronly, "Only master only %s supported for now" % name
 
     def slowimport(self):
         return "    import %(n)s              :: *;" % self.ifndict
