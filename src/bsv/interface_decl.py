@@ -488,6 +488,17 @@ class InterfaceLCD(InterfaceBus, Interface):
         return len(pins) 
 
 
+class InterfaceSD(InterfaceBus, Interface):
+
+    def __init__(self, *args):
+        InterfaceBus.__init__(self, ['io_out', 'io_out_en', 'io_in'],
+                              "Bit#({0})", "d")
+        Interface.__init__(self, *args)
+
+    def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
+        return len(pins) / 3
+
+
 class InterfaceNSPI(InterfaceBus, Interface):
 
     def __init__(self, *args):
@@ -512,6 +523,9 @@ class InterfaceEINT(Interface):
 
 
 class InterfaceGPIO(InterfaceBus, Interface):
+    """ note: the busfilter cuts out everything as the entire set of pins
+        is a bus, but it's less code.  get_nonbuspins returns empty list.
+    """
 
     def __init__(self, ifacename, pinspecs, ganged=None, single=False):
         InterfaceBus.__init__(self, ['out', 'out_en', 'in'],
@@ -531,6 +545,7 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
                                 {'gpio': InterfaceGPIO,
                                  'spi': InterfaceNSPI,
                                  'lcd': InterfaceLCD,
+                                 'sd': InterfaceSD,
                                  'qspi': InterfaceNSPI,
                                  'eint': InterfaceEINT})
         PeripheralInterfaces.__init__(self)
