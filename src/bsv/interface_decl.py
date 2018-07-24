@@ -446,6 +446,19 @@ class InterfaceQSPI(Interface):
                              decfn)
 
 
+class InterfaceEINT(Interface):
+    """ uses old-style (non-get/put) for now
+    """
+
+    def ifacepfmt(self, *args):
+        res = '\n'.join(map(self.ifacefmtdecpin, self.pins)).format(*args)
+        return '\n' + res  # pins is a list
+
+    def ifacedef2(self, *args):
+        return self.ifacedef(*args)
+
+
+
 class InterfaceGPIO(Interface):
 
     def ifacepfmt(self, *args):
@@ -478,7 +491,8 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
     def __init__(self, pth=None):
         InterfacesBase.__init__(self, Interface, pth,
                                 {'gpio': InterfaceGPIO,
-                                 'qspi': InterfaceQSPI})
+                                 'qspi': InterfaceQSPI,
+                                 'eint': InterfaceEINT})
         PeripheralInterfaces.__init__(self)
 
     def ifacedef(self, f, *args):
