@@ -57,5 +57,5 @@ class nspi(PBase):
         return "        method {0}_isint = {0}.interrupts[5];".format(name)
 
     def slowifdeclmux(self, name, count):
-        sname = self.peripheral.iname().format(count)
+        sname = self.get_iname(count)
         return "        method Bit#(1) %s_isint;" % sname
