@@ -354,8 +354,12 @@ class Interface(PeripheralIface):
         # XXX HACK! assume in, out and inout, create set of indices
         # that are repeated three times.
         plens = []
-        for i in range(0, len(pins), 3):
-            plens += [i/3, i/3, i/3]
+        # ARG even worse hack for LCD *sigh*...
+        if names[1] is None and names[2] is None:
+            plens = range(len(pins))
+        else:
+            for i in range(0, len(pins), 3):
+                plens += [i/3, i/3, i/3]
         for (typ, txt) in map(self.ifacedef3pin, plens, pins):
             if typ == 'tput':
                 tput.append(txt)
@@ -367,27 +371,35 @@ class Interface(PeripheralIface):
         tget = '\n'.join(tget).format(*args)
         tputen = '\n'.join(tputen).format(*args)
         bitfmt = bitfmt.format(count)
-        template = """\
-              interface {5} = interface Put#({0})
-                 method Action put({4} in);
+        template = ["""\
+              interface {3} = interface Put#({0})
+                 method Action put({2} in);
 {1}
                  endmethod
                endinterface;
-               interface {6} = interface Put#({0})
-                 method Action put({4} in);
-{2}
+""",
+"""\
+               interface {3} = interface Put#({0})
+                 method Action put({2} in);
+{1}
                  endmethod
                endinterface;
-               interface {7} = interface Get#({0})
-                 method ActionValue#({4}) get;
-                   {4} tget;
-{3}
+""",
+"""\
+               interface {3} = interface Get#({0})
+                 method ActionValue#({2}) get;
+                   {2} tget;
+{1}
                    return tget;
                  endmethod
                endinterface;
-""".format(count, tput, tputen, tget, 
-           bitfmt, names[0], names[1], names[2])
-        return '\n' + template + '\n'
+"""]
+        res = ''
+        tlist = [tput, tputen, tget]
+        for i, n in enumerate(names):
+            if n:
+                res += template[i].format(count, tlist[i], bitfmt, n)
+        return '\n' + res + '\n'
 
 
 class MuxInterface(Interface):
@@ -411,6 +423,45 @@ class IOInterface(Interface):
     def wirefmt(self, *args):
         return generic_io.format(*args)
 
+
+class InterfaceLCD(Interface):
+
+    def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
+        return len(pins) 
+
+    def ifacepfmt(self, *args):
+        pins = filter(lambda x: not x.name_.startswith('out'), self.pins)
+        res = '\n'.join(map(self.ifacepfmtdecpin, pins)).format(*args)
+        res = res.format(*args)
+
+        pins = filter(lambda x: x.name_.startswith('out'), self.pins)
+        plen = self.get_n_iopins(pins)
+
+        return "\n" + res + """
+          interface Put#(Bit#({0})) data_out;
+""".format(plen)
+
+    def ifacedef2(self, *args):
+        pins = filter(lambda x: not x.name_.startswith('out'), self.pins)
+        res = '\n'.join(map(self.ifacedef2pin, pins))
+        res = res.format(*args)
+
+        pins = filter(lambda x: x.name_.startswith('out'), self.pins)
+        plen = self.get_n_iopins(pins)
+        bitspec = "Bit#({0})".format(plen)
+        return '\n' + res + self.vectorifacedef2(pins, plen,
+                        ['data', None, None],
+                                    bitspec, *args) + '\n'
+
+    def ifacedef3pin(self, idx, pin):
+        decfn = self.ifacefmtdecfn2
+        outfn = self.ifacefmtoutfn
+        # print pin, pin.outenmode
+        if pin.outenmode:
+            decfn = self.ifacefmtdecfn3
+            outfn = self.ifacefmtoutenfn
+        return pin.ifacedef3(idx, outfn, self.ifacefmtinfn,
+                             decfn)
 
 class InterfaceNSPI(Interface):
 
@@ -500,6 +551,7 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
         InterfacesBase.__init__(self, Interface, pth,
                                 {'gpio': InterfaceGPIO,
                                  'spi': InterfaceNSPI,
+                                 'lcd': InterfaceLCD,
                                  'qspi': InterfaceNSPI,
                                  'eint': InterfaceEINT})
         PeripheralInterfaces.__init__(self)

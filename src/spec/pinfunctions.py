@@ -105,7 +105,7 @@ def uartfull(suffix, bank):
 def rgbttl(suffix, bank):
     ttlpins = ['CK+', 'DE+', 'HS+', 'VS+']
     for i in range(24):
-        ttlpins.append("D%d+" % i)
+        ttlpins.append("OUT%d+" % i)
     return (ttlpins, [])
 
 
