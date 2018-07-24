@@ -369,18 +369,18 @@ class Interface(PeripheralIface):
         bitfmt = bitfmt.format(count)
         template = """\
               interface {5} = interface Put#({0})
-                 method Action put({4}) in);
+                 method Action put({4} in);
 {1}
                  endmethod
                endinterface;
                interface {6} = interface Put#({0})
-                 method Action put({4}) in);
+                 method Action put({4} in);
 {2}
                  endmethod
                endinterface;
                interface {7} = interface Get#({0})
                  method ActionValue#({4})) get;
-                   Vector#({0},Bit#(1)) tget;
+                   {4} tget;
 {3}
                    return tget;
                  endmethod
@@ -458,7 +458,7 @@ class InterfaceGPIO(Interface):
     def ifacedef2(self, *args):
         return self.vectorifacedef2(self.pins, len(self.pinspecs),
                         ['out', 'out_en', 'in'],
-                                    "Vector#({0},Bit#(1)", *args)
+                                    "Vector#({0},Bit#(1))", *args)
 
     def ifacedef3pin(self, idx, pin):
         decfn = self.ifacefmtdecfn2
