@@ -424,91 +424,84 @@ class IOInterface(Interface):
         return generic_io.format(*args)
 
 
-class InterfaceLCD(Interface):
+class InterfaceBus(object):
+
+    def __init__(self, namelist, bitspec, filterbus):
+        self.namelist = namelist
+        self.bitspec = bitspec
+        self.fbus = filterbus # filter identifying which are bus pins
+
+    def get_nonbuspins(self):
+        return filter(lambda x: not x.name_.startswith(self.fbus), self.pins)
+
+    def get_buspins(self):
+        return filter(lambda x: x.name_.startswith(self.fbus), self.pins)
+
+    def ifacepfmt(self, *args):
+        pins = self.get_nonbuspins()
+        res = '\n'.join(map(self.ifacepfmtdecpin, pins)).format(*args)
+        res = res.format(*args)
+
+        pins = self.get_buspins()
+        plen = self.get_n_iopins(pins)
+
+        res += '\n'
+        template = "          interface {1}#(Bit#({0})) {2};\n"
+        for i, n in enumerate(self.namelist):
+            if not n:
+                continue
+            ftype = 'Get' if i == 2 else "Put"
+            res += template.format(plen, ftype, n)
+
+        return "\n" + res
+
+    def ifacedef2(self, *args):
+        pins = self.get_nonbuspins()
+        res = '\n'.join(map(self.ifacedef2pin, pins))
+        res = res.format(*args)
+
+        pins = self.get_buspins()
+        plen = self.get_n_iopins(pins)
+        bitspec = "Bit#({0})".format(plen)
+        return '\n' + res + self.vectorifacedef2(pins, plen,
+                                    self.namelist, bitspec, *args) + '\n'
+
+    def ifacedef3pin(self, idx, pin):
+        decfn = self.ifacefmtdecfn2
+        outfn = self.ifacefmtoutfn
+        # print pin, pin.outenmode
+        if pin.outenmode:
+            decfn = self.ifacefmtdecfn3
+            outfn = self.ifacefmtoutenfn
+        return pin.ifacedef3(idx, outfn, self.ifacefmtinfn,
+                             decfn)
+
+
+class InterfaceLCD(InterfaceBus, Interface):
+
+    def __init__(self, *args):
+        InterfaceBus.__init__(self, ['data_out', None, None],
+                              "Bit#({0})", "out")
+        Interface.__init__(self, *args)
 
     def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
         return len(pins) 
 
-    def ifacepfmt(self, *args):
-        pins = filter(lambda x: not x.name_.startswith('out'), self.pins)
-        res = '\n'.join(map(self.ifacepfmtdecpin, pins)).format(*args)
-        res = res.format(*args)
 
-        pins = filter(lambda x: x.name_.startswith('out'), self.pins)
-        plen = self.get_n_iopins(pins)
+class InterfaceNSPI(InterfaceBus, Interface):
 
-        return "\n" + res + """
-          interface Put#(Bit#({0})) data_out;
-""".format(plen)
-
-    def ifacedef2(self, *args):
-        pins = filter(lambda x: not x.name_.startswith('out'), self.pins)
-        res = '\n'.join(map(self.ifacedef2pin, pins))
-        res = res.format(*args)
-
-        pins = filter(lambda x: x.name_.startswith('out'), self.pins)
-        plen = self.get_n_iopins(pins)
-        bitspec = "Bit#({0})".format(plen)
-        return '\n' + res + self.vectorifacedef2(pins, plen,
-                        ['data_out', None, None],
-                                    bitspec, *args) + '\n'
-
-    def ifacedef3pin(self, idx, pin):
-        decfn = self.ifacefmtdecfn2
-        outfn = self.ifacefmtoutfn
-        # print pin, pin.outenmode
-        if pin.outenmode:
-            decfn = self.ifacefmtdecfn3
-            outfn = self.ifacefmtoutenfn
-        return pin.ifacedef3(idx, outfn, self.ifacefmtinfn,
-                             decfn)
-
-class InterfaceNSPI(Interface):
+    def __init__(self, *args):
+        InterfaceBus.__init__(self, ['io_out', 'io_out_en', 'io_in'],
+                              "Bit#({0})", "io")
+        Interface.__init__(self, *args)
 
     def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
         return len(pins) / 3
-
-    def ifacepfmt(self, *args):
-        pins = filter(lambda x: not x.name_.startswith('io'), self.pins)
-        res = '\n'.join(map(self.ifacepfmtdecpin, pins)).format(*args)
-        res = res.format(*args)
-
-        pins = filter(lambda x: x.name_.startswith('io'), self.pins)
-        plen = self.get_n_iopins(pins)
-
-        return "\n" + res + """
-          interface Put#(Bit#({0})) io_out;
-          interface Put#(Bit#({0})) io_out_en;
-          interface Get#(Bit#({0})) io_in;
-""".format(plen)
-
-    def ifacedef2(self, *args):
-        pins = filter(lambda x: not x.name_.startswith('io'), self.pins)
-        res = '\n'.join(map(self.ifacedef2pin, pins))
-        res = res.format(*args)
-
-        pins = filter(lambda x: x.name_.startswith('io'), self.pins)
-        plen = self.get_n_iopins(pins)
-        bitspec = "Bit#({0})".format(plen)
-        return '\n' + res + self.vectorifacedef2(pins, plen,
-                        ['io_out', 'io_out_en', 'io_in'],
-                                    bitspec, *args) + '\n'
-
-    def ifacedef3pin(self, idx, pin):
-        decfn = self.ifacefmtdecfn2
-        outfn = self.ifacefmtoutfn
-        # print pin, pin.outenmode
-        if pin.outenmode:
-            decfn = self.ifacefmtdecfn3
-            outfn = self.ifacefmtoutenfn
-        return pin.ifacedef3(idx, outfn, self.ifacefmtinfn,
-                             decfn)
 
 
 class InterfaceEINT(Interface):
     """ uses old-style (non-get/put) for now
     """
-
     def ifacepfmt(self, *args):
         res = '\n'.join(map(self.ifacefmtdecpin, self.pins)).format(*args)
         return '\n' + res  # pins is a list
