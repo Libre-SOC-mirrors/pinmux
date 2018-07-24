@@ -450,7 +450,7 @@ class InterfaceLCD(Interface):
         plen = self.get_n_iopins(pins)
         bitspec = "Bit#({0})".format(plen)
         return '\n' + res + self.vectorifacedef2(pins, plen,
-                        ['data', None, None],
+                        ['data_out', None, None],
                                     bitspec, *args) + '\n'
 
     def ifacedef3pin(self, idx, pin):
