@@ -15,14 +15,21 @@ class sdmmc(PBase):
     def _mk_connection(self, name=None, count=0):
         return "sd{0}.slave"
 
-    def pinname_in(self, pname):
-        return "%s_in" % pname
-
     def pinname_out(self, pname):
-        if pname.startswith('d'):
-            return "%s_out" % pname
-        return pname
+        if pname in ['cmd', 'clk']:
+            return pname
+        return ''
 
-    def pinname_outen(self, pname):
-        if pname.startswith('d'):
-            return "%s_outen" % pname
+    def mk_pincon(self, name, count):
+        ret = [PBase.mk_pincon(self, name, count)]
+        # special-case for gpio in, store in a temporary vector
+        plen = len(self.peripheral.pinspecs)
+        template = "      mkConnection({0}.{1},\n\t\t\t{2}.{1});"
+        sname = self.peripheral.iname().format(count)
+        name = self.get_iname(count)
+        ps = "pinmux.peripheral_side.%s" % sname
+        n = "{0}".format(name)
+        for ptype in ['out', 'out_en', 'in']:
+            ret.append(template.format(ps, ptype, n))
+        return '\n'.join(ret)
+
