@@ -24,10 +24,11 @@ class rgbttl(PBase):
     def mk_pincon(self, name, count):
         ret = [PBase.mk_pincon(self, name, count)]
         # special-case for gpio in, store in a temporary vector
+        sname = self.peripheral.iname().format(count)
         plen = len(self.peripheral.pinspecs)
         template = "      mkConnection({0}.{1},\n\t\t\t{2}.{1});"
         name = self.get_iname(count)
-        ps = "pinmux.peripheral_side.%s" % name
+        ps = "pinmux.peripheral_side.%s" % sname
         n = "{0}".format(name)
         for ptype in ['data_out']:
             ret.append(template.format(ps, ptype, n))
