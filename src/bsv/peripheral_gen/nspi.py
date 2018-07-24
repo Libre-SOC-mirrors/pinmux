@@ -5,8 +5,6 @@ class nspi(PBase):
 
     def __init__(self, name, masteronly):
         PBase.__init__(self, name)
-        if masteronly:
-            name = "m" + name
         self.ifndict = {'N': name.upper(), 'n': name}
         self.masteronly = masteronly
         assert masteronly, "Only master only %s supported for now" % name
