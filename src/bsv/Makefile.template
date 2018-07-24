@@ -17,6 +17,7 @@ BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/mux
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/plic
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/pwm
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/qspi
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/spi
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/sdmmc
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/uart
 

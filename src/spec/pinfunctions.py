@@ -61,19 +61,21 @@ def sdmmc(suffix, bank):
     return emmc(suffix, bank, pincount=4)
 
 
-def spi(suffix, bank):
-    pins = ['CLK*', 'NSS*', 'MOSI*', 'MISO*']
-    return (pins, [])
-
-
-def quadspi(suffix, bank):
+def nspi(suffix, bank, iosize):
     qpins = ['CK*', 'NSS*']
     inout = []
-    for i in range(4):
+    for i in range(iosize):
         pname = "IO%d*" % i
         qpins.append(pname)
         inout.append(pname)
     return (qpins, inout)
+
+def spi(suffix, bank):
+    return nspi(suffix, bank, 2)
+
+
+def quadspi(suffix, bank):
+    return nspi(suffix, bank, 4)
 
 
 def i2c(suffix, bank):
