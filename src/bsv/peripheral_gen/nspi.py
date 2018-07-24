@@ -38,8 +38,9 @@ class nspi(PBase):
         # special-case for gpio in, store in a temporary vector
         plen = len(self.peripheral.pinspecs)
         template = "      mkConnection({0}.{1},\n\t\t\t{2}.{1});"
+        sname = self.peripheral.iname().format(count)
         name = self.get_iname(count)
-        ps = "pinmux.peripheral_side.%s" % name
+        ps = "pinmux.peripheral_side.%s" % sname
         n = "{0}.out".format(name)
         for ptype in ['io_out', 'io_out_en', 'io_in']:
             ret.append(template.format(ps, ptype, n))
