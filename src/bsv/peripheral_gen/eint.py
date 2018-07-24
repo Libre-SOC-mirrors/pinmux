@@ -35,7 +35,7 @@ class eint(PBase):
         for idx, p in enumerate(self.peripheral.pinspecs):
             pname = p['name']
             sname = self.peripheral.pname(pname).format(count)
-            ps = "pinmux.peripheral_side.%s" % sname
+            ps = "pinmux.peripheral_side.eint.%s" % sname
             comma = '' if idx == size - 1 else ','
             ret.append("             {0}{1}".format(ps, comma))
         ret.append("        });")
