@@ -41,9 +41,9 @@ def pinspec():
                       'SD0': 'SD/MMC 0',
                       'SD1': 'SD/MMC 1',
                       'SD2': 'SD/MMC 2',
-                      'SPI0': 'SPI (Serial Peripheral Interface) 0',
-                      'SPI1': 'SPI (Serial Peripheral Interface) 1',
-                      'QSPI': 'Quad SPI (Serial Peripheral Interface) 1',
+                      'MSPI0': 'SPI (Serial Peripheral Interface) Master 0',
+                      'MSPI1': 'SPI (Serial Peripheral Interface) Master 1',
+                      'MQSPI': 'Quad SPI Master 0',
                       'TWI0': 'I2C 0',
                       'TWI1': 'I2C 1',
                       'TWI2': 'I2C 2',
@@ -62,8 +62,8 @@ def pinspec():
     # Bank A, 0-27
     ps.gpio("", ('A', 0), 0, 0, 28)
     ps.rgbttl("", ('A', 0), 1, limit=22)
-    ps.spi("0", ('A', 10), 2)
-    ps.quadspi("", ('A', 4), 2)
+    ps.mspi("0", ('A', 10), 2)
+    ps.mquadspi("", ('A', 4), 2)
     ps.uart("0", ('A', 16), 2)
     ps.i2c("1", ('A', 18), 2)
     ps.pwm("", ('A', 21), 2, 0, 3)
@@ -76,7 +76,7 @@ def pinspec():
     ps.uartfull("0", ('A', 14), 3)
     ps.uartfull("1", ('A', 18), 3)
     ps.jtag("", ('A', 24), 2)
-    ps.spi("1", ('A', 24), 1)
+    ps.mspi("1", ('A', 24), 1)
     ps.i2c("0", ('A', 0), 2)
     ps.uart("1", ('A', 2), 2)
     ps.uart("2", ('A', 14), 2)
@@ -89,7 +89,7 @@ def pinspec():
     # lists (interfaces, EINTs, PWMs) from available pins.
 
     minitest = ['ULPI0/8', 'ULPI1', 'MMC', 'SD0', 'UART0',
-                'TWI0', 'SPI0', 'B3:SD1', ]
+                'TWI0', 'MSPI0', 'B3:SD1', ]
     minitest_eint = ['EINT_0', 'EINT_1', 'EINT_2', 'EINT_3', 'EINT_4']
     minitest_pwm = ['B2:PWM_0']
     descriptions = {
@@ -98,7 +98,7 @@ def pinspec():
         'and UART2, for debug purposes',
         'TWI2': 'I2C.\n',
         'E2:SD1': '',
-        'SPI1': '',
+        'MSPI1': '',
         'UART0': '',
         'B1:LCD/22': '18-bit RGB/TTL LCD',
         'ULPI0/8': 'user-facing: internal (on Card), USB-OTG ULPI PHY',

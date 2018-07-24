@@ -61,14 +61,25 @@ def sdmmc(suffix, bank):
     return emmc(suffix, bank, pincount=4)
 
 
-def nspi(suffix, bank, iosize):
-    qpins = ['CK*', 'NSS*']
+def nspi(suffix, bank, iosize, masteronly=True):
+    if masteronly:
+        qpins = ['CK+', 'NSS+']
+    else:
+        qpins = ['CK*', 'NSS*']
     inout = []
     for i in range(iosize):
         pname = "IO%d*" % i
         qpins.append(pname)
         inout.append(pname)
     return (qpins, inout)
+
+def mspi(suffix, bank):
+    return nspi(suffix, bank, 2, masteronly=True)
+
+
+def mquadspi(suffix, bank):
+    return nspi(suffix, bank, 4, masteronly=True)
+
 
 def spi(suffix, bank):
     return nspi(suffix, bank, 2)
@@ -229,6 +240,8 @@ def gpio(suffix, bank):
 pinspec = (('IIS', i2s),
            ('MMC', emmc),
            ('SD', sdmmc),
+           ('MSPI', mspi),
+           ('MQSPI', mquadspi),
            ('SPI', spi),
            ('QSPI', quadspi),
            ('TWI', i2c),
