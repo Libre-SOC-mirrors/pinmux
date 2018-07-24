@@ -8,9 +8,10 @@ class gpio(PBase):
                "    import mux::*;\n" + \
                "    import gpio::*;\n"
 
-    def slowifdeclmux(self):
+    def slowifdeclmux(self, name, count):
         size = len(self.peripheral.pinspecs)
-        return "        interface GPIO_config#(%d) pad_config{0};" % size
+        return "        interface GPIO_config#(%d) pad_config%d;" % \
+                            (size, count)
 
     def num_axi_regs32(self):
         return 2

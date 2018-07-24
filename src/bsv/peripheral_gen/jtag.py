@@ -12,25 +12,13 @@ class jtag(PBase):
     def axi_addr_map(self, name, ifacenum):
         return ''
 
-    def slowifdeclmux(self):
-        return "        method  Action jtag_ms (Bit#(1) in);\n" +  \
-               "        method  Bit#(1) jtag_di;\n" + \
-               "        method  Action jtag_do (Bit#(1) in);\n" + \
-               "        method  Action jtag_ck (Bit#(1) in);"
+    def slowifdeclmux(self, name, count):
+        sname = self.get_iname(count)
+        return "        interface PeripheralSideJTAG %s;" % sname
 
-    def slowifinstance(self):
-        return jtag_method_template  # bit of a lazy hack this...
+    def slowifinstance(self, name, count):
+        sname = self.peripheral.iname().format(count)
+        pname = self.get_iname(count)
+        template = "        interface {0} = pinmux.peripheral_side.{1};"
+        return template.format(pname, sname)
 
-
-jtag_method_template = """\
-        method  Action jtag_ms (Bit#(1) in);
-          pinmux.peripheral_side.jtag_ms(in);
-        endmethod
-        method  Bit#(1) jtag_di=pinmux.peripheral_side.jtag_di;
-        method  Action jtag_do (Bit#(1) in);
-          pinmux.peripheral_side.jtag_do(in);
-        endmethod
-        method  Action jtag_ck (Bit#(1) in);
-          pinmux.peripheral_side.jtag_ck(in);
-        endmethod
-"""

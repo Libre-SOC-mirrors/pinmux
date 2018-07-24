@@ -62,8 +62,9 @@ class quart(PBase):
         name = self.get_iname(inum)
         return "        method {0}_intr = {0}.irq;".format(name)
 
-    def slowifdeclmux(self):
-        return "        method Bit#(1) {1}{0}_intr;"
+    def slowifdeclmux(self, name, count):
+        sname = self.peripheral.iname().format(count)
+        return "        method Bit#(1) %s_intr;" % sname
 
 
 uart_plic_template = """\

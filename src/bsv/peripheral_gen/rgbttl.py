@@ -34,4 +34,13 @@ class rgbttl(PBase):
             ret.append(template.format(ps, ptype, n))
         return '\n'.join(ret)
 
+    def slowifdeclmux(self, name, count):
+        sname = self.get_iname(count)
+        return "        interface PeripheralSideLCD %s;" % sname
+
+    def slowifinstance(self, name, count):
+        sname = self.peripheral.iname().format(count)
+        pname = self.get_iname(count)
+        template = "        interface {0} = pinmux.peripheral_side.{1};"
+        return template.format(pname, sname)
 

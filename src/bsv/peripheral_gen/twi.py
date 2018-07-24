@@ -44,5 +44,6 @@ class twi(PBase):
         name = self.get_iname(inum)
         return "        method {0}_isint = {0}.isint;".format(name)
 
-    def slowifdeclmux(self):
-        return "        method Bit#(1) {1}{0}_isint;"
+    def slowifdeclmux(self, name, inum):
+        sname = self.get_iname(inum)
+        return "        method Bit#(1) %s_isint;" % sname

@@ -5,10 +5,10 @@ class PBase(object):
     def __init__(self, name):
         self.name = name
 
-    def slowifdeclmux(self):
+    def slowifdeclmux(self, name, count):
         return ''
 
-    def slowifinstance(self):
+    def slowifinstance(self, name, count):
         return ''
 
     def slowimport(self):
@@ -274,15 +274,15 @@ class PeripheralInterfaces(object):
     def slowifinstance(self, *args):
         ret = []
         for (name, count) in self.ifacecount:
-            #print "slowimport", name, self.data[name].slowimport
-            ret.append(self.data[name].slowifinstance())
+            for i in range(count):
+                ret.append(self.data[name].slowifinstance(name, i))
         return '\n'.join(list(filter(None, ret)))
 
     def slowifdeclmux(self, *args):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
-                ret.append(self.data[name].slowifdeclmux().format(i, name))
+                ret.append(self.data[name].slowifdeclmux(name, i))
         return '\n'.join(list(filter(None, ret)))
 
     def slowifdecl(self, *args):
