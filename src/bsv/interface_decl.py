@@ -446,7 +446,7 @@ class InterfaceBus(object):
         plen = self.get_n_iopins(pins)
 
         res += '\n'
-        template = "          interface {1}#(Bit#({0})) {2};\n"
+        template = "          interface {1}#(%s) {2};\n" % self.bitspec
         for i, n in enumerate(self.namelist):
             if not n:
                 continue
@@ -462,7 +462,7 @@ class InterfaceBus(object):
 
         pins = self.get_buspins()
         plen = self.get_n_iopins(pins)
-        bitspec = "Bit#({0})".format(plen)
+        bitspec = self.bitspec.format(plen)
         return '\n' + res + self.vectorifacedef2(pins, plen,
                                     self.namelist, bitspec, *args) + '\n'
 
@@ -511,29 +511,15 @@ class InterfaceEINT(Interface):
 
 
 
-class InterfaceGPIO(Interface):
+class InterfaceGPIO(InterfaceBus, Interface):
 
-    def ifacepfmt(self, *args):
-        return """
-          interface Put#(Vector#({0}, Bit#(1))) out;
-          interface Put#(Vector#({0}, Bit#(1))) out_en;
-          interface Get#(Vector#({0}, Bit#(1))) in;
-""".format(len(self.pinspecs))
+    def __init__(self, ifacename, pinspecs, ganged=None, single=False):
+        InterfaceBus.__init__(self, ['out', 'out_en', 'in'],
+                              "Vector#({0},Bit#(1))", ifacename[-1])
+        Interface.__init__(self, ifacename, pinspecs, ganged, single)
 
-    def ifacedef2(self, *args):
-        return self.vectorifacedef2(self.pins, len(self.pinspecs),
-                        ['out', 'out_en', 'in'],
-                                    "Vector#({0},Bit#(1))", *args)
-
-    def ifacedef3pin(self, idx, pin):
-        decfn = self.ifacefmtdecfn2
-        outfn = self.ifacefmtoutfn
-        # print pin, pin.outenmode
-        if pin.outenmode:
-            decfn = self.ifacefmtdecfn3
-            outfn = self.ifacefmtoutenfn
-        return pin.ifacedef3(idx, outfn, self.ifacefmtinfn,
-                             decfn)
+    def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
+        return len(pins) / 3
 
 
 class Interfaces(InterfacesBase, PeripheralInterfaces):
