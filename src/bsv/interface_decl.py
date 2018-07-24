@@ -491,7 +491,7 @@ class InterfaceLCD(InterfaceBus, Interface):
 class InterfaceSD(InterfaceBus, Interface):
 
     def __init__(self, *args):
-        InterfaceBus.__init__(self, ['io_out', 'io_out_en', 'io_in'],
+        InterfaceBus.__init__(self, ['out', 'out_en', 'in'],
                               "Bit#({0})", "d")
         Interface.__init__(self, *args)
 
