@@ -544,9 +544,11 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
         InterfacesBase.__init__(self, Interface, pth,
                                 {'gpio': InterfaceGPIO,
                                  'spi': InterfaceNSPI,
+                                 'mspi': InterfaceNSPI,
                                  'lcd': InterfaceLCD,
                                  'sd': InterfaceSD,
                                  'qspi': InterfaceNSPI,
+                                 'mqspi': InterfaceNSPI,
                                  'eint': InterfaceEINT})
         PeripheralInterfaces.__init__(self)
 
