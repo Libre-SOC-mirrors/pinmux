@@ -412,18 +412,24 @@ class IOInterface(Interface):
         return generic_io.format(*args)
 
 
-class InterfaceQSPI(Interface):
+class InterfaceNSPI(Interface):
+
+    def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
+        return len(pins) / 3
 
     def ifacepfmt(self, *args):
         pins = filter(lambda x: not x.name_.startswith('io'), self.pins)
         res = '\n'.join(map(self.ifacepfmtdecpin, pins)).format(*args)
         res = res.format(*args)
 
+        pins = filter(lambda x: x.name_.startswith('io'), self.pins)
+        plen = self.get_n_iopins(pins)
+
         return "\n" + res + """
-          interface Put#(Bit#(4)) io_out;
-          interface Put#(Bit#(4)) io_out_en;
-          interface Get#(Bit#(4)) io_in;
-""".format(len(self.pinspecs))
+          interface Put#(Bit#({0})) io_out;
+          interface Put#(Bit#({0})) io_out_en;
+          interface Get#(Bit#({0})) io_in;
+""".format(plen)
 
     def ifacedef2(self, *args):
         pins = filter(lambda x: not x.name_.startswith('io'), self.pins)
@@ -431,9 +437,11 @@ class InterfaceQSPI(Interface):
         res = res.format(*args)
 
         pins = filter(lambda x: x.name_.startswith('io'), self.pins)
-        return '\n' + res + self.vectorifacedef2(pins, 4,
+        plen = self.get_n_iopins(pins)
+        bitspec = "Bit#({0})".format(plen)
+        return '\n' + res + self.vectorifacedef2(pins, plen,
                         ['io_out', 'io_out_en', 'io_in'],
-                                    "Bit#(4)", *args) + '\n'
+                                    bitspec, *args) + '\n'
 
     def ifacedef3pin(self, idx, pin):
         decfn = self.ifacefmtdecfn2
@@ -491,7 +499,8 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
     def __init__(self, pth=None):
         InterfacesBase.__init__(self, Interface, pth,
                                 {'gpio': InterfaceGPIO,
-                                 'qspi': InterfaceQSPI,
+                                 'spi': InterfaceNSPI,
+                                 'qspi': InterfaceNSPI,
                                  'eint': InterfaceEINT})
         PeripheralInterfaces.__init__(self)
 
