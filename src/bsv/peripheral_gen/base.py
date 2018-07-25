@@ -134,7 +134,17 @@ class PBase(object):
     def mksuffix(self, name, i):
         return i
 
-    def __mk_connection(self, con, aname):
+    def __mk_connection(self, con, aname, fabricname):
+        txt = "        mkConnection ({2}.v_to_slaves\n" + \
+            "                    [fromInteger(valueOf({1}))],\n" + \
+            "                    {0});"
+
+        print "PBase __mk_connection", self.name, aname
+        if not con:
+            return ''
+        return txt.format(con, aname, fabricname)
+
+    def __mk_master_connection(self, con, aname):
         txt = "        mkConnection (slow_fabric.v_to_slaves\n" + \
             "                    [fromInteger(valueOf({1}))],\n" + \
             "                    {0});"
@@ -144,15 +154,15 @@ class PBase(object):
             return ''
         return txt.format(con, aname)
 
-    def mk_connection(self, count, name=None):
+    def mk_connection(self, count, fabricname, typ, name=None):
         if name is None:
             name = self.name
         print "PBase mk_conn", self.name, count
-        aname = self.axi_slave_name(name, count)
+        aname = self.axi_slave_name(name, count, typ)
         #dname = self.mksuffix(name, count)
         #dname = "{0}{1}".format(name, dname)
         con = self._mk_connection(name, count).format(count, aname)
-        return self.__mk_connection(con, aname)
+        return self.__mk_connection(con, aname, fabricname)
 
     def _mk_connection(self, name=None, count=0):
         return ''
@@ -441,13 +451,26 @@ class PeripheralInterfaces(object):
                 ret.append(x.format(suffix))
         return '\n'.join(list(filter(None, ret)))
 
+    def mk_fast_connection(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
+                txt = self.data[name].mk_connection(i, "fabric", "fast")
+                if name == 'gpioa':
+                    print "txt", txt
+                    print self.data[name].mk_connection
+                ret.append(txt)
+        return '\n'.join(list(filter(None, ret)))
+
     def mk_connection(self, *args):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                txt = self.data[name].mk_connection(i)
+                txt = self.data[name].mk_connection(i, "slow_fabric", "")
                 if name == 'gpioa':
                     print "txt", txt
                     print self.data[name].mk_connection

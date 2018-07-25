@@ -138,7 +138,7 @@ def write_soc(soc, soct, p, ifaces, iocells):
     mastdecl = ifaces.axi_master_idx()
     fnaddrmap = ifaces.axi_addr_map()
     mkfast = ifaces.mkfast_peripheral()
-    mkcon = ifaces.mk_connection()
+    mkcon = ifaces.mk_fast_connection()
     mkcellcon = ifaces.mk_cellconn()
     pincon = ifaces.mk_pincon()
     inst = ifaces.extifinstance()
@@ -148,7 +148,7 @@ def write_soc(soc, soct, p, ifaces, iocells):
     ifacedef = ifaces.mk_ext_ifacedef()
     with open(soc, "w") as bsv_file:
         bsv_file.write(soct.format(imports, ifdecl, mkfast,
-                            slavedecl, mastdecl,
+                            slavedecl, mastdecl, mkcon,
                             #'', '' #regdef, slavedecl,
                             #'', mkslow, #fnaddrmap, mkslow, mkcon, mkcellcon,
                             #pincon, inst, mkplic,

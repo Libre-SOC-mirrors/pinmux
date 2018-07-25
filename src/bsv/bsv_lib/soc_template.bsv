@@ -200,6 +200,10 @@ package Soc;
 			`ifdef FlexBus
 				mkConnection (fabric.v_to_slaves[fromInteger(valueOf(FlexBus_slave_num))],flexbus.axi_side);
 			`endif
+
+// fabric connections
+{5}
+
 			`ifdef DMA
 			//rule to connect all interrupt lines to the DMA
 			//All the interrupt lines to DMA are active HIGH. For peripherals that are not connected, or those which do not
