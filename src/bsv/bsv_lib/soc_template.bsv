@@ -63,6 +63,7 @@ package Soc;
 `ifdef FlexBus
             import FlexBus_Types::*;
 `endif
+{0}
 
 	/*========================= */
 	interface Ifc_Soc;
@@ -222,14 +223,14 @@ package Soc;
 					`ifdef UART0 uart0_interrupt.send(slow_peripherals.uart0_intr); `endif
 				endrule
 				rule rl_connect_interrupt_to_DMA;
-					Bit#(12) lv_interrupt_to_DMA= {'d-1, 
+					Bit#(12) lv_interrupt_to_DMA= {{'d-1, 
 															`ifdef I2C1 i2c1_interrupt.read `else 1'b1 `endif , 
 															`ifdef I2C0 i2c0_interrupt.read `else 1'b1 `endif , 
 															`ifdef QSPI1 qspi1_interrupt.read `else 1'b1 `endif ,
 															1'b1, 
 															`ifdef QSPI0 qspi0_interrupt.read `else 1'b1 `endif , 
 															1'b1,1'b0, 
-															`ifdef UART0 uart0_interrupt.read `else 1'b1 `endif };
+															`ifdef UART0 uart0_interrupt.read `else 1'b1 `endif }};
 					dma.interrupt_from_peripherals(lv_interrupt_to_DMA);
 				endrule
 			`endif

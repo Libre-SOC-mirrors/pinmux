@@ -86,6 +86,8 @@ def pinmuxgen(pth=None, verify=True):
     idef = os.path.join(bp, 'instance_defines.bsv')
     slow = os.path.join(bp, 'slow_peripherals.bsv')
     slowt = os.path.join(cwd, 'slow_peripherals_template.bsv')
+    soc = os.path.join(bp, 'soc.bsv')
+    soct = os.path.join(cwd, 'soc_template.bsv')
 
     write_pmp(pmp, p, ifaces, iocells)
     write_ptp(ptp, p, ifaces)
@@ -93,6 +95,7 @@ def pinmuxgen(pth=None, verify=True):
     write_bus(bus, p, ifaces)
     write_instances(idef, p, ifaces)
     write_slow(slow, slowt, p, ifaces, iocells)
+    write_soc(soc, soct, p, ifaces, iocells)
 
 
 def write_slow(slow, slowt, p, ifaces, iocells):
@@ -120,6 +123,32 @@ def write_slow(slow, slowt, p, ifaces, iocells):
                                     fnaddrmap, mkslow, mkcon, mkcellcon,
                                     pincon, inst, mkplic,
                                     numsloirqs, ifacedef))
+
+def write_soc(soc, soct, p, ifaces, iocells):
+    """ write out the soc.bsv file.
+        joins all the peripherals together as AXI Masters
+    """
+    with open(soct) as bsv_file:
+        soct = bsv_file.read()
+    imports = ifaces.slowimport()
+    ifdecl = ifaces.slowifdeclmux() + '\n' + ifaces.extifdecl()
+    regdef = ifaces.axi_reg_def()
+    slavedecl = ifaces.axi_slave_idx()
+    fnaddrmap = ifaces.axi_addr_map()
+    mkslow = ifaces.mkslow_peripheral()
+    mkcon = ifaces.mk_connection()
+    mkcellcon = ifaces.mk_cellconn()
+    pincon = ifaces.mk_pincon()
+    inst = ifaces.extifinstance()
+    mkplic = ifaces.mk_plic()
+    numsloirqs = ifaces.mk_sloirqsdef()
+    ifacedef = ifaces.mk_ext_ifacedef()
+    ifacedef = ifaces.mk_ext_ifacedef()
+    with open(soc, "w") as bsv_file:
+        bsv_file.write(soct.format(imports, ))#ifdecl, regdef, slavedecl,
+                                    #fnaddrmap, mkslow, mkcon, mkcellcon,
+                                    #pincon, inst, mkplic,
+                                    #numsloirqs, ifacedef))
 
 
 def write_bus(bus, p, ifaces):
