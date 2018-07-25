@@ -45,12 +45,16 @@ class PBase(object):
                 "    `define %(bend)s  'h%(end)08X // %(comment)s" % locals(),
                 offs)
 
-    def axi_slave_name(self, name, ifacenum):
+    def axi_master_name(self, name, ifacenum):
         name = name.upper()
-        return "{0}{1}_slave_num".format(name, ifacenum)
+        return "{0}{1}_laster_num".format(name, ifacenum)
 
-    def axi_slave_idx(self, idx, name, ifacenum):
-        name = self.axi_slave_name(name, ifacenum)
+    def axi_slave_name(self, name, ifacenum, typ=''):
+        name = name.upper()
+        return "{0}{1}_{2}slave_num".format(name, ifacenum, typ)
+
+    def axi_slave_idx(self, idx, name, ifacenum, typ):
+        name = self.axi_slave_name(name, ifacenum, typ)
         return ("typedef {0} {1};".format(idx, name), 1)
 
     def axi_addr_map(self, name, ifacenum):
@@ -262,10 +266,10 @@ class PeripheralIface(object):
             return ('', 0)
         return self.slow.axi_reg_def(start, self.ifacename, count)
 
-    def axi_slave_idx(self, start, count):
+    def axi_slave_idx(self, start, count, typ):
         if not self.slow:
             return ('', 0)
-        return self.slow.axi_slave_idx(start, self.ifacename, count)
+        return self.slow.axi_slave_idx(start, self.ifacename, count, typ)
 
     def axi_addr_map(self, count):
         if not self.slow:
@@ -333,13 +337,13 @@ class PeripheralInterfaces(object):
                 start += offs
         return '\n'.join(list(filter(None, ret)))
 
-    def _axi_num_idx(self, start, template, typ, getfn, *args):
+    def _axi_num_idx(self, start, template, typ, idxtype, *args):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                (rdef, offs) = getattr(self.data[name], getfn)(start, i)
+                (rdef, offs) = self.data[name].axi_slave_idx(start, i, idxtype)
                 #print ("ifc", name, rdef, offs)
                 ret.append(rdef)
                 start += offs
@@ -349,7 +353,11 @@ class PeripheralInterfaces(object):
 
     def axi_slave_idx(self, *args):
         return self._axi_num_idx(0, axi_slave_declarations, 'slave',
-                                 'axi_slave_idx', *args)
+                                 '', *args)
+
+    def axi_fastslave_idx(self, *args):
+        return self._axi_num_idx(0, axi_fastslave_declarations, 'fastslave',
+                                 'fast', *args)
 
     def axi_addr_map(self, *args):
         ret = []

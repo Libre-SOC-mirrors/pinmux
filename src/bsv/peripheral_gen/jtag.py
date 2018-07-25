@@ -17,10 +17,10 @@ class jtag(PBase):
             jtag{0}.scan_out_5_i(1'b0);
         endrule
 """
-    def axi_slave_name(self, name, ifacenum):
+    def axi_slave_name(self, name, ifacenum, typ=''):
         return ''
 
-    def axi_slave_idx(self, idx, name, ifacenum):
+    def axi_slave_idx(self, idx, name, ifacenum, typ):
         return ('', 0)
 
     def axi_addr_map(self, name, ifacenum):

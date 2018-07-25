@@ -16,7 +16,7 @@ class gpio(PBase):
     def num_axi_regs32(self):
         return 2
 
-    def axi_slave_idx(self, idx, name, ifacenum):
+    def axi_slave_idx(self, idx, name, ifacenum, typ):
         """ generates AXI slave number definition, except
             GPIO also has a muxer per bank
         """
@@ -24,8 +24,8 @@ class gpio(PBase):
         mname = 'mux' + name[4:]
         mname = mname.upper()
         print "AXIslavenum", name, mname
-        (ret, x) = PBase.axi_slave_idx(self, idx, name, ifacenum)
-        (ret2, x) = PBase.axi_slave_idx(self, idx + 1, mname, ifacenum)
+        (ret, x) = PBase.axi_slave_idx(self, idx, name, ifacenum, typ)
+        (ret2, x) = PBase.axi_slave_idx(self, idx + 1, mname, ifacenum, typ)
         return ("%s\n%s" % (ret, ret2), 2)
 
     def mkslow_peripheral(self, size=0):
