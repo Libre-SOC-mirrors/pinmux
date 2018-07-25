@@ -270,7 +270,7 @@ class PeripheralIface(object):
 
 class PeripheralInterfaces(object):
     def __init__(self):
-        pass
+        self.fastbusmode = False
 
     def slowimport(self, *args):
         ret = []
@@ -432,7 +432,10 @@ class PeripheralInterfaces(object):
         return "    `define NUM_SLOW_IRQS {0}".format(self.num_slow_irqs)
 
     def is_on_fastbus(self, name, i):
+        #print "fastbus mode", self.fastbusmode, name, i
         iname = self.data[name].iname().format(i)
+        if self.fastbusmode:
+            return iname not in self.fastbus
         return iname in self.fastbus
 
 

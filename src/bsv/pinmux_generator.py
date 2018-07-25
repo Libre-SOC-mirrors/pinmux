@@ -128,14 +128,15 @@ def write_soc(soc, soct, p, ifaces, iocells):
     """ write out the soc.bsv file.
         joins all the peripherals together as AXI Masters
     """
+    ifaces.fastbusmode = True # side-effects... shouldn't really do this
     with open(soct) as bsv_file:
         soct = bsv_file.read()
     imports = ifaces.slowimport()
-    ifdecl = ifaces.slowifdeclmux() + '\n' + ifaces.extifdecl()
+    ifdecl = "" #ifaces.slowifdeclmux() + '\n' + ifaces.extifdecl()
     regdef = ifaces.axi_reg_def()
     slavedecl = ifaces.axi_slave_idx()
     fnaddrmap = ifaces.axi_addr_map()
-    mkslow = ifaces.mkslow_peripheral()
+    mkfast = ifaces.mkslow_peripheral()
     mkcon = ifaces.mk_connection()
     mkcellcon = ifaces.mk_cellconn()
     pincon = ifaces.mk_pincon()
@@ -145,10 +146,12 @@ def write_soc(soc, soct, p, ifaces, iocells):
     ifacedef = ifaces.mk_ext_ifacedef()
     ifacedef = ifaces.mk_ext_ifacedef()
     with open(soc, "w") as bsv_file:
-        bsv_file.write(soct.format(imports, ))#ifdecl, regdef, slavedecl,
-                                    #fnaddrmap, mkslow, mkcon, mkcellcon,
-                                    #pincon, inst, mkplic,
-                                    #numsloirqs, ifacedef))
+        bsv_file.write(soct.format(imports, ifdecl, mkfast,
+                            #'', '' #regdef, slavedecl,
+                            #'', mkslow, #fnaddrmap, mkslow, mkcon, mkcellcon,
+                            #pincon, inst, mkplic,
+                            #numsloirqs, ifacedef))
+                                  ))
 
 
 def write_bus(bus, p, ifaces):

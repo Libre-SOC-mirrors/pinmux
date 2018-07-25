@@ -113,7 +113,7 @@ package Soc;
         `ifdef FlexBus
             interface FlexBus_Master_IFC flexbus_out;
         `endif
-
+{1}
 	endinterface
 	(*synthesize*)
 	module mkSoc #(Bit#(`VADDR) reset_vector, Clock slow_clock, Reset slow_reset, Clock uart_clock, 
@@ -121,6 +121,7 @@ package Soc;
                  `ifdef PWM_AXI4Lite ,Clock ext_pwm_clock `endif )(Ifc_Soc);
 		Clock core_clock <-exposeCurrentClock; // slow peripheral clock
 		Reset core_reset <-exposeCurrentReset; // slow peripheral reset
+{2}
       `ifdef Debug 
 			Ifc_jtagdtm tap <-mkjtagdtm(clocked_by tck, reset_by trst);
          rule drive_tmp_scan_outs;
