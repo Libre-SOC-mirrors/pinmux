@@ -31,6 +31,8 @@ package Soc;
 	import slow_peripherals::*;
 	`include "defines.bsv"
 	`include "instance_defines.bsv"
+    /*====== AXI4 Lite slave declarations =======*/
+{3}
 
 		`ifdef DMA
 			import DMA				 :: *;

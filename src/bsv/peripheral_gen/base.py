@@ -204,6 +204,21 @@ mkplic_rule = """\
 """
 
 
+axi_fastslave_declarations = """\
+{0}
+typedef  TAdd#(LastGen_fastslave_num,1)      Sdram_cfg_slave_num;
+typedef  TAdd#(Sdram_slave_num   ,`ifdef SDRAM      1 `else 0 `endif )      Sdram_cfg_slave_num;
+typedef TAdd#(Sdram_cfg_slave_num,`ifdef BOOTROM    1 `else 0 `endif )      BootRom_slave_num   ;
+typedef TAdd#(BootRom_slave_num  ,`ifdef Debug      1 `else 0 `endif )      Debug_slave_num ;
+typedef  TAdd#(Debug_slave_num   , `ifdef TCMemory  1 `else 0 `endif )      TCM_slave_num;
+typedef  TAdd#(TCM_slave_num     ,`ifdef DMA            1 `else 0 `endif )  Dma_slave_num;
+typedef  TAdd#(Dma_slave_num      ,1 )      SlowPeripheral_slave_num;
+typedef  TAdd#(SlowPeripheral_slave_num,`ifdef VME  1 `else 0 `endif )       VME_slave_num;
+typedef  TAdd#(VME_slave_num,`ifdef FlexBus 1 `else 0 `endif )              FlexBus_slave_num;
+typedef TAdd#(FlexBus_slave_num,1)                       Num_Slaves;
+
+"""
+
 axi_slave_declarations = """\
 typedef  0  SlowMaster;
 {0}
