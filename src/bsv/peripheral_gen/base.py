@@ -9,6 +9,9 @@ class PBase(object):
         sname = self.get_iname(count)
         return "        interface PeripheralSide%s %s;" % (name.upper(), sname)
 
+    def has_axi_master(self):
+        return False
+
     def slowifdeclmux(self, name, count):
         return ''
 
@@ -45,13 +48,17 @@ class PBase(object):
                 "    `define %(bend)s  'h%(end)08X // %(comment)s" % locals(),
                 offs)
 
-    def axi_master_name(self, name, ifacenum):
+    def axi_master_name(self, name, ifacenum, typ=''):
         name = name.upper()
-        return "{0}{1}_laster_num".format(name, ifacenum)
+        return "{0}{1}_master_num".format(name, ifacenum)
 
     def axi_slave_name(self, name, ifacenum, typ=''):
         name = name.upper()
         return "{0}{1}_{2}slave_num".format(name, ifacenum, typ)
+
+    def axi_master_idx(self, idx, name, ifacenum, typ):
+        name = self.axi_master_name(name, ifacenum, typ)
+        return ("typedef {0} {1};".format(idx, name), 1)
 
     def axi_slave_idx(self, idx, name, ifacenum, typ):
         name = self.axi_slave_name(name, ifacenum, typ)
@@ -203,6 +210,14 @@ mkplic_rule = """\
      endrule
 """
 
+axi_master_declarations= """\
+typedef 0 Dmem_master_num;
+typedef 1 Imem_master_num;
+{0}
+typedef TAdd#(LastGen_master_num, `ifdef Debug 1 `else 0 `endif ) Debug_master_num;
+typedef TAdd#(Debug_master_num, `ifdef DMA 1 `else 0 `endif ) DMA_master_num;
+typedef TAdd#(DMA_master_num,1) Num_Masters;
+"""
 
 axi_fastslave_declarations = """\
 {0}
@@ -281,6 +296,11 @@ class PeripheralIface(object):
             return ('', 0)
         return self.slow.axi_reg_def(start, self.ifacename, count)
 
+    def axi_master_idx(self, start, count, typ):
+        if not self.slow or not self.slow.has_axi_master():
+            return ('', 0)
+        return self.slow.axi_master_idx(start, self.ifacename, count, typ)
+
     def axi_slave_idx(self, start, count, typ):
         if not self.slow:
             return ('', 0)
@@ -358,7 +378,11 @@ class PeripheralInterfaces(object):
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                (rdef, offs) = self.data[name].axi_slave_idx(start, i, idxtype)
+                if typ == 'master':
+                    fn = self.data[name].axi_master_idx
+                else:
+                    fn = self.data[name].axi_slave_idx
+                (rdef, offs) = fn(start, i, idxtype)
                 #print ("ifc", name, rdef, offs)
                 ret.append(rdef)
                 start += offs
@@ -369,6 +393,14 @@ class PeripheralInterfaces(object):
     def axi_slave_idx(self, *args):
         return self._axi_num_idx(0, axi_slave_declarations, 'slave',
                                  '', *args)
+
+    def axi_fastslave_idx(self, *args):
+        return self._axi_num_idx(0, axi_fastslave_declarations, 'fastslave',
+                                 'fast', *args)
+
+    def axi_master_idx(self, *args):
+        return self._axi_num_idx(2, axi_master_declarations, 'master',
+                                 'master', *args)
 
     def axi_fastslave_idx(self, *args):
         return self._axi_num_idx(0, axi_fastslave_declarations, 'fastslave',

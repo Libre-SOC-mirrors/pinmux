@@ -6,14 +6,8 @@ class rgbttl(PBase):
     def slowimport(self):
         return "    import rgbttl_dummy              :: *;"
 
-    def must_be_axi_master(self):
+    def has_axi_master(self):
         return True
-
-    def axi_slave_name(self, name, ifacenum):
-        return ''
-
-    def axi_slave_idx(self, idx, name, ifacenum, typ):
-        return ('', 0)
 
     def num_axi_regs32(self):
         return 10
