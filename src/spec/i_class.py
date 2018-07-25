@@ -90,7 +90,7 @@ def pinspec():
     # lists (interfaces, EINTs, PWMs) from available pins.
 
     i_class = ['ULPI0/8', 'ULPI1', 'MMC', 'SD0', 'UART0',
-                'TWI0', 'MSPI0', 'B3:SD1', ]
+               'TWI0', 'MSPI0', 'B3:SD1', ]
     i_class_eint = ['EINT_0', 'EINT_1', 'EINT_2', 'EINT_3', 'EINT_4']
     i_class_pwm = ['B2:PWM_0']
     descriptions = {

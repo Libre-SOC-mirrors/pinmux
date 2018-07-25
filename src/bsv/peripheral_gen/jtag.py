@@ -11,4 +11,3 @@ class jtag(PBase):
 
     def axi_addr_map(self, name, ifacenum):
         return ''
-

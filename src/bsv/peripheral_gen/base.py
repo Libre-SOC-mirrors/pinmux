@@ -187,7 +187,6 @@ class PBase(object):
         return template.format(pname, sname)
 
 
-
 mkplic_rule = """\
      rule rl_connect_{0}_to_plic_{2};
         if({1} == 1'b1) begin
@@ -435,6 +434,7 @@ class PeripheralInterfaces(object):
     def is_on_fastbus(self, name, i):
         iname = self.data[name].iname().format(i)
         return iname in self.fastbus
+
 
 class PFactory(object):
     def getcls(self, name):

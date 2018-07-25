@@ -359,7 +359,7 @@ class Interface(PeripheralIface):
             plens = range(len(pins))
         else:
             for i in range(0, len(pins), 3):
-                plens += [i/3, i/3, i/3]
+                plens += [i / 3, i / 3, i / 3]
         for (typ, txt) in map(self.ifacedef3pin, plens, pins):
             if typ == 'tput':
                 tput.append(txt)
@@ -378,14 +378,14 @@ class Interface(PeripheralIface):
                  endmethod
                endinterface;
 """,
-"""\
+                    """\
                interface {3} = interface Put#({0})
                  method Action put({2} in);
 {1}
                  endmethod
                endinterface;
 """,
-"""\
+                    """\
                interface {3} = interface Get#({0})
                  method ActionValue#({2}) get;
                    {2} tget;
@@ -429,7 +429,7 @@ class InterfaceBus(object):
     def __init__(self, namelist, bitspec, filterbus):
         self.namelist = namelist
         self.bitspec = bitspec
-        self.fbus = filterbus # filter identifying which are bus pins
+        self.fbus = filterbus  # filter identifying which are bus pins
 
     def get_nonbuspins(self):
         return filter(lambda x: not x.name_.startswith(self.fbus), self.pins)
@@ -463,8 +463,8 @@ class InterfaceBus(object):
         pins = self.get_buspins()
         plen = self.get_n_iopins(pins)
         bitspec = self.bitspec.format(plen)
-        return '\n' + res + self.vectorifacedef2(pins, plen,
-                                    self.namelist, bitspec, *args) + '\n'
+        return '\n' + res + self.vectorifacedef2(
+            pins, plen, self.namelist, bitspec, *args) + '\n'
 
     def ifacedef3pin(self, idx, pin):
         decfn = self.ifacefmtdecfn2
@@ -484,8 +484,8 @@ class InterfaceLCD(InterfaceBus, Interface):
                               "Bit#({0})", "out")
         Interface.__init__(self, *args)
 
-    def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
-        return len(pins) 
+    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
+        return len(pins)
 
 
 class InterfaceSD(InterfaceBus, Interface):
@@ -495,7 +495,7 @@ class InterfaceSD(InterfaceBus, Interface):
                               "Bit#({0})", "d")
         Interface.__init__(self, *args)
 
-    def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
+    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
         return len(pins) / 3
 
 
@@ -506,20 +506,20 @@ class InterfaceNSPI(InterfaceBus, Interface):
                               "Bit#({0})", "io")
         Interface.__init__(self, *args)
 
-    def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
+    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
         return len(pins) / 3
 
 
 class InterfaceEINT(Interface):
     """ uses old-style (non-get/put) for now
     """
+
     def ifacepfmt(self, *args):
         res = '\n'.join(map(self.ifacefmtdecpin, self.pins)).format(*args)
         return '\n' + res  # pins is a list
 
     def ifacedef2(self, *args):
         return self.ifacedef(*args)
-
 
 
 class InterfaceGPIO(InterfaceBus, Interface):
@@ -532,7 +532,7 @@ class InterfaceGPIO(InterfaceBus, Interface):
                               "Vector#({0},Bit#(1))", ifacename[-1])
         Interface.__init__(self, ifacename, pinspecs, ganged, single)
 
-    def get_n_iopins(self, pins): # HACK! assume in/out/outen so div by 3
+    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
         return len(pins) / 3
 
 

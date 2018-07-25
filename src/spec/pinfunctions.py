@@ -73,6 +73,7 @@ def nspi(suffix, bank, iosize, masteronly=True):
         inout.append(pname)
     return (qpins, inout)
 
+
 def mspi(suffix, bank):
     return nspi(suffix, bank, 2, masteronly=True)
 

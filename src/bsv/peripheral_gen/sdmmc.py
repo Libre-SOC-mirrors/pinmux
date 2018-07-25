@@ -32,4 +32,3 @@ class sdmmc(PBase):
         for ptype in ['out', 'out_en', 'in']:
             ret.append(template.format(ps, ptype, n))
         return '\n'.join(ret)
-
