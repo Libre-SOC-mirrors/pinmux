@@ -10,7 +10,7 @@ def pinspec():
     pinbanks = {
         'A': 28,
         'B': 32,
-        'C': 32,
+        'C': 24,
     }
     fixedpins = {
         'CTRL_SYS': [

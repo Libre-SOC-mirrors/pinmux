@@ -97,7 +97,10 @@ class Pinouts(object):
             setattr(self, name, PinGen(self, fname, pinfn, self.bankspec))
 
     def setganged(self, fname, grp):
-        self.ganged[fname] = map(lambda x: x[:-1], grp)
+        grp = map(lambda x: x[:-1], grp)
+        if not self.ganged.has_key(fname):
+            self.ganged[fname] = []
+        self.ganged[fname] += grp
 
     def __contains__(self, k):
         return k in self.pins
