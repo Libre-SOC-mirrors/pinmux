@@ -333,20 +333,23 @@ class PeripheralInterfaces(object):
                 start += offs
         return '\n'.join(list(filter(None, ret)))
 
-    def axi_slave_idx(self, *args):
+    def _axi_num_idx(self, start, template, typ, getfn, *args):
         ret = []
-        start = 0
         for (name, count) in self.ifacecount:
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                (rdef, offs) = self.data[name].axi_slave_idx(start, i)
+                (rdef, offs) = getattr(self.data[name], getfn)(start, i)
                 #print ("ifc", name, rdef, offs)
                 ret.append(rdef)
                 start += offs
-        ret.append("typedef %d LastGen_slave_num;" % (start - 1))
+        ret.append("typedef %d LastGen_%s_num;" % (start - 1, typ))
         decls = '\n'.join(list(filter(None, ret)))
-        return axi_slave_declarations.format(decls)
+        return template.format(decls)
+
+    def axi_slave_idx(self, *args):
+        return self._axi_num_idx(0, axi_slave_declarations, 'slave',
+                                 'axi_slave_idx', *args)
 
     def axi_addr_map(self, *args):
         ret = []
