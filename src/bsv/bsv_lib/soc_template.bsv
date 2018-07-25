@@ -123,14 +123,6 @@ package Soc;
 		Reset core_reset <-exposeCurrentReset; // slow peripheral reset
 {2}
       `ifdef Debug 
-			Ifc_jtagdtm tap <-mkjtagdtm(clocked_by tck, reset_by trst);
-         rule drive_tmp_scan_outs;
-             tap.scan_out_1_i(1'b0);
-             tap.scan_out_2_i(1'b0);
-             tap.scan_out_3_i(1'b0);
-             tap.scan_out_4_i(1'b0);
-             tap.scan_out_5_i(1'b0);
-         endrule
 			Ifc_DebugModule core<-mkDebugModule(reset_vector);
 		`else
 			Ifc_core_AXI4 core <-mkcore_AXI4(reset_vector);
