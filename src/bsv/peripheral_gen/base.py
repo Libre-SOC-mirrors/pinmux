@@ -207,6 +207,9 @@ class PBase(object):
     def mk_ext_ifacedef(self, iname, inum):
         return ''
 
+    def extfastifinstance(self, name, count):
+        return ''
+
     def extifinstance(self, name, count):
         sname = self.peripheral.iname().format(count)
         pname = self.get_iname(count)
@@ -287,7 +290,7 @@ class PeripheralIface(object):
             self.slow = slow(ifacename)
             self.slow.peripheral = self
         for fname in ['slowimport',
-                      'extifinstance', 'extifdecl',
+                      'extfastifinstance', 'extifinstance', 'extifdecl',
                       'slowifdecl', 'slowifdeclmux',
                       'fastifdecl',
                       'mkslow_peripheral', 
@@ -335,6 +338,17 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             #print "slowimport", name, self.data[name].slowimport
             ret.append(self.data[name].slowimport())
+        return '\n'.join(list(filter(None, ret)))
+
+    def extfastifinstance(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                iname = self.data[name].iname().format(i)
+                print "extfast", iname, self.is_on_fastbus(name, i)
+                if self.is_on_fastbus(name, i):
+                    continue
+                ret.append(self.data[name].extfastifinstance(name, i))
         return '\n'.join(list(filter(None, ret)))
 
     def extifinstance(self, *args):

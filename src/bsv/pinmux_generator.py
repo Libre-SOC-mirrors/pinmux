@@ -142,14 +142,14 @@ def write_soc(soc, soct, p, ifaces, iocells):
     mkcon = ifaces.mk_fast_connection()
     mkcellcon = ifaces.mk_cellconn()
     pincon = ifaces.mk_pincon()
-    inst = ifaces.extifinstance()
+    inst = ifaces.extfastifinstance()
     mkplic = ifaces.mk_plic()
     numsloirqs = ifaces.mk_sloirqsdef()
-    ifacedef = ifaces.mk_ext_ifacedef()
     ifacedef = ifaces.mk_ext_ifacedef()
     with open(soc, "w") as bsv_file:
         bsv_file.write(soct.format(imports, ifdecl, mkfast,
                             slavedecl, mastdecl, mkcon,
+                            inst,
                             #'', '' #regdef, slavedecl,
                             #'', mkslow, #fnaddrmap, mkslow, mkcon, mkcellcon,
                             #pincon, inst, mkplic,

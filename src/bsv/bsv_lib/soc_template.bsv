@@ -285,26 +285,7 @@ package Soc;
     `ifdef DDR
       interface master=fabric.v_to_slaves[fromInteger(valueOf(Sdram_slave_num))];
     `endif
-		`ifdef Debug
-			method Action tms_i(Bit#(1) tms);
-				tap.tms_i(tms);
-			endmethod
-			method Action tdi_i(Bit#(1) tdi);
-				tap.tdi_i(tdi);
-			endmethod
-			method Action bs_chain_i(Bit#(1) bs_chain);
-				tap.bs_chain_i(bs_chain);
-			endmethod
-			method Bit#(1) shiftBscan2Edge=tap.shiftBscan2Edge;
-			method Bit#(1) selectJtagInput=tap.selectJtagInput;
-			method Bit#(1) selectJtagOutput=tap.selectJtagOutput;
-			method Bit#(1) updateBscan=tap.updateBscan;
-			method Bit#(1) bscan_in=tap.bscan_in;
-            method Bit#(1) scan_shift_en=tap.scan_shift_en;
-			method Bit#(1) tdo=tap.tdo;
-			method Bit#(1) tdo_oe=tap.tdo_oe;
-		`endif
 		interface slow_ios=slow_peripherals.slow_ios;
-
+{6}
 	endmodule
 endpackage
