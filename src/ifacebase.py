@@ -12,6 +12,7 @@ class InterfacesBase(UserDict):
 
     def __init__(self, ifacekls, pth=None, ifaceklsdict=None):
         self.pth = pth
+        self.fastbus = []
         self.ifacecount = []
         if ifaceklsdict is None:
             ifaceklsdict = {}
@@ -27,6 +28,7 @@ class InterfacesBase(UserDict):
                 ln = ln.split("\t")
                 name = ln[0]  # will have uart
                 count = int(ln[1])  # will have count of uart
+                self.fastbus += ln[2:]
                 # spec looks like this:
                 """
                 [{'name': 'sda', 'outen': True},

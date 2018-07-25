@@ -33,8 +33,3 @@ class rgbttl(PBase):
         for ptype in ['data_out']:
             ret.append(template.format(ps, ptype, n))
         return '\n'.join(ret)
-
-    def slowifdeclmux(self, name, count):
-        sname = self.get_iname(count)
-        return "        interface PeripheralSideLCD %s;" % sname
-

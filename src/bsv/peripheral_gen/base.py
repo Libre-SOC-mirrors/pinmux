@@ -5,6 +5,10 @@ class PBase(object):
     def __init__(self, name):
         self.name = name
 
+    def extifdecl(self, name, count):
+        sname = self.get_iname(count)
+        return "        interface PeripheralSide%s %s;" % (name.upper(), sname)
+
     def slowifdeclmux(self, name, count):
         return ''
 
@@ -234,7 +238,8 @@ class PeripheralIface(object):
             self.slow = slow(ifacename)
             self.slow.peripheral = self
         for fname in ['slowimport',
-                      'extifinstance', 'slowifdecl', 'slowifdeclmux',
+                      'extifinstance', 'extifdecl',
+                      'slowifdecl', 'slowifdeclmux',
                       'mkslow_peripheral', 'mk_plic', 'mk_ext_ifacedef',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
@@ -279,7 +284,19 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
+                iname = self.data[name].iname().format(i)
+                if not self.is_on_fastbus(name, i):
+                    continue
                 ret.append(self.data[name].extifinstance(name, i))
+        return '\n'.join(list(filter(None, ret)))
+
+    def extifdecl(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                if not self.is_on_fastbus(name, i):
+                    continue
+                ret.append(self.data[name].extifdecl(name, i))
         return '\n'.join(list(filter(None, ret)))
 
     def slowifdeclmux(self, *args):
@@ -293,6 +310,8 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 ret.append(self.data[name].slowifdecl().format(i, name))
         return '\n'.join(list(filter(None, ret)))
 
@@ -301,6 +320,8 @@ class PeripheralInterfaces(object):
         start = 0x00011100  # start of AXI peripherals address
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 x = self.data[name].axi_reg_def(start, i)
                 #print ("ifc", name, x)
                 (rdef, offs) = x
@@ -313,6 +334,8 @@ class PeripheralInterfaces(object):
         start = 0
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 (rdef, offs) = self.data[name].axi_slave_idx(start, i)
                 #print ("ifc", name, rdef, offs)
                 ret.append(rdef)
@@ -325,6 +348,8 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 ret.append(self.data[name].axi_addr_map(i))
         return '\n'.join(list(filter(None, ret)))
 
@@ -332,6 +357,8 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 print "mkslow", name, count
                 x = self.data[name].mkslow_peripheral()
                 print name, count, x
@@ -343,7 +370,8 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
-                print "mk_conn", name, i
+                if self.is_on_fastbus(name, i):
+                    continue
                 txt = self.data[name].mk_connection(i)
                 if name == 'gpioa':
                     print "txt", txt
@@ -356,6 +384,8 @@ class PeripheralInterfaces(object):
         cellcount = 0
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 res = self.data[name].mk_cellconn(cellcount, name, i)
                 if not res:
                     continue
@@ -368,6 +398,8 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 txt = self.data[name].mk_pincon(name, i)
                 ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
@@ -376,6 +408,8 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 txt = self.data[name].mk_ext_ifacedef(name, i)
                 ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
@@ -385,6 +419,8 @@ class PeripheralInterfaces(object):
         irq_offs = 8  # XXX: DMA scovers 0-7?
         for (name, count) in self.ifacecount:
             for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
                 res = self.data[name].mk_plic(i, irq_offs)
                 if not res:
                     continue
@@ -396,6 +432,9 @@ class PeripheralInterfaces(object):
     def mk_sloirqsdef(self):
         return "    `define NUM_SLOW_IRQS {0}".format(self.num_slow_irqs)
 
+    def is_on_fastbus(self, name, i):
+        iname = self.data[name].iname().format(i)
+        return iname in self.fastbus
 
 class PFactory(object):
     def getcls(self, name):

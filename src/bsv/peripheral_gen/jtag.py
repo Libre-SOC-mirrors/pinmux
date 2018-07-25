@@ -12,7 +12,3 @@ class jtag(PBase):
     def axi_addr_map(self, name, ifacenum):
         return ''
 
-    def slowifdeclmux(self, name, count):
-        sname = self.get_iname(count)
-        return "        interface PeripheralSideJTAG %s;" % sname
-
