@@ -12,6 +12,9 @@ class PBase(object):
     def has_axi_master(self):
         return False
 
+    def fastifdecl(self, name, count):
+        return ''
+
     def slowifdeclmux(self, name, count):
         return ''
 
@@ -286,6 +289,7 @@ class PeripheralIface(object):
         for fname in ['slowimport',
                       'extifinstance', 'extifdecl',
                       'slowifdecl', 'slowifdeclmux',
+                      'fastifdecl',
                       'mkslow_peripheral', 
                       'mkfast_peripheral',
                       'mk_plic', 'mk_ext_ifacedef',
@@ -357,6 +361,16 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 ret.append(self.data[name].slowifdeclmux(name, i))
+        return '\n'.join(list(filter(None, ret)))
+
+    def fastifdecl(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                print "fastifdecl", name, i, self.is_on_fastbus(name, i)
+                if self.is_on_fastbus(name, i):
+                    continue
+                ret.append(self.data[name].fastifdecl(name, i))
         return '\n'.join(list(filter(None, ret)))
 
     def slowifdecl(self, *args):

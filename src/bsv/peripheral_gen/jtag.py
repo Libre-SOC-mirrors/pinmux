@@ -6,6 +6,24 @@ class jtag(PBase):
     def slowimport(self):
         return "    import jtagtdm::*;\n"
 
+    def fastifdecl(self, name, count):
+        # YUK!
+        template = """ \
+         (*always_ready,always_enabled*) method Action tms_i(Bit#(1) tms);
+         (*always_ready,always_enabled*) method Action tdi_i(Bit#(1) tdi);
+         (*always_ready,always_enabled*)
+                                 method Action bs_chain_i(Bit#(1) bs_chain);
+         (*always_ready,always_enabled*) method Bit#(1) shiftBscan2Edge;
+         (*always_ready,always_enabled*) method Bit#(1) selectJtagInput;
+         (*always_ready,always_enabled*) method Bit#(1) selectJtagOutput;
+         (*always_ready,always_enabled*) method Bit#(1) updateBscan;
+         (*always_ready,always_enabled*) method Bit#(1) bscan_in;
+         (*always_ready,always_enabled*) method Bit#(1) scan_shift_en;
+         (*always_ready,always_enabled*) method Bit#(1) tdo;
+         (*always_ready,always_enabled*) method Bit#(1) tdo_oe;
+"""
+        return template
+
     def mkfast_peripheral(self):
         return """\
         Ifc_jtagdtm jtag{0} <-mkjtagdtm(clocked_by tck, reset_by trst);

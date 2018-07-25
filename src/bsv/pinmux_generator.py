@@ -132,7 +132,8 @@ def write_soc(soc, soct, p, ifaces, iocells):
     with open(soct) as bsv_file:
         soct = bsv_file.read()
     imports = ifaces.slowimport()
-    ifdecl = "" #ifaces.slowifdeclmux() + '\n' + ifaces.extifdecl()
+    ifdecl = ifaces.fastifdecl()
+#ifaces.slowifdeclmux() + '\n' + ifaces.extifdecl()
     regdef = ifaces.axi_reg_def()
     slavedecl = ifaces.axi_fastslave_idx()
     mastdecl = ifaces.axi_master_idx()
