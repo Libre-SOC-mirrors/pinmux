@@ -114,6 +114,9 @@ class PBase(object):
     def mk_cellconn(self, *args):
         return ''
 
+    def mkfast_peripheral(self, size=0):
+        return ''
+
     def mkslow_peripheral(self, size=0):
         return ''
 
@@ -239,7 +242,9 @@ class PeripheralIface(object):
         for fname in ['slowimport',
                       'extifinstance', 'extifdecl',
                       'slowifdecl', 'slowifdeclmux',
-                      'mkslow_peripheral', 'mk_plic', 'mk_ext_ifacedef',
+                      'mkslow_peripheral', 
+                      'mkfast_peripheral',
+                      'mk_plic', 'mk_ext_ifacedef',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
@@ -352,13 +357,26 @@ class PeripheralInterfaces(object):
                 ret.append(self.data[name].axi_addr_map(i))
         return '\n'.join(list(filter(None, ret)))
 
+    def mkfast_peripheral(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
+                #print "mkfast", name, count
+                x = self.data[name].mkfast_peripheral()
+                print name, count, x
+                suffix = self.data[name].mksuffix(name, i)
+                ret.append(x.format(suffix))
+        return '\n'.join(list(filter(None, ret)))
+
     def mkslow_peripheral(self, *args):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                print "mkslow", name, count
+                #print "mkslow", name, count
                 x = self.data[name].mkslow_peripheral()
                 print name, count, x
                 suffix = self.data[name].mksuffix(name, i)

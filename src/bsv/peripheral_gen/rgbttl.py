@@ -9,7 +9,7 @@ class rgbttl(PBase):
     def num_axi_regs32(self):
         return 10
 
-    def mkslow_peripheral(self):
+    def mkfast_peripheral(self):
         sz = len(self.peripheral.pinspecs) - 4  # subtract CK, DE, HS, VS
         return "        Ifc_rgbttl_dummy lcd{0} <-  mkrgbttl_dummy();"
 

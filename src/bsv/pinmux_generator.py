@@ -136,7 +136,7 @@ def write_soc(soc, soct, p, ifaces, iocells):
     regdef = ifaces.axi_reg_def()
     slavedecl = ifaces.axi_slave_idx()
     fnaddrmap = ifaces.axi_addr_map()
-    mkfast = ifaces.mkslow_peripheral()
+    mkfast = ifaces.mkfast_peripheral()
     mkcon = ifaces.mk_connection()
     mkcellcon = ifaces.mk_cellconn()
     pincon = ifaces.mk_pincon()
