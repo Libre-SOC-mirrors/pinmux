@@ -210,11 +210,18 @@ class PBase(object):
     def extfastifinstance(self, name, count):
         return ''
 
-    def extifinstance(self, name, count):
-        sname = self.peripheral.iname().format(count)
+    def _extifinstance(self, name, count, suffix, prefix, samename=False):
         pname = self.get_iname(count)
-        template = "        interface {0} = pinmux.peripheral_side.{1};"
-        return template.format(pname, sname)
+        if samename:
+            sname = pname
+        else:
+            sname = self.peripheral.iname().format(count)
+        template = "        interface {0}{3} = {2}{1};"
+        return template.format(pname, sname, prefix, suffix)
+
+    def extifinstance(self, name, count):
+        return self._extifinstance(name, count, "",
+                                            "pinmux.peripheral_side.")
 
 
 mkplic_rule = """\

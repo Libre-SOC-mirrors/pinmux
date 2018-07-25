@@ -7,47 +7,13 @@ class jtag(PBase):
         return "    import jtagtdm::*;\n"
 
     def extfastifinstance(self, name, count):
-        # YUK!
-        print "jtag", name, count
-        return """\
-            method Action tms_i(Bit#(1) tms);
-                {0}.tms_i(tms);
-            endmethod
-            method Action tdi_i(Bit#(1) tdi);
-                {0}.tdi_i(tdi);
-            endmethod
-            method Action bs_chain_i(Bit#(1) bs_chain);
-                {0}.bs_chain_i(bs_chain);
-            endmethod
-            method Bit#(1) shiftBscan2Edge={0}.shiftBscan2Edge;
-            method Bit#(1) selectJtagInput={0}.selectJtagInput;
-            method Bit#(1) selectJtagOutput={0}.selectJtagOutput;
-            method Bit#(1) updateBscan={0}.updateBscan;
-            method Bit#(1) bscan_in={0}.bscan_in;
-            method Bit#(1) scan_shift_en={0}.scan_shift_en;
-            method Bit#(1) tdo={0}.tdo;
-            method Bit#(1) tdo_oe={0}.tdo_oe;
-""".format(self.name, count)
+        return self._extifinstance(name, count, "_out", "", True)
 
 
 
     def fastifdecl(self, name, count):
         # YUK!
-        template = """ \
-         (*always_ready,always_enabled*) method Action tms_i(Bit#(1) tms);
-         (*always_ready,always_enabled*) method Action tdi_i(Bit#(1) tdi);
-         (*always_ready,always_enabled*)
-                                 method Action bs_chain_i(Bit#(1) bs_chain);
-         (*always_ready,always_enabled*) method Bit#(1) shiftBscan2Edge;
-         (*always_ready,always_enabled*) method Bit#(1) selectJtagInput;
-         (*always_ready,always_enabled*) method Bit#(1) selectJtagOutput;
-         (*always_ready,always_enabled*) method Bit#(1) updateBscan;
-         (*always_ready,always_enabled*) method Bit#(1) bscan_in;
-         (*always_ready,always_enabled*) method Bit#(1) scan_shift_en;
-         (*always_ready,always_enabled*) method Bit#(1) tdo;
-         (*always_ready,always_enabled*) method Bit#(1) tdo_oe;
-"""
-        return template
+        return "          Ifc_jtagdtm jtag{0}_out;".format(count);
 
     def mkfast_peripheral(self):
         return """\
