@@ -110,7 +110,7 @@ def write_slow(slow, slowt, p, ifaces, iocells):
     mkcon = ifaces.mk_connection()
     mkcellcon = ifaces.mk_cellconn()
     pincon = ifaces.mk_pincon()
-    inst = ifaces.slowifinstance()
+    inst = ifaces.extifinstance()
     mkplic = ifaces.mk_plic()
     numsloirqs = ifaces.mk_sloirqsdef()
     ifacedef = ifaces.mk_ext_ifacedef()

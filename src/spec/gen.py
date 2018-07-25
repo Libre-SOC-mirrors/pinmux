@@ -3,7 +3,7 @@ import os.path
 from spec.interfaces import Pinouts
 
 
-def specgen(of, pth, pinouts, bankspec, pinbanks, fixedpins):
+def specgen(of, pth, pinouts, bankspec, pinbanks, fixedpins, fastbus):
     """ generates a specification of pinouts (tsv files)
         for reading in by pinmux.
 
@@ -31,7 +31,12 @@ def specgen(of, pth, pinouts, bankspec, pinbanks, fixedpins):
     with open(os.path.join(pth, 'interfaces.txt'), 'w') as f:
         for k in pinouts.fnspec.keys():
             s = pinouts.fnspec[k]
-            f.write("%s\t%d\n" % (k.lower(), len(s)))
+            line = [k.lower(), str(len(s))]
+            for b in fastbus:
+                if b.startswith(k.lower()):
+                    line.append(b)
+            line = '\t'.join(line)
+            f.write("%s\n" % line)
             s0 = s[list(s.keys())[0]]  # hack, take first
             gangedgroup = pinouts.ganged[k]
             with open(os.path.join(pth, '%s.txt' % k.lower()), 'w') as g:

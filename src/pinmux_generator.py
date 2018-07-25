@@ -90,7 +90,8 @@ if __name__ == '__main__':
             if testing:
                 dummytest(ps, output_dir, output_type)
             else:
-                specgen(of, output_dir, pinout, bankspec, pinspec, fixedpins)
+                specgen(of, output_dir, pinout,
+                        bankspec, pinspec, fixedpins, ps.fastbus)
     else:
         if output_type == 'bsv':
             from bsv.pinmux_generator import pinmuxgen as gentypes

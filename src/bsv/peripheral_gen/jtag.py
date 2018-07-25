@@ -14,11 +14,5 @@ class jtag(PBase):
 
     def slowifdeclmux(self, name, count):
         sname = self.get_iname(count)
-        return "        interface PeripheralSideJTAG %s_out;" % sname
-
-    def slowifinstance(self, name, count):
-        sname = self.peripheral.iname().format(count)
-        pname = self.get_iname(count)
-        template = "        interface {0}_out = pinmux.peripheral_side.{1};"
-        return template.format(pname, sname)
+        return "        interface PeripheralSideJTAG %s;" % sname
 

@@ -57,7 +57,8 @@ def pinspec():
                       'ULPI2': 'ULPI (USB Low Pin-count) 2',
                       }
 
-    ps = PinSpec(pinbanks, fixedpins, function_names)
+    ps = PinSpec(pinbanks, fixedpins, function_names,
+                 ['lcd0', 'jtag0'])
 
     # Bank A, 0-27
     ps.gpio("", ('A', 0), 0, 0, 28)

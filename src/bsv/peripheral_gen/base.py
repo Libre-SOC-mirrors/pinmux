@@ -8,9 +8,6 @@ class PBase(object):
     def slowifdeclmux(self, name, count):
         return ''
 
-    def slowifinstance(self, name, count):
-        return ''
-
     def slowimport(self):
         return ''
 
@@ -179,6 +176,13 @@ class PBase(object):
     def mk_ext_ifacedef(self, iname, inum):
         return ''
 
+    def extifinstance(self, name, count):
+        sname = self.peripheral.iname().format(count)
+        pname = self.get_iname(count)
+        template = "        interface {0} = pinmux.peripheral_side.{1};"
+        return template.format(pname, sname)
+
+
 
 mkplic_rule = """\
      rule rl_connect_{0}_to_plic_{2};
@@ -230,7 +234,7 @@ class PeripheralIface(object):
             self.slow = slow(ifacename)
             self.slow.peripheral = self
         for fname in ['slowimport',
-                      'slowifinstance', 'slowifdecl', 'slowifdeclmux',
+                      'extifinstance', 'slowifdecl', 'slowifdeclmux',
                       'mkslow_peripheral', 'mk_plic', 'mk_ext_ifacedef',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
             fn = CallFn(self, fname)
@@ -271,11 +275,11 @@ class PeripheralInterfaces(object):
             ret.append(self.data[name].slowimport())
         return '\n'.join(list(filter(None, ret)))
 
-    def slowifinstance(self, *args):
+    def extifinstance(self, *args):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
-                ret.append(self.data[name].slowifinstance(name, i))
+                ret.append(self.data[name].extifinstance(name, i))
         return '\n'.join(list(filter(None, ret)))
 
     def slowifdeclmux(self, *args):

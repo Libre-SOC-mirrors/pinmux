@@ -5,7 +5,8 @@ from spec.ifaceprint import display_fixed
 
 
 class PinSpec(Pinouts):
-    def __init__(self, pinbanks, fixedpins, function_names):
+    def __init__(self, pinbanks, fixedpins, function_names, fast=None):
+        self.fastbus = fast or []
         self.pinbanks = pinbanks
         self.fixedpins = fixedpins
         self.function_names = function_names
