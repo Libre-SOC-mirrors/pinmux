@@ -55,37 +55,37 @@ package Soc;
 {4}
 
 
-        `ifdef DMA
-            import DMA				 :: *;
-        `endif
-        `ifdef BOOTROM
-            import BootRom			::*;
-        `endif
-        `ifdef SDRAM
-            import sdr_top			 :: *;
+    `ifdef DMA
+        import DMA				 :: *;
     `endif
-        `ifdef BRAM
-            import Memory_AXI4	::*;
-        `endif
-        `ifdef TCMemory
-            import TCM::*;
-        `endif
-        `ifdef Debug
-            import jtagdtm::*;
-            import DebugModule::*;
-        `else
-            import core::*;
-        `endif
-`ifdef  VME
-            import vme_top ::*;
-`endif
+    `ifdef BOOTROM
+        import BootRom			::*;
+    `endif
+    `ifdef SDRAM
+        import sdr_top			 :: *;
+    `endif
+    `ifdef BRAM
+        import Memory_AXI4	::*;
+    `endif
+    `ifdef TCMemory
+        import TCM::*;
+    `endif
+    `ifdef Debug
+        import jtagdtm::*;
+        import DebugModule::*;
+    `else
+        import core::*;
+    `endif
+    `ifdef  VME
+        import vme_top ::*;
+    `endif
 
-`ifdef VME
-            import vme_master::*;
-`endif
-`ifdef FlexBus
-            import FlexBus_Types::*;
-`endif
+    `ifdef VME
+        import vme_master::*;
+    `endif
+    `ifdef FlexBus
+        import FlexBus_Types::*;
+    `endif
 {0}
 
     /*========================= */
@@ -93,28 +93,29 @@ package Soc;
         interface SP_ios slow_ios;
         (*always_ready,always_enabled*)
         method Action boot_sequence(Bit#(1) bootseq);
-        
-          `ifdef SDRAM 
+            
+        `ifdef SDRAM 
             (*always_ready*) interface Ifc_sdram_out sdram_out; 
         `endif
-      `ifdef DDR
-        (*prefix="M_AXI"*) interface
-                AXI4_Master_IFC#(`PADDR, `Reg_width, `USERSPACE) master;
-      `endif
-        `ifdef HYPER
-            (*always_ready,always_enabled*)	
-           interface Ifc_flash ifc_flash;
+        ifdef DDR
+            (*prefix="M_AXI"*) interface
+                   AXI4_Master_IFC#(`PADDR, `Reg_width, `USERSPACE) master;
         `endif
-    /*=============================================== */
-       `ifdef VME
-                interface Vme_out  proc_ifc;
-            interface Data_bus_inf proc_dbus;
+        `ifdef HYPER
+             (*always_ready,always_enabled*)	
+             interface Ifc_flash ifc_flash;
+        `endif
+        /*=============================================== */
+        `ifdef VME
+             interface Vme_out  proc_ifc;
+             interface Data_bus_inf proc_dbus;
         `endif
         `ifdef FlexBus
-            interface FlexBus_Master_IFC flexbus_out;
+             interface FlexBus_Master_IFC flexbus_out;
         `endif
 {1}
     endinterface
+
     (*synthesize*)
     module mkSoc #(Bit#(`VADDR) reset_vector,
                  Clock slow_clock, Reset slow_reset, Clock uart_clock, 
@@ -123,7 +124,7 @@ package Soc;
         Clock core_clock <-exposeCurrentClock; // slow peripheral clock
         Reset core_reset <-exposeCurrentReset; // slow peripheral reset
 {2}
-      `ifdef Debug 
+        `ifdef Debug 
             Ifc_DebugModule core<-mkDebugModule(reset_vector);
         `else
             Ifc_core_AXI4 core <-mkcore_AXI4(reset_vector);
@@ -134,7 +135,7 @@ package Soc;
         `ifdef SDRAM
             Ifc_sdr_slave sdram<- mksdr_axi4_slave(clk0);
         `endif
-    `ifdef BRAM
+        `ifdef BRAM
             Memory_IFC#(`SDRAMMemBase,`Addr_space)main_memory <- 
                         mkMemory("code.mem.MSB","code.mem.LSB","MainMEM");
         `endif
