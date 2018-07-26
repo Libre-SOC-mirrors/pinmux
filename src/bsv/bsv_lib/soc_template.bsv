@@ -223,7 +223,7 @@ package Soc;
                               flexbus.axi_side);
             `endif
 
-// fabric connections
+            // fabric connections
 {5}
 
             `ifdef DMA

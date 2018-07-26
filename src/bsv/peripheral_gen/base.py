@@ -576,7 +576,7 @@ class PeripheralInterfaces(object):
                     print "txt", txt
                     print self.data[name].mk_connection
                 ret.append(txt)
-        return '\n'.join(li(list(filter(None, ret)), 4))
+        return '\n'.join(li(list(filter(None, ret)), 12))
 
     def mk_connection(self, *args):
         ret = []
