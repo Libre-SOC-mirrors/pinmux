@@ -71,7 +71,6 @@ package Soc;
         import TCM::*;
     `endif
     `ifdef Debug
-        import jtagdtm::*;
         import DebugModule::*;
     `else
         import core::*;
