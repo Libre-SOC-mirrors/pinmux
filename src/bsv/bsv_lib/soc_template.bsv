@@ -113,25 +113,27 @@ package Soc;
 			BootRom_IFC bootrom <-mkBootRom;
 		`endif
 		`ifdef SDRAM
-			Ifc_sdr_slave			sdram				<- mksdr_axi4_slave(clk0);
+			Ifc_sdr_slave sdram<- mksdr_axi4_slave(clk0);
 		`endif
     `ifdef BRAM
-			Memory_IFC#(`SDRAMMemBase,`Addr_space) main_memory <- mkMemory("code.mem.MSB","code.mem.LSB","MainMEM");
+			Memory_IFC#(`SDRAMMemBase,`Addr_space)main_memory <- 
+                        mkMemory("code.mem.MSB","code.mem.LSB","MainMEM");
 		`endif
 		`ifdef TCMemory
 			Ifc_TCM					tcm				<- mkTCM;	
 		`endif
 		`ifdef DMA
-			DmaC#(7,`NUM_DMACHANNELS)				dma				<- mkDMA();
+			DmaC#(7,`NUM_DMACHANNELS) dma	<- mkDMA();
 		`endif
 			`ifdef VME
 			Ifc_vme_top             vme             <-mkvme_top();
 			`endif	
         `ifdef FlexBus
             AXI4_Slave_to_FlexBus_Master_Xactor_IFC #(32, 64,0)
-                                            flexbus <- mkAXI4_Slave_to_FlexBus_Master_Xactor;
+                            flexbus <- mkAXI4_Slave_to_FlexBus_Master_Xactor;
         `endif
-		Ifc_slow_peripherals slow_peripherals <-mkslow_peripherals(core_clock, core_reset, uart_clock, 
+		Ifc_slow_peripherals slow_peripherals <-mkslow_peripherals(
+          core_clock, core_reset, uart_clock, 
           uart_reset, clocked_by slow_clock , reset_by slow_reset 
           `ifdef PWM_AXI4Lite , ext_pwm_clock `endif );	
 
@@ -140,42 +142,66 @@ package Soc;
 		 		fabric <- mkAXI4_Fabric(fn_addr_to_slave_num);
 
    	// Connect traffic generators to fabric
-   	mkConnection (core.dmem_master,	fabric.v_from_masters [fromInteger(valueOf(Dmem_master_num))]);
-   	mkConnection (core.imem_master,	fabric.v_from_masters [fromInteger(valueOf(Imem_master_num))]);
+   	mkConnection (core.dmem_master,fabric.v_from_masters
+                              [fromInteger(valueOf(Dmem_master_num))]);
+   	mkConnection (core.imem_master,	fabric.v_from_masters 
+                              [fromInteger(valueOf(Imem_master_num))]);
 		`ifdef Debug
-			mkConnection (core.debug_master, fabric.v_from_masters [fromInteger(valueOf(Debug_master_num))]);
+			mkConnection (core.debug_master, fabric.v_from_masters 
+                              [fromInteger(valueOf(Debug_master_num))]);
 		`endif
 		`ifdef DMA
-         mkConnection (dma.mmu, fabric.v_from_masters[fromInteger(valueOf(DMA_master_num))]);
+         mkConnection (dma.mmu, fabric.v_from_masters
+                              [fromInteger(valueOf(DMA_master_num))]);
 		`endif
 
 
 		// Connect fabric to memory slaves
 			`ifdef Debug
-				mkConnection (fabric.v_to_slaves [fromInteger(valueOf(Debug_slave_num))],core.debug_slave);
+				mkConnection (fabric.v_to_slaves 
+                              [fromInteger(valueOf(Debug_slave_num))],
+                              core.debug_slave);
 			`endif
 			`ifdef SDRAM	
-				mkConnection (fabric.v_to_slaves [fromInteger(valueOf(Sdram_slave_num))],	sdram.axi4_slave_sdram); // 
-	   		mkConnection (fabric.v_to_slaves [fromInteger(valueOf(Sdram_cfg_slave_num))],	sdram.axi4_slave_cntrl_reg); // 
+				mkConnection (fabric.v_to_slaves 
+                              [fromInteger(valueOf(Sdram_slave_num))],	
+                              sdram.axi4_slave_sdram); // 
+	   		mkConnection (fabric.v_to_slaves 
+                              [fromInteger(valueOf(Sdram_cfg_slave_num))],
+                              sdram.axi4_slave_cntrl_reg); // 
       `endif
       `ifdef BRAM
-				mkConnection(fabric.v_to_slaves[fromInteger(valueOf(Sdram_slave_num))],main_memory.axi_slave);
+				mkConnection(fabric.v_to_slaves
+                              [fromInteger(valueOf(Sdram_slave_num))],
+                              main_memory.axi_slave);
 			`endif
 			`ifdef BOOTROM
-				mkConnection (fabric.v_to_slaves [fromInteger(valueOf(BootRom_slave_num))],bootrom.axi_slave);
+				mkConnection (fabric.v_to_slaves 
+                              [fromInteger(valueOf(BootRom_slave_num))],
+                              bootrom.axi_slave);
 			`endif
 			`ifdef DMA
-   			mkConnection (fabric.v_to_slaves [fromInteger(valueOf(Dma_slave_num))],	dma.cfg); //DMA slave
+   			mkConnection (fabric.v_to_slaves 
+                              [fromInteger(valueOf(Dma_slave_num))],	
+                              dma.cfg); //DMA slave
 			`endif
 			`ifdef TCMemory
-				mkConnection (fabric.v_to_slaves [fromInteger(valueOf(TCM_slave_num))],tcm.axi_slave);
+				mkConnection (fabric.v_to_slaves 
+                              [fromInteger(valueOf(TCM_slave_num))],
+                              tcm.axi_slave);
 			`endif
-			mkConnection(fabric.v_to_slaves [fromInteger(valueOf(SlowPeripheral_slave_num))],slow_peripherals.axi_slave);
+			mkConnection(fabric.v_to_slaves 
+                              [fromInteger(valueOf(SlowPeripheral_slave_num))],
+                              slow_peripherals.axi_slave);
 			`ifdef VME
-				mkConnection (fabric.v_to_slaves[fromInteger(valueOf(VME_slave_num))],vme.slave_axi_vme);
+				mkConnection (fabric.v_to_slaves
+                              [fromInteger(valueOf(VME_slave_num))],
+                              vme.slave_axi_vme);
 			`endif
 			`ifdef FlexBus
-				mkConnection (fabric.v_to_slaves[fromInteger(valueOf(FlexBus_slave_num))],flexbus.axi_side);
+				mkConnection (fabric.v_to_slaves
+                              [fromInteger(valueOf(FlexBus_slave_num))],
+                              flexbus.axi_side);
 			`endif
 
 // fabric connections
@@ -185,33 +211,6 @@ package Soc;
 			//rule to connect all interrupt lines to the DMA
 			//All the interrupt lines to DMA are active HIGH. For peripherals that are not connected, or those which do not
 			//generate an interrupt (like TCM), drive a constant 1 on the corresponding interrupt line.
-				`ifdef I2C1 SyncBitIfc#(Bit#(1)) i2c1_interrupt <-mkSyncBitToCC(slow_clock,slow_reset); `endif
-				`ifdef I2C0 SyncBitIfc#(Bit#(1)) i2c0_interrupt <-mkSyncBitToCC(slow_clock,slow_reset); `endif
-				`ifdef QSPI1 SyncBitIfc#(Bit#(1)) qspi1_interrupt <-mkSyncBitToCC(slow_clock,slow_reset); `endif
-				`ifdef QSPI0 SyncBitIfc#(Bit#(1)) qspi0_interrupt <-mkSyncBitToCC(slow_clock,slow_reset); `endif
-				`ifdef UART0 SyncBitIfc#(Bit#(1)) uart0_interrupt <-mkSyncBitToCC(uart_clock,uart_reset); `endif
-				rule synchronize_i2c_interrupts;
-					`ifdef I2C1 i2c1_interrupt.send(slow_peripherals.i2c1_isint); `endif
-					`ifdef I2C0 i2c0_interrupt.send(slow_peripherals.i2c0_isint); `endif
-				endrule
-				rule synchronize_qspi_interrupts;
-					`ifdef QSPI0 qspi0_interrupt.send(slow_peripherals.qspi0_isint); `endif
-					`ifdef QSPI1 qspi1_interrupt.send(slow_peripherals.qspi1_isint); `endif
-				endrule
-				rule synchronize_uart0_interrupt;
-					`ifdef UART0 uart0_interrupt.send(slow_peripherals.uart0_intr); `endif
-				endrule
-				rule rl_connect_interrupt_to_DMA;
-					Bit#(12) lv_interrupt_to_DMA= {{'d-1, 
-															`ifdef I2C1 i2c1_interrupt.read `else 1'b1 `endif , 
-															`ifdef I2C0 i2c0_interrupt.read `else 1'b1 `endif , 
-															`ifdef QSPI1 qspi1_interrupt.read `else 1'b1 `endif ,
-															1'b1, 
-															`ifdef QSPI0 qspi0_interrupt.read `else 1'b1 `endif , 
-															1'b1,1'b0, 
-															`ifdef UART0 uart0_interrupt.read `else 1'b1 `endif }};
-					dma.interrupt_from_peripherals(lv_interrupt_to_DMA);
-				endrule
 {7}
 			`endif
 
