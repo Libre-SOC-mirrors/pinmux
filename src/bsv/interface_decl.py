@@ -462,7 +462,6 @@ class InterfaceBus(InterfaceFmt):
         pins = self.get_buspins()
         plen = len(pins) / self.get_n_iopinsdiv()
 
-        res += '\n'
         template = "          interface {1}#(%s) {2};\n" % self.bitspec
         for i, n in enumerate(self.namelist):
             if not n:
