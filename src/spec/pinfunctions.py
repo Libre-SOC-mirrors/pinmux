@@ -143,11 +143,11 @@ def flexbus1(suffix, bank):
         inout.append(pname)
     for i in range(2):
         buspins.append("CS%d+" % i)
-    buspins += ['ALE', 'OE', 'RW', 'TA', 'CLK+',
-                'A0', 'A1', 'TS', 'TBST',
-                'TSIZ0', 'TSIZ1']
+    buspins += ['ALE+', 'OE+', 'RW+', 'TA-',
+                'TS+', 'TBST+',
+                'TSIZ0+', 'TSIZ1+']
     for i in range(4):
-        buspins.append("BWE%d" % i)
+        buspins.append("BWE%d+" % i)
     for i in range(2, 6):
         buspins.append("CS%d+" % i)
     return (buspins, inout)

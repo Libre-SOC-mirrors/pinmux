@@ -88,17 +88,17 @@ def pinspec():
     flexspec = {
         'FB_TS': ('FB_ALE', 2),
         'FB_CS2': ('FB_BWE2', 2),
-        'FB_A0': ('FB_BWE2', 3),
+        'FB_AD0': ('FB_BWE2', 3),
         'FB_CS3': ('FB_BWE3', 2),
-        'FB_A1': ('FB_BWE3', 3),
+        'FB_AD1': ('FB_BWE3', 3),
         'FB_TBST': ('FB_OE', 2),
         'FB_TSIZ0': ('FB_BWE0', 2),
         'FB_TSIZ1': ('FB_BWE1', 2),
     }
-    ps.gpio("", ('B', 0), 0, 0, 32)
+    ps.gpio("", ('B', 0), 0, 0, 18)
     ps.flexbus1("", ('B', 0), 1, spec=flexspec)
 
-    ps.gpio("", ('C', 0), 0, 0, 32)
+    ps.gpio("", ('C', 0), 0, 0, 24)
     ps.flexbus2("", ('C', 0), 1)
 
     # Scenarios below can be spec'd out as either "find first interface"
