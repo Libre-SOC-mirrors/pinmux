@@ -154,7 +154,15 @@ class Pin(object):
         return (name, res)
 
 
-class Interface(PeripheralIface):
+class InterfaceFmt(object):
+
+    def ifacepfmtdecpin(self, pin):
+        return pin.ifacepfmt(self.ifacepfmtdecfn)
+
+    def ifacepfmtdecfn(self, name):
+        return name
+
+class Interface(PeripheralIface, InterfaceFmt):
     """ create an interface from a list of pinspecs.
         each pinspec is a dictionary, see Pin class arguments
         single indicates that there is only one of these, and
@@ -170,6 +178,7 @@ class Interface(PeripheralIface):
 
     def __init__(self, ifacename, pinspecs, ganged=None, single=False):
         PeripheralIface.__init__(self, ifacename)
+        InterfaceFmt.__init__(self)
         self.ifacename = ifacename
         self.ganged = ganged or {}
         self.pins = []  # a list of instances of class Pin
@@ -288,9 +297,6 @@ class Interface(PeripheralIface):
         res = '\n'.join(map(self.ifacefmtdecpin, self.pins)).format(*args)
         return '\n' + res  # pins is a list
 
-    def ifacepfmtdecfn(self, name):
-        return name
-
     def ifacefmtdecfn(self, name):
         return name  # like: uart
 
@@ -310,9 +316,6 @@ class Interface(PeripheralIface):
     def wirefmtpin(self, pin):
         return pin.wirefmt(self.ifacefmtoutfn, self.ifacefmtinfn,
                            self.ifacefmtdecfn2)
-
-    def ifacepfmtdecpin(self, pin):
-        return pin.ifacepfmt(self.ifacepfmtdecfn)
 
     def ifacefmtdecpin(self, pin):
         return pin.ifacefmt(self.ifacefmtdecfn)
@@ -424,18 +427,28 @@ class IOInterface(Interface):
         return generic_io.format(*args)
 
 
-class InterfaceBus(object):
+class InterfaceBus(InterfaceFmt):
 
-    def __init__(self, namelist, bitspec, filterbus):
+    def __init__(self, pins, is_inout, namelist, bitspec, filterbus):
+        InterfaceFmt.__init__(self)
         self.namelist = namelist
         self.bitspec = bitspec
         self.fbus = filterbus  # filter identifying which are bus pins
+        self.pins_ = pins
+        self.is_inout = is_inout
+        self.buspins = filter(lambda x: x.name_.startswith(self.fbus),
+                              self.pins_)
+        self.nonbuspins = filter(lambda x: not x.name_.startswith(self.fbus),
+                              self.pins_)
 
     def get_nonbuspins(self):
-        return filter(lambda x: not x.name_.startswith(self.fbus), self.pins)
+        return self.nonbuspins
 
     def get_buspins(self):
-        return filter(lambda x: x.name_.startswith(self.fbus), self.pins)
+        return self.buspins
+
+    def get_n_iopinsdiv(self):
+        return 3 if self.is_inout else 1
 
     def ifacepfmt(self, *args):
         pins = self.get_nonbuspins()
@@ -443,7 +456,7 @@ class InterfaceBus(object):
         res = res.format(*args)
 
         pins = self.get_buspins()
-        plen = self.get_n_iopins(pins)
+        plen = len(pins) / self.get_n_iopinsdiv()
 
         res += '\n'
         template = "          interface {1}#(%s) {2};\n" % self.bitspec
@@ -461,8 +474,11 @@ class InterfaceBus(object):
         res = res.format(*args)
 
         pins = self.get_buspins()
-        plen = self.get_n_iopins(pins)
+        plen = len(pins) / self.get_n_iopinsdiv()
+        for pin in pins:
+            print "ifbus pins", pin.name_, plen
         bitspec = self.bitspec.format(plen)
+        print self
         return '\n' + res + self.vectorifacedef2(
             pins, plen, self.namelist, bitspec, *args) + '\n'
 
@@ -477,49 +493,74 @@ class InterfaceBus(object):
                              decfn)
 
 
+class InterfaceMultiBus(object):
+
+    def __init__(self, pins):
+        self.multibus_specs = []
+        self.nonbuspins = pins
+        self.nonb = self.add_bus(False, [], '', "xxxxxxxnofilter")
+
+    def add_bus(self, is_inout, namelist, bitspec, filterbus):
+        pins = self.nonbuspins
+        buspins = filter(lambda x: x.name_.startswith(filterbus), pins)
+        nbuspins = filter(lambda x: not x.name_.startswith(filterbus), pins)
+        self.nonbuspins = nbuspins
+        b = InterfaceBus(buspins, is_inout,
+                         namelist, bitspec, filterbus)
+        print is_inout, namelist, filterbus, buspins
+        self.multibus_specs.append(b)
+        self.multibus_specs[0].pins_ = nbuspins
+        self.multibus_specs[0].nonbuspins = nbuspins
+
+    def ifacepfmt(self, *args):
+        res = Interface.ifacepfmt(self, *args)
+        return res
+        for b in self.multibus_specs:
+            res += b.ifacepfmt(*args)
+        return res
+
+    def ifacedef2(self, *args):
+        res = Interface.ifacedef2(self, *args)
+        return res
+        for b in self.multibus_specs:
+            res += b.ifacedef2(*args)
+        return res
+
+
 class InterfaceLCD(InterfaceBus, Interface):
 
     def __init__(self, *args):
-        InterfaceBus.__init__(self, ['data_out', None, None],
+        Interface.__init__(self, *args)
+        InterfaceBus.__init__(self, self.pins, False, ['data_out', None, None],
                               "Bit#({0})", "out")
-        Interface.__init__(self, *args)
 
-    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
-        return len(pins)
+class InterfaceFlexBus(InterfaceMultiBus, Interface):
 
-
-class InterfaceFlexBus(InterfaceBus, Interface):
-
-    def __init__(self, *args):
-        InterfaceBus.__init__(self, ['ad_out', 'ad_out_en', 'ad_in'],
+    def __init__(self, ifacename, pinspecs, ganged=None, single=False):
+        Interface.__init__(self, ifacename, pinspecs, ganged, single)
+        InterfaceMultiBus.__init__(self, self.pins)
+        self.add_bus(True, ['ad_out', 'ad_out_en', 'ad_in'],
                               "Bit#({0})", "ad")
-        Interface.__init__(self, *args)
+        self.add_bus(True, ['bwe', None, None],
+                              "Bit#({0})", "bwe")
 
-    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
-        return len(pins) / 3
-
+    def ifacedef2(self, *args):
+        return InterfaceMultiBus.ifacedef2(self, *args)
 
 class InterfaceSD(InterfaceBus, Interface):
 
     def __init__(self, *args):
-        InterfaceBus.__init__(self, ['out', 'out_en', 'in'],
-                              "Bit#({0})", "d")
         Interface.__init__(self, *args)
-
-    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
-        return len(pins) / 3
-
+        InterfaceBus.__init__(self, self.pins, True, ['out', 'out_en', 'in'],
+                              "Bit#({0})", "d")
 
 class InterfaceNSPI(InterfaceBus, Interface):
 
     def __init__(self, *args):
-        InterfaceBus.__init__(self, ['io_out', 'io_out_en', 'io_in'],
-                              "Bit#({0})", "io")
         Interface.__init__(self, *args)
-
-    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
-        return len(pins) / 3
-
+        InterfaceBus.__init__(self, self.pins, True,
+                              ['io_out', 'io_out_en', 'io_in'],
+                              "Bit#({0})", "io")
 
 class InterfaceEINT(Interface):
     """ uses old-style (non-get/put) for now
@@ -539,13 +580,9 @@ class InterfaceGPIO(InterfaceBus, Interface):
     """
 
     def __init__(self, ifacename, pinspecs, ganged=None, single=False):
-        InterfaceBus.__init__(self, ['out', 'out_en', 'in'],
-                              "Vector#({0},Bit#(1))", ifacename[-1])
         Interface.__init__(self, ifacename, pinspecs, ganged, single)
-
-    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
-        return len(pins) / 3
-
+        InterfaceBus.__init__(self, self.pins, True, ['out', 'out_en', 'in'],
+                              "Vector#({0},Bit#(1))", ifacename[-1])
 
 class Interfaces(InterfacesBase, PeripheralInterfaces):
     """ contains a list of interface definitions
