@@ -152,18 +152,20 @@ package Soc;
                             flexbus <- mkAXI4_Slave_to_FlexBus_Master_Xactor;
         `endif
         Ifc_slow_peripherals slow_peripherals <-mkslow_peripherals(
-          core_clock, core_reset, uart_clock, 
-          uart_reset, clocked_by slow_clock , reset_by slow_reset 
-          `ifdef PWM_AXI4Lite , ext_pwm_clock `endif );	
+                          core_clock, core_reset, uart_clock, 
+                          uart_reset, clocked_by slow_clock ,
+                          reset_by slow_reset 
+                          `ifdef PWM_AXI4Lite , ext_pwm_clock `endif );	
 
-    // Fabric
-    AXI4_Fabric_IFC #(Num_Masters, Num_Slaves, `PADDR, `Reg_width,`USERSPACE)
-                fabric <- mkAXI4_Fabric(fn_addr_to_slave_num);
+        // Fabric
+        AXI4_Fabric_IFC #(Num_Masters, Num_Slaves,
+                          `PADDR, `Reg_width,`USERSPACE)
+                        fabric <- mkAXI4_Fabric(fn_addr_to_slave_num);
 
-    // Connect traffic generators to fabric
-    mkConnection (core.dmem_master,fabric.v_from_masters
+        // Connect traffic generators to fabric
+        mkConnection (core.dmem_master,fabric.v_from_masters
                               [fromInteger(valueOf(Dmem_master_num))]);
-    mkConnection (core.imem_master,	fabric.v_from_masters 
+        mkConnection (core.imem_master,	fabric.v_from_masters 
                               [fromInteger(valueOf(Imem_master_num))]);
         `ifdef Debug
             mkConnection (core.debug_master, fabric.v_from_masters 
