@@ -25,7 +25,7 @@ class PBase(object):
 
     def extifdecl(self, name, count):
         sname = self.get_iname(count)
-        return "        interface PeripheralSide%s %s;" % (name.upper(), sname)
+        return "interface PeripheralSide%s %s;" % (name.upper(), sname)
 
     def has_axi_master(self):
         return False
@@ -155,7 +155,7 @@ class PBase(object):
                         ps_ = ps + '_out'
                     else:
                         ps_ = ps
-                    ret.append("      mkConnection({0},\n\t\t\t{1}.{2});"
+                    ret.append("mkConnection({0},\n\t\t\t{1}.{2});"
                                .format(ps_, n_, fname))
                 fname = None
                 if p.get('outen'):
@@ -164,7 +164,7 @@ class PBase(object):
                     if isinstance(fname, str):
                         fname = "{0}.{1}".format(n_, fname)
                     fname = self.pinname_tweak(pname, 'outen', fname)
-                    ret.append("      mkConnection({0}_outen,\n\t\t\t{1});"
+                    ret.append("mkConnection({0}_outen,\n\t\t\t{1});"
                                .format(ps, fname))
             if typ == 'in' or typ == 'inout':
                 fname = self.pinname_in(pname)
@@ -176,8 +176,8 @@ class PBase(object):
                     n_ = "{0}{1}".format(n, count)
                     n_ = '{0}.{1}'.format(n_, fname)
                     n_ = self.ifname_tweak(pname, 'in', n_)
-                    ret.append("      mkConnection({1}, {0});".format(ps_, n_))
-        return '\n'.join(ret)
+                    ret.append("mkConnection({1}, {0});".format(ps_, n_))
+        return '\n'.join(li(ret, 6))
 
     def mk_cellconn(self, *args):
         return ''
@@ -192,24 +192,24 @@ class PBase(object):
         return i
 
     def __mk_connection(self, con, aname, fabricname):
-        txt = "        mkConnection ({2}.v_to_slaves\n" + \
-            "                    [fromInteger(valueOf({1}))],\n" + \
-            "                    {0});"
+        txt = "mkConnection ({2}.v_to_slaves\n" + \
+              "            [fromInteger(valueOf({1}))],\n" + \
+              "            {0});"
 
         print "PBase __mk_connection", self.name, aname
         if not con:
             return ''
-        return txt.format(con, aname, fabricname)
+        return li(txt.format(con, aname, fabricname), 8)
 
     def __mk_master_connection(self, con, aname):
-        txt = "        mkConnection (slow_fabric.v_to_slaves\n" + \
-            "                    [fromInteger(valueOf({1}))],\n" + \
-            "                    {0});"
+        txt = "mkConnection (slow_fabric.v_to_slaves\n" + \
+              "            [fromInteger(valueOf({1}))],\n" + \
+              "            {0});"
 
         print "PBase __mk_connection", self.name, aname
         if not con:
             return ''
-        return txt.format(con, aname)
+        return li(txt.format(con, aname), 8)
 
     def mk_connection(self, count, fabricname, typ, name=None):
         if name is None:
@@ -249,14 +249,14 @@ class PBase(object):
         if niq == 0:
             return ('', irq_offs)
         name = self.get_iname(inum)
-        res.append("    // PLIC rules for {0}".format(name))
+        res.append("// PLIC rules for {0}".format(name))
         for idx in range(niq):
             plic_obj = self.plic_object(name, idx)
             print "plic_obj", name, idx, plic_obj
             plic = mkplic_rule.format(name, plic_obj, irq_offs)
             res.append(plic)
             irq_offs += 1  # increment to next irq
-        return ('\n'.join(res), irq_offs)
+        return ('\n'.join(li(res, 5)), irq_offs)
 
     def mk_ext_ifacedef(self, iname, inum):
         return ''
@@ -279,12 +279,12 @@ class PBase(object):
 
 
 mkplic_rule = """\
-     rule rl_connect_{0}_to_plic_{2};
-        if({1} == 1'b1) begin
-            ff_gateway_queue[{2}].enq(1);
-            plic.ifc_external_irq[{2}].irq_frm_gateway(True);
-        end
-     endrule
+rule rl_connect_{0}_to_plic_{2};
+   if({1} == 1'b1) begin
+       ff_gateway_queue[{2}].enq(1);
+       plic.ifc_external_irq[{2}].irq_frm_gateway(True);
+   end
+endrule
 """
 
 axi_master_declarations= """\
@@ -441,7 +441,7 @@ class PeripheralInterfaces(object):
                 if not self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].extifdecl(name, i))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def slowifdeclmux(self, *args):
         ret = []
