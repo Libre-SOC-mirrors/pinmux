@@ -60,7 +60,7 @@ def pinspec():
                       }
 
     ps = PinSpec(pinbanks, fixedpins, function_names,
-                 ['lcd', 'jtag'])
+                 ['lcd', 'jtag', 'flexbus' ])
 
     # Bank A, 0-27
     ps.gpio("", ('A', 0), 0, 0, 28)
