@@ -20,6 +20,7 @@ BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/qspi
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/spi
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/sdmmc
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/flexbus
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/jtagdtm
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/uart
 
 default: gen_verilog
