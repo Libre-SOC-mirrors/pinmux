@@ -488,6 +488,17 @@ class InterfaceLCD(InterfaceBus, Interface):
         return len(pins)
 
 
+class InterfaceFlexBus(InterfaceBus, Interface):
+
+    def __init__(self, *args):
+        InterfaceBus.__init__(self, ['ad_out', 'ad_out_en', 'ad_in'],
+                              "Bit#({0})", "ad")
+        Interface.__init__(self, *args)
+
+    def get_n_iopins(self, pins):  # HACK! assume in/out/outen so div by 3
+        return len(pins) / 3
+
+
 class InterfaceSD(InterfaceBus, Interface):
 
     def __init__(self, *args):
@@ -547,6 +558,7 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
                                  'mspi': InterfaceNSPI,
                                  'lcd': InterfaceLCD,
                                  'sd': InterfaceSD,
+                                 'fb': InterfaceFlexBus,
                                  'qspi': InterfaceNSPI,
                                  'mqspi': InterfaceNSPI,
                                  'eint': InterfaceEINT})
