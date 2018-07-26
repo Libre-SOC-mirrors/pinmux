@@ -8,10 +8,16 @@ class gpio(PBase):
                "    import mux::*;\n" + \
                "    import gpio::*;\n"
 
+    def extifinstance2(self, name, count):
+        template = "interface pad_config{0} = {1}.pad_config;"
+        dname = self.mksuffix(self.name, count)
+        return template.format(dname, name)
+
     def slowifdeclmux(self, name, count):
         size = len(self.peripheral.pinspecs)
-        return "        interface GPIO_config#(%d) pad_config%d;" % \
-            (size, count)
+        dname = self.mksuffix(self.name, count)
+        return "interface GPIO_config#(%d) pad_config%s;" % \
+            (size, dname)
 
     def num_axi_regs32(self):
         return 2

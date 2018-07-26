@@ -273,6 +273,9 @@ class PBase(object):
         template = "        interface {0}{3} = {2}{1};"
         return template.format(pname, sname, prefix, suffix)
 
+    def extifinstance2(self, name, count):
+        return ''
+
     def extifinstance(self, name, count):
         return self._extifinstance(name, count, "",
                                             "pinmux.peripheral_side.")
@@ -362,7 +365,8 @@ class PeripheralIface(object):
             self.slow = slow(ifacename)
             self.slow.peripheral = self
         for fname in ['slowimport',
-                      'extfastifinstance', 'extifinstance', 'extifdecl',
+                      'extfastifinstance',
+                      'extifinstance2', 'extifinstance', 'extifdecl',
                       'slowifdecl', 'slowifdeclmux',
                       'fastifdecl',
                       'mkslow_peripheral',
@@ -422,6 +426,14 @@ class PeripheralInterfaces(object):
                 if self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].extfastifinstance(name, i))
+        return '\n'.join(list(filter(None, ret)))
+
+    def extifinstance2(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                iname = self.data[name].iname().format(i)
+                ret.append(self.data[name].extifinstance2(name, i))
         return '\n'.join(list(filter(None, ret)))
 
     def extifinstance(self, *args):

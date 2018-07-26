@@ -114,6 +114,7 @@ def write_slow(slow, slowt, p, ifaces, iocells):
     mkcellcon = ifaces.mk_cellconn()
     pincon = ifaces.mk_pincon()
     inst = ifaces.extifinstance()
+    inst2 = ifaces.extifinstance2()
     mkplic = ifaces.mk_plic()
     numsloirqs = ifaces.mk_sloirqsdef()
     ifacedef = ifaces.mk_ext_ifacedef()
@@ -122,7 +123,8 @@ def write_slow(slow, slowt, p, ifaces, iocells):
         bsv_file.write(slowt.format(imports, ifdecl, regdef, slavedecl,
                                     fnaddrmap, mkslow, mkcon, mkcellcon,
                                     pincon, inst, mkplic,
-                                    numsloirqs, ifacedef))
+                                    numsloirqs, ifacedef,
+                                    inst2))
 
 def write_soc(soc, soct, p, ifaces, iocells):
     """ write out the soc.bsv file.

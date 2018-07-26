@@ -218,8 +218,8 @@ package slow_peripherals;
        */
 		endinterface
         interface iocell_side=pinmux.iocell_side;
-        interface pad_config0= gpioa.pad_config;
 {9}
+{13}
 		/*===================================*/
 	endmodule
 endpackage
