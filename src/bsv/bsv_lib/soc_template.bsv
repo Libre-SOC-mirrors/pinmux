@@ -81,7 +81,8 @@ package Soc;
 	  		(*always_ready*) interface Ifc_sdram_out sdram_out; 
   		`endif
       `ifdef DDR
-        (*prefix="M_AXI"*) interface AXI4_Master_IFC#(`PADDR, `Reg_width, `USERSPACE) master;
+        (*prefix="M_AXI"*) interface
+                AXI4_Master_IFC#(`PADDR, `Reg_width, `USERSPACE) master;
       `endif
 		`ifdef HYPER
 			(*always_ready,always_enabled*)	
@@ -98,7 +99,8 @@ package Soc;
 {1}
 	endinterface
 	(*synthesize*)
-	module mkSoc #(Bit#(`VADDR) reset_vector, Clock slow_clock, Reset slow_reset, Clock uart_clock, 
+	module mkSoc #(Bit#(`VADDR) reset_vector,
+                 Clock slow_clock, Reset slow_reset, Clock uart_clock, 
                  Reset uart_reset, Clock clk0, Clock tck, Reset trst
                  `ifdef PWM_AXI4Lite ,Clock ext_pwm_clock `endif )(Ifc_Soc);
 		Clock core_clock <-exposeCurrentClock; // slow peripheral clock
@@ -208,17 +210,22 @@ package Soc;
 {5}
 
 			`ifdef DMA
-			//rule to connect all interrupt lines to the DMA
-			//All the interrupt lines to DMA are active HIGH. For peripherals that are not connected, or those which do not
-			//generate an interrupt (like TCM), drive a constant 1 on the corresponding interrupt line.
+			// rule to connect all interrupt lines to the DMA
+			// All the interrupt lines to DMA are active
+			// HIGH. For peripherals that are not connected,
+			// or those which do not
+			// generate an interrupt (like TCM), drive a constant 1 
+            // on the corresponding interrupt line.
 {7}
 			`endif
 
 
-		/*======= Synchornization between the JTAG and the Debug Module ========= */
+		/*==== Synchornization between the JTAG and the Debug Module ===== */
 		`ifdef Debug
-			SyncFIFOIfc#(Bit#(40)) sync_request_to_dm <-mkSyncFIFOToCC(1,tck,trst);
-			SyncFIFOIfc#(Bit#(34)) sync_response_from_dm <-mkSyncFIFOFromCC(1,tck);
+			SyncFIFOIfc#(Bit#(40)) sync_request_to_dm <-
+                                        mkSyncFIFOToCC(1,tck,trst);
+			SyncFIFOIfc#(Bit#(34)) sync_response_from_dm <-
+                                        mkSyncFIFOFromCC(1,tck);
 			rule connect_tap_request_to_syncfifo;
 				let x<-tap.request_to_dm;
 				sync_request_to_dm.enq(x);
@@ -237,7 +244,7 @@ package Soc;
 				tap.response_from_dm(sync_response_from_dm.first);
 			endrule
 		`endif
-		/*======================================================================= */
+		/*============================================================ */
 	
         `ifdef FlexBus
             //rule drive_flexbus_inputs;
@@ -247,9 +254,12 @@ package Soc;
          `endif
 
 		`ifdef CLINT
-			SyncBitIfc#(Bit#(1)) clint_mtip_int <-mkSyncBitToCC(slow_clock,slow_reset);
-			SyncBitIfc#(Bit#(1)) clint_msip_int <-mkSyncBitToCC(slow_clock,slow_reset);
-			Reg#(Bit#(`Reg_width)) clint_mtime_value <-mkSyncRegToCC(0,slow_clock,slow_reset);
+			SyncBitIfc#(Bit#(1)) clint_mtip_int <-
+                                        mkSyncBitToCC(slow_clock,slow_reset);
+			SyncBitIfc#(Bit#(1)) clint_msip_int <-
+                                        mkSyncBitToCC(slow_clock,slow_reset);
+			Reg#(Bit#(`Reg_width)) clint_mtime_value <-
+                                        mkSyncRegToCC(0,slow_clock,slow_reset);
 			rule synchronize_clint_data;
 				clint_mtip_int.send(slow_peripherals.mtip_int);
 				clint_msip_int.send(slow_peripherals.msip_int);
@@ -262,7 +272,9 @@ package Soc;
 			endrule
 		`endif
 		`ifdef PLIC
-			Reg#(Tuple2#(Bool,Bool)) plic_interrupt_note <-mkSyncRegToCC(tuple2(False,False),slow_clock,slow_reset);
+			Reg#(Tuple2#(Bool,Bool)) plic_interrupt_note <-
+                                        mkSyncRegToCC(tuple2(False,False),
+                                                      slow_clock,slow_reset);
 			rule synchronize_interrupts;
 				let note <- slow_peripherals.intrpt_note;
 				plic_interrupt_note<=note;
@@ -279,12 +291,14 @@ package Soc;
 		`ifdef FlexBus
             interface flexbus_out = flexbus.flexbus_side;
 		`endif 
-      method Action boot_sequence(Bit#(1) bootseq) = core.boot_sequence(bootseq);
+      method Action boot_sequence(Bit#(1) bootseq) = 
+                            core.boot_sequence(bootseq);
 		`ifdef SDRAM
 			interface sdram_out=sdram.ifc_sdram_out;
 		`endif
     `ifdef DDR
-      interface master=fabric.v_to_slaves[fromInteger(valueOf(Sdram_slave_num))];
+      interface master=fabric.v_to_slaves
+                            [fromInteger(valueOf(Sdram_slave_num))];
     `endif
 		interface slow_ios=slow_peripherals.slow_ios;
 {6}
