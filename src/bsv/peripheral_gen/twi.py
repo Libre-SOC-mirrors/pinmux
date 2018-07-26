@@ -6,9 +6,12 @@ class twi(PBase):
     def slowimport(self):
         return "    import I2C_top           :: *;"
 
+    def irq_name(self):
+        return "twi{0}_isint"
+
     def slowifdecl(self):
         return "            interface I2C_out twi{0}_out;\n" + \
-               "            method Bit#(1) twi{0}_isint;"
+               "            method Bit#(1) %s;" % self.irq_name()
 
     def num_axi_regs32(self):
         return 8

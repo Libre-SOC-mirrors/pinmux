@@ -211,6 +211,7 @@ package Soc;
 															`ifdef UART0 uart0_interrupt.read `else 1'b1 `endif }};
 					dma.interrupt_from_peripherals(lv_interrupt_to_DMA);
 				endrule
+{7}
 			`endif
 
 

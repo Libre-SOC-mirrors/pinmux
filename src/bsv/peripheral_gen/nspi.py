@@ -12,9 +12,12 @@ class nspi(PBase):
     def slowimport(self):
         return "    import %(n)s              :: *;" % self.ifndict
 
+    def irq_name(self):
+        return "%(n)s{0}_isint" % self.ifndict
+
     def slowifdecl(self):
         return "            interface %(N)s_out %(n)s{0}_out;\n" + \
-               "            method Bit#(1) %(n)s{0}_isint;" % self.ifndict
+               "            method Bit#(1) %s;" % self.irq_name
 
     def num_axi_regs32(self):
         return 13

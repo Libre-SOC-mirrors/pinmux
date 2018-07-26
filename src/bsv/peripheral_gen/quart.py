@@ -6,15 +6,22 @@ class quart(PBase):
     def slowimport(self):
         return "    import Uart16550         :: *;"
 
+    def irq_name(self):
+        return "quart{0}_intr"
+
     def slowifdecl(self):
         return "            interface RS232_PHY_Ifc quart{0}_coe;\n" + \
-               "            method Bit#(1) quart{0}_intr;"
+               "            method Bit#(1) %s;" % self.irq_name()
+
+    def get_clock_reset(self, name, count):
+        return "slow_clock,slow_reset" # XXX TODO: change to uart_clock/reset
 
     def num_axi_regs32(self):
         return 8
 
     def mkslow_peripheral(self, size=0):
-        return "        Uart16550_AXI4_Lite_Ifc quart{0} <- \n" + \
+        return "        // XXX XXX TODO: change to uart_clock/reset" + \
+               "        Uart16550_AXI4_Lite_Ifc quart{0} <- \n" + \
                "                mkUart16550(clocked_by sp_clock,\n" + \
                "                    reset_by sp_reset, sp_clock, sp_reset);"
 

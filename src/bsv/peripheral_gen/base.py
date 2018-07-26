@@ -12,6 +12,39 @@ class PBase(object):
     def has_axi_master(self):
         return False
 
+    def irq_name(self):
+        return ""
+
+    def mk_dma_irq(self, name, count):
+        if not self.irq_name():
+            return ''
+        sname = self.get_iname(count)
+        return "{0}_interrupt".format(sname)
+
+    def mk_dma_rule(self, name, count):
+        irqname = self.mk_dma_irq(name, count)
+        if not irqname:
+            return ''
+        pirqname = self.irq_name().format(count)
+        template = "                      {0}_interrupt.send(\n" + \
+                   "                            slow_peripherals.{1});"
+        return template.format(irqname, pirqname)
+
+    def get_clock_reset(self, name, count):
+        return "slow_clock,slow_reset"
+
+    def mk_dma_sync(self, name, count):
+        irqname = self.mk_dma_irq(name, count)
+        if not irqname:
+            return ''
+        sname = self.peripheral.iname().format(count)
+        template = "                SyncBitIfc#(Bit#(1)) {0} <-\n" + \
+                   "                   <-mkSyncBitToCC({1});"
+        return template.format(irqname, self.get_clock_reset(name, count))
+
+    def mk_dma_connect(self, name, count):
+        return ''
+
     def fastifdecl(self, name, count):
         return ''
 
@@ -301,6 +334,7 @@ class PeripheralIface(object):
                       'slowifdecl', 'slowifdeclmux',
                       'fastifdecl',
                       'mkslow_peripheral', 
+                      'mk_dma_sync', 'mk_dma_connect', 'mk_dma_rule',
                       'mkfast_peripheral',
                       'mk_plic', 'mk_ext_ifacedef',
                       'mk_connection', 'mk_cellconn', 'mk_pincon']:
@@ -536,6 +570,45 @@ class PeripheralInterfaces(object):
                 txt = self.data[name].mk_pincon(name, i)
                 ret.append(txt)
         return '\n'.join(list(filter(None, ret)))
+
+    def mk_dma_irq(self):
+        ret = []
+        sync = []
+        rules = []
+        cnct = []
+
+        self.dma_count = 0
+
+        for (name, count) in self.ifacecount:
+            ifacerules = []
+            for i in range(count):
+                if not self.is_on_fastbus(name, i):
+                    continue
+                txt = self.data[name].mk_dma_sync(name, i)
+                if txt:
+                    self.dma_count += 1
+                sync.append(txt)
+                txt = self.data[name].mk_dma_rule(name, i)
+                ifacerules.append(txt)
+                txt = self.data[name].mk_dma_connect(name, i)
+                cnct.append(txt)
+            ifacerules = list(filter(None, ifacerules))
+            if ifacerules:
+                txt = "                rule synchronize_%s_interrupts;" % name
+                rules.append(txt)
+                rules += ifacerules
+                rules.append("                endrule")
+
+        ct = self.dma_count
+        _cnct    = ["               rule rl_connect_interrupt_to_DMA;",
+                    "                 Bit #(%d) lv_interrupt_to_DMA={" % ct]
+        cnct = _cnct + cnct
+        cnct.append("                 };")
+        cnct.append("                 dma.interrupt_from_peripherals(\n" + \
+                    "                         lv_interrupt_to_DMA);")
+        cnct.append("               endrule;")
+
+        return '\n'.join(list(filter(None, sync + rules + cnct)))
 
     def mk_ext_ifacedef(self):
         ret = []
