@@ -11,7 +11,7 @@ class jtag(PBase):
 
     def fastifdecl(self, name, count):
         # YUK!
-        return "Ifc_jtagdtm jtag{0}_out;".format(count)
+        return "interface Ifc_jtagdtm jtag{0}_out;".format(count)
 
     def mkfast_peripheral(self):
         return """\

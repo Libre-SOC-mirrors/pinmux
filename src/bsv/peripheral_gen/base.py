@@ -266,14 +266,17 @@ else"""
     def extfastifinstance(self, name, count):
         return ''
 
-    def _extifinstance(self, name, count, suffix, prefix, samename=False):
+    def _extifinstance(self, name, count, suffix, prefix, samename=False,
+                       ifsuffix=None):
+        if ifsuffix is None:
+            ifsuffix = ''
         pname = self.get_iname(count)
         if samename:
             sname = pname
         else:
             sname = self.peripheral.iname().format(count)
-        template = "interface {0}{3} = {2}{1};"
-        return template.format(pname, sname, prefix, suffix)
+        template = "interface {0}{3} = {2}{1}{4};"
+        return template.format(pname, sname, prefix, suffix, ifsuffix)
 
     def extifinstance2(self, name, count):
         return ''
@@ -715,6 +718,7 @@ class PFactory(object):
         from qspi import qspi, mqspi
         from gpio import gpio
         from rgbttl import rgbttl
+        from flexbus import flexbus
 
         for k, v in {'uart': uart,
                      'rs232': rs232,
@@ -729,6 +733,7 @@ class PFactory(object):
                      'sd': sdmmc,
                      'jtag': jtag,
                      'lcd': rgbttl,
+                     'fb': flexbus,
                      'gpio': gpio
                      }.items():
             if name.startswith(k):

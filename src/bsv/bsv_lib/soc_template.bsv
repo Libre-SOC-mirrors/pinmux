@@ -109,9 +109,6 @@ package Soc;
              interface Vme_out  proc_ifc;
              interface Data_bus_inf proc_dbus;
         `endif
-        `ifdef FlexBus
-             interface FlexBus_Master_IFC flexbus_out;
-        `endif
 {1}
     endinterface
 
@@ -147,10 +144,6 @@ package Soc;
             `ifdef VME
             Ifc_vme_top             vme             <-mkvme_top();
             `endif	
-        `ifdef FlexBus
-            AXI4_Slave_to_FlexBus_Master_Xactor_IFC #(32, 64,0)
-                            flexbus <- mkAXI4_Slave_to_FlexBus_Master_Xactor;
-        `endif
         Ifc_slow_peripherals slow_peripherals <-mkslow_peripherals(
                           core_clock, core_reset, uart_clock, 
                           uart_reset, clocked_by slow_clock ,
@@ -218,11 +211,6 @@ package Soc;
                 mkConnection (fabric.v_to_slaves
                               [fromInteger(valueOf(VME_slave_num))],
                               vme.slave_axi_vme);
-            `endif
-            `ifdef FlexBus
-                mkConnection (fabric.v_to_slaves
-                              [fromInteger(valueOf(FlexBus_slave_num))],
-                              flexbus.axi_side);
             `endif
 
             // fabric connections
@@ -306,9 +294,6 @@ package Soc;
         `ifdef VME
             interface  proc_ifc = vme.proc_ifc;
             interface   proc_dbus = vme.proc_dbus;
-        `endif 
-        `ifdef FlexBus
-            interface flexbus_out = flexbus.flexbus_side;
         `endif 
          method Action boot_sequence(Bit#(1) bootseq) = 
                             core.boot_sequence(bootseq);
