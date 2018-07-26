@@ -20,7 +20,7 @@ class quart(PBase):
         return 8
 
     def mkslow_peripheral(self, size=0):
-        return "// XXX TODO: change to uart_clock/reset" + \
+        return "// XXX TODO: change to uart_clock/reset\n" + \
                "Uart16550_AXI4_Lite_Ifc quart{0} <- \n" + \
                "                mkUart16550(clocked_by sp_clock,\n" + \
                "                    reset_by sp_reset, sp_clock, sp_reset);"
