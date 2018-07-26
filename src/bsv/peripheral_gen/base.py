@@ -125,10 +125,11 @@ class PBase(object):
         bname = self.axibase(name, ifacenum)
         bend = self.axiend(name, ifacenum)
         name = self.axi_slave_name(name, ifacenum)
-        return """\
-        if(addr>=`{0} && addr<=`{1})
-            return tuple2(True,fromInteger(valueOf({2})));
-        else""".format(bname, bend, name)
+        template = """\
+if(addr>=`{0} && addr<=`{1})
+    return tuple2(True,fromInteger(valueOf({2})));
+else"""
+        return template.format(bname, bend, name)
 
     def mk_pincon(self, name, count):
         # TODO: really should be using bsv.interface_decl.Interfaces
@@ -140,7 +141,7 @@ class PBase(object):
             pname = p['name']
             #n = "{0}{1}".format(self.name, self.mksuffix(name, count))
             n = name  # "{0}{1}".format(self.name, self.mksuffix(name, count))
-            ret.append("    //%s %s" % (n, str(p)))
+            ret.append("//%s %s" % (n, str(p)))
             sname = self.peripheral.iname().format(count)
             sname = "{0}.{1}".format(sname, pname)
             ps = "pinmux.peripheral_side.%s" % sname
@@ -177,7 +178,7 @@ class PBase(object):
                     n_ = '{0}.{1}'.format(n_, fname)
                     n_ = self.ifname_tweak(pname, 'in', n_)
                     ret.append("mkConnection({1}, {0});".format(ps_, n_))
-        return '\n'.join(li(ret, 6))
+        return '\n'.join(ret)
 
     def mk_cellconn(self, *args):
         return ''
@@ -199,7 +200,7 @@ class PBase(object):
         print "PBase __mk_connection", self.name, aname
         if not con:
             return ''
-        return li(txt.format(con, aname, fabricname), 8)
+        return txt.format(con, aname, fabricname)
 
     def __mk_master_connection(self, con, aname):
         txt = "mkConnection (slow_fabric.v_to_slaves\n" + \
@@ -209,7 +210,7 @@ class PBase(object):
         print "PBase __mk_connection", self.name, aname
         if not con:
             return ''
-        return li(txt.format(con, aname), 8)
+        return txt.format(con, aname)
 
     def mk_connection(self, count, fabricname, typ, name=None):
         if name is None:
@@ -256,7 +257,7 @@ class PBase(object):
             plic = mkplic_rule.format(name, plic_obj, irq_offs)
             res.append(plic)
             irq_offs += 1  # increment to next irq
-        return ('\n'.join(li(res, 5)), irq_offs)
+        return ('\n'.join(res), irq_offs)
 
     def mk_ext_ifacedef(self, iname, inum):
         return ''
@@ -270,7 +271,7 @@ class PBase(object):
             sname = pname
         else:
             sname = self.peripheral.iname().format(count)
-        template = "        interface {0}{3} = {2}{1};"
+        template = "interface {0}{3} = {2}{1};"
         return template.format(pname, sname, prefix, suffix)
 
     def extifinstance2(self, name, count):
@@ -338,9 +339,9 @@ typedef TAdd#(AxiExp1_slave_num,1) Num_Slow_Slaves;
 """
 
 pinmux_cellrule = """\
-    rule connect_select_lines_pinmux;
+rule connect_select_lines_pinmux;
 {0}
-    endrule
+endrule
 """
 
 
@@ -415,7 +416,7 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             #print "slowimport", name, self.data[name].slowimport
             ret.append(self.data[name].slowimport())
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 4))
 
     def extfastifinstance(self, *args):
         ret = []
@@ -426,7 +427,7 @@ class PeripheralInterfaces(object):
                 if self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].extfastifinstance(name, i))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def extifinstance2(self, *args):
         ret = []
@@ -434,7 +435,7 @@ class PeripheralInterfaces(object):
             for i in range(count):
                 iname = self.data[name].iname().format(i)
                 ret.append(self.data[name].extifinstance2(name, i))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def extifinstance(self, *args):
         ret = []
@@ -444,7 +445,7 @@ class PeripheralInterfaces(object):
                 if not self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].extifinstance(name, i))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def extifdecl(self, *args):
         ret = []
@@ -460,7 +461,7 @@ class PeripheralInterfaces(object):
         for (name, count) in self.ifacecount:
             for i in range(count):
                 ret.append(self.data[name].slowifdeclmux(name, i))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def fastifdecl(self, *args):
         ret = []
@@ -470,7 +471,7 @@ class PeripheralInterfaces(object):
                 if self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].fastifdecl(name, i))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 4))
 
     def slowifdecl(self, *args):
         ret = []
@@ -536,7 +537,7 @@ class PeripheralInterfaces(object):
                 if self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].axi_addr_map(i))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def mkfast_peripheral(self, *args):
         ret = []
@@ -549,7 +550,7 @@ class PeripheralInterfaces(object):
                 print name, count, x
                 suffix = self.data[name].mksuffix(name, i)
                 ret.append(x.format(suffix))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def mkslow_peripheral(self, *args):
         ret = []
@@ -562,7 +563,7 @@ class PeripheralInterfaces(object):
                 print name, count, x
                 suffix = self.data[name].mksuffix(name, i)
                 ret.append(x.format(suffix))
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def mk_fast_connection(self, *args):
         ret = []
@@ -575,7 +576,7 @@ class PeripheralInterfaces(object):
                     print "txt", txt
                     print self.data[name].mk_connection
                 ret.append(txt)
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 4))
 
     def mk_connection(self, *args):
         ret = []
@@ -588,7 +589,7 @@ class PeripheralInterfaces(object):
                     print "txt", txt
                     print self.data[name].mk_connection
                 ret.append(txt)
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def mk_cellconn(self):
         ret = []
@@ -602,8 +603,8 @@ class PeripheralInterfaces(object):
                     continue
                 (txt, cellcount) = res
                 ret.append(txt)
-        ret = '\n'.join(list(filter(None, ret)))
-        return pinmux_cellrule.format(ret)
+        ret = li('\n'.join(list(filter(None, ret))), 4)
+        return li(pinmux_cellrule.format(ret), 4)
 
     def mk_pincon(self):
         ret = []
@@ -613,7 +614,7 @@ class PeripheralInterfaces(object):
                     continue
                 txt = self.data[name].mk_pincon(name, i)
                 ret.append(txt)
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 4))
 
     def mk_dma_irq(self):
         ret = []
@@ -670,7 +671,7 @@ class PeripheralInterfaces(object):
                     continue
                 txt = self.data[name].mk_ext_ifacedef(name, i)
                 ret.append(txt)
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def mk_plic(self):
         ret = []
@@ -685,7 +686,7 @@ class PeripheralInterfaces(object):
                 (txt, irq_offs) = res
                 ret.append(txt)
         self.num_slow_irqs = irq_offs
-        return '\n'.join(list(filter(None, ret)))
+        return '\n'.join(li(list(filter(None, ret)), 4))
 
     def mk_sloirqsdef(self):
         return "    `define NUM_SLOW_IRQS {0}".format(self.num_slow_irqs)

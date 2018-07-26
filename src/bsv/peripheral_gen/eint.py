@@ -5,11 +5,11 @@ class eint(PBase):
 
     def slowimport(self):
         size = len(self.peripheral.pinspecs)
-        return "    `define NUM_EINTS %d" % size
+        return "`define NUM_EINTS %d" % size
 
     def mkslow_peripheral(self, size=0):
         size = len(self.peripheral.pinspecs)
-        return "        Wire#(Bit#(%d)) wr_interrupt <- mkWire();" % size
+        return "Wire#(Bit#(%d)) wr_interrupt <- mkWire();" % size
 
     def axi_slave_name(self, name, ifacenum, typ=''):
         return ''
@@ -30,16 +30,16 @@ class eint(PBase):
         ret = [PBase.mk_pincon(self, name, count)]
         size = len(self.peripheral.pinspecs)
         ret.append(eint_pincon_template.format(size))
-        ret.append("    rule con_%s%d_io_in;" % (name, count))
-        ret.append("    wr_interrupt <= ({")
+        ret.append("rule con_%s%d_io_in;" % (name, count))
+        ret.append("     wr_interrupt <= ({")
         for idx, p in enumerate(self.peripheral.pinspecs):
             pname = p['name']
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.eint.%s" % sname
             comma = '' if idx == size - 1 else ','
             ret.append("             {0}{1}".format(ps, comma))
-        ret.append("        });")
-        ret.append("    endrule")
+        ret.append("     });")
+        ret.append("endrule")
 
         return '\n'.join(ret)
 

@@ -4,14 +4,14 @@ from bsv.peripheral_gen.base import PBase
 class quart(PBase):
 
     def slowimport(self):
-        return "    import Uart16550         :: *;"
+        return "import Uart16550         :: *;"
 
     def irq_name(self):
         return "quart{0}_intr"
 
     def slowifdecl(self):
-        return "            interface RS232_PHY_Ifc quart{0}_coe;\n" + \
-               "            method Bit#(1) %s;" % self.irq_name()
+        return "interface RS232_PHY_Ifc quart{0}_coe;\n" + \
+               "method Bit#(1) %s;" % self.irq_name()
 
     def get_clock_reset(self, name, count):
         return "slow_clock,slow_reset" # XXX TODO: change to uart_clock/reset
@@ -20,8 +20,8 @@ class quart(PBase):
         return 8
 
     def mkslow_peripheral(self, size=0):
-        return "        // XXX XXX TODO: change to uart_clock/reset" + \
-               "        Uart16550_AXI4_Lite_Ifc quart{0} <- \n" + \
+        return "// XXX TODO: change to uart_clock/reset" + \
+               "Uart16550_AXI4_Lite_Ifc quart{0} <- \n" + \
                "                mkUart16550(clocked_by sp_clock,\n" + \
                "                    reset_by sp_reset, sp_clock, sp_reset);"
 
@@ -40,15 +40,15 @@ class quart(PBase):
 
     def __disabled_mk_pincon(self, name, count):
         ret = [PBase.mk_pincon(self, name, count)]
-        ret.append("    rule con_%s%d_io_in;" % (name, count))
-        ret.append("       {0}{1}.coe_rs232.modem_input(".format(name, count))
+        ret.append("rule con_%s%d_io_in;" % (name, count))
+        ret.append("    {0}{1}.coe_rs232.modem_input(".format(name, count))
         for idx, pname in enumerate(['rx', 'cts']):
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s" % sname
             ret.append("            {0},".format(ps))
         ret.append("            1'b1,1'b0,1'b1")
-        ret.append("        );")
-        ret.append("    endrule")
+        ret.append("     );")
+        ret.append("endrule")
 
         return '\n'.join(ret)
 
@@ -67,18 +67,18 @@ class quart(PBase):
 
     def mk_ext_ifacedef(self, iname, inum):
         name = self.get_iname(inum)
-        return "        method {0}_intr = {0}.irq;".format(name)
+        return "method {0}_intr = {0}.irq;".format(name)
 
     def slowifdeclmux(self, name, count):
         sname = self.peripheral.iname().format(count)
-        return "        method Bit#(1) %s_intr;" % sname
+        return "method Bit#(1) %s_intr;" % sname
 
 
 uart_plic_template = """\
-     // PLIC {0} synchronisation with irq {1}
-     SyncBitIfc#(Bit#(1)) {0}_interrupt <-
-                                mkSyncBitToCC(sp_clock, uart_reset);
-     rule plic_synchronize_{0}_interrupt_{1};
-         {0}_interrupt.send({0}.irq);
-     endrule
+// PLIC {0} synchronisation with irq {1}
+SyncBitIfc#(Bit#(1)) {0}_interrupt <-
+                            mkSyncBitToCC(sp_clock, uart_reset);
+rule plic_synchronize_{0}_interrupt_{1};
+     {0}_interrupt.send({0}.irq);
+endrule
 """

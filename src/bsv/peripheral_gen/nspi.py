@@ -10,20 +10,20 @@ class nspi(PBase):
         assert masteronly, "Only master only %s supported for now" % name
 
     def slowimport(self):
-        return "    import %(n)s              :: *;" % self.ifndict
+        return "import %(n)s              :: *;" % self.ifndict
 
     def irq_name(self):
         return "%(n)s{0}_isint" % self.ifndict
 
     def slowifdecl(self):
-        return "            interface %(N)s_out %(n)s{0}_out;\n" + \
-               "            method Bit#(1) %s;" % self.irq_name
+        return "interface %(N)s_out %(n)s{0}_out;\n" + \
+               "method Bit#(1) %s;" % self.irq_name
 
     def num_axi_regs32(self):
         return 13
 
     def mkslow_peripheral(self, size=0):
-        return "        Ifc_%(n)s %(n)s{0} <-  mk%(n)s();" % self.ifndict
+        return "Ifc_%(n)s %(n)s{0} <-  mk%(n)s();" % self.ifndict
 
     def _mk_connection(self, name=None, count=0):
         return "%(n)s{0}.slave" % self.ifndict
@@ -42,7 +42,7 @@ class nspi(PBase):
         ret = [PBase.mk_pincon(self, name, count)]
         # special-case for gpio in, store in a temporary vector
         plen = len(self.peripheral.pinspecs)
-        template = "      mkConnection({0}.{1},\n\t\t\t{2}.{1});"
+        template = "mkConnection({0}.{1},\n\t\t\t{2}.{1});"
         sname = self.peripheral.iname().format(count)
         name = self.get_iname(count)
         ps = "pinmux.peripheral_side.%s" % sname
@@ -59,8 +59,8 @@ class nspi(PBase):
 
     def mk_ext_ifacedef(self, iname, inum):
         name = self.get_iname(inum)
-        return "        method {0}_isint = {0}.interrupts[5];".format(name)
+        return "method {0}_isint = {0}.interrupts[5];".format(name)
 
     def slowifdeclmux(self, name, count):
         sname = self.get_iname(count)
-        return "        method Bit#(1) %s_isint;" % sname
+        return "method Bit#(1) %s_isint;" % sname

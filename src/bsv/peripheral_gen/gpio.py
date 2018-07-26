@@ -4,9 +4,9 @@ from bsv.peripheral_gen.base import PBase
 class gpio(PBase):
 
     def slowimport(self):
-        return "    import pinmux::*;\n" + \
-               "    import mux::*;\n" + \
-               "    import gpio::*;\n"
+        return "import pinmux::*;\n" + \
+               "import mux::*;\n" + \
+               "import gpio::*;\n"
 
     def extifinstance2(self, name, count):
         template = "interface pad_config{0} = {1}.pad_config;"
@@ -37,8 +37,8 @@ class gpio(PBase):
     def mkslow_peripheral(self, size=0):
         print "gpioslow", self.peripheral, dir(self.peripheral)
         size = len(self.peripheral.pinspecs)
-        return "        MUX#(%d) mux{0} <- mkmux();\n" % size + \
-               "        GPIO#(%d) gpio{0} <- mkgpio();" % size
+        return "MUX#(%d) mux{0} <- mkmux();\n" % size + \
+               "GPIO#(%d) gpio{0} <- mkgpio();" % size
 
     def mk_connection(self, count, fabricname, typ):
         print "GPIO mk_conn", self.name, count
@@ -63,7 +63,7 @@ class gpio(PBase):
     def mk_cellconn(self, cellnum, name, count):
         ret = []
         bank = self.mksuffix(name, count)
-        txt = "       pinmux.mux_lines.cell{0}_mux(mux{1}.mux_config.mux[{2}]);"
+        txt = "pinmux.mux_lines.cell{0}_mux(mux{1}.mux_config.mux[{2}]);"
         for p in self.peripheral.pinspecs:
             ret.append(txt.format(cellnum, bank, p['name'][1:]))
             cellnum += 1
@@ -80,7 +80,7 @@ class gpio(PBase):
         # special-case for gpio in, store in a temporary vector
         ret = []
         plen = len(self.peripheral.pinspecs)
-        template = "      mkConnection({0}.{1},\n\t\t\t{2}_{1});"
+        template = "mkConnection({0}.{1},\n\t\t\t{2}_{1});"
         ps = "pinmux.peripheral_side.%s" % name
         n = "{0}.func.gpio".format(name)
         for ptype in ['out', 'out_en', 'in']:
