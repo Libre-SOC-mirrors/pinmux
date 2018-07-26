@@ -31,6 +31,7 @@ package Soc;
 	import slow_peripherals::*;
 	`include "defines.bsv"
 	`include "instance_defines.bsv"
+{8}
     /*====== AXI4 slave declarations =======*/
 {3}
     /*====== AXI4 Master declarations =======*/
@@ -121,7 +122,7 @@ package Soc;
 			Ifc_TCM					tcm				<- mkTCM;	
 		`endif
 		`ifdef DMA
-			DmaC#(7,12)				dma				<- mkDMA();
+			DmaC#(7,`NUM_DMACHANNELS)				dma				<- mkDMA();
 		`endif
 			`ifdef VME
 			Ifc_vme_top             vme             <-mkvme_top();

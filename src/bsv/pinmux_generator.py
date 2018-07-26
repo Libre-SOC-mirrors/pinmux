@@ -147,10 +147,11 @@ def write_soc(soc, soct, p, ifaces, iocells):
     numsloirqs = ifaces.mk_sloirqsdef()
     ifacedef = ifaces.mk_ext_ifacedef()
     dma = ifaces.mk_dma_irq()
+    num_dmachannels = ifaces.num_dmachannels()
     with open(soc, "w") as bsv_file:
         bsv_file.write(soct.format(imports, ifdecl, mkfast,
                             slavedecl, mastdecl, mkcon,
-                            inst, dma,
+                            inst, dma, num_dmachannels,
                             #'', '' #regdef, slavedecl,
                             #'', mkslow, #fnaddrmap, mkslow, mkcon, mkcellcon,
                             #pincon, inst, mkplic,
