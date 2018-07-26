@@ -4,7 +4,7 @@ from bsv.peripheral_gen.base import PBase
 class jtag(PBase):
 
     def slowimport(self):
-        return "import jtagtdm::*;\n"
+        return "import jtagdtm::*;\n"
 
     def extfastifinstance(self, name, count):
         return self._extifinstance(name, count, "_out", "", True)
