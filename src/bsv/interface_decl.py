@@ -162,6 +162,87 @@ class InterfaceFmt(object):
     def ifacepfmtdecfn(self, name):
         return name
 
+    def ifacefmtoutfn(self, name):
+        return "wr%s" % name  # like wruart
+
+    def ifacefmtdecfn2(self, name):
+        return name  # like: uart
+
+    def ifacefmtdecfn3(self, name):
+        """ HACK! """
+        return "%s_outen" % name  # like uart_outen
+
+    def ifacefmtinfn(self, name):
+        return "wr%s" % name
+
+    def ifacedef2pin(self, pin):
+        decfn = self.ifacefmtdecfn2
+        outfn = self.ifacefmtoutfn
+        # print pin, pin.outenmode
+        if pin.outenmode:
+            decfn = self.ifacefmtdecfn3
+            outfn = self.ifacefmtoutenfn
+        return pin.ifacedef2(outfn, self.ifacefmtinfn,
+                             decfn)
+
+    def vectorifacedef2(self, pins, count, names, bitfmt, *args):
+        tput = []
+        tget = []
+        tputen = []
+        if len(pins) == 0:
+            return ''
+        # XXX HACK! assume in, out and inout, create set of indices
+        # that are repeated three times.
+        plens = []
+        # ARG even worse hack for LCD *sigh*...
+        if names[1] is None and names[2] is None:
+            plens = range(len(pins))
+        else:
+            for i in range(0, len(pins), 3):
+                plens += [i / 3, i / 3, i / 3]
+        for (typ, txt) in map(self.ifacedef3pin, plens, pins):
+            if typ == 'tput':
+                tput.append(txt)
+            elif typ == 'tget':
+                tget.append(txt)
+            elif typ == 'tputen':
+                tputen.append(txt)
+        tput = '\n'.join(tput).format(*args)
+        tget = '\n'.join(tget).format(*args)
+        tputen = '\n'.join(tputen).format(*args)
+        bitfmt = bitfmt.format(count)
+        template = ["""\
+              interface {3} = interface Put#({0})
+                 method Action put({2} in);
+{1}
+                 endmethod
+               endinterface;
+""",
+                    """\
+               interface {3} = interface Put#({0})
+                 method Action put({2} in);
+{1}
+                 endmethod
+               endinterface;
+""",
+                    """\
+               interface {3} = interface Get#({0})
+                 method ActionValue#({2}) get;
+                   {2} tget;
+{1}
+                   return tget;
+                 endmethod
+               endinterface;
+"""]
+        res = ''
+        tlist = [tput, tputen, tget]
+        for i, n in enumerate(names):
+            if n:
+                res += template[i].format(count, tlist[i], bitfmt, n)
+        return '\n' + res + '\n'
+
+
+
 class Interface(PeripheralIface, InterfaceFmt):
     """ create an interface from a list of pinspecs.
         each pinspec is a dictionary, see Pin class arguments
@@ -300,19 +381,6 @@ class Interface(PeripheralIface, InterfaceFmt):
     def ifacefmtdecfn(self, name):
         return name  # like: uart
 
-    def ifacefmtdecfn2(self, name):
-        return name  # like: uart
-
-    def ifacefmtdecfn3(self, name):
-        """ HACK! """
-        return "%s_outen" % name  # like uart_outen
-
-    def ifacefmtoutfn(self, name):
-        return "wr%s" % name  # like wruart
-
-    def ifacefmtinfn(self, name):
-        return "wr%s" % name
-
     def wirefmtpin(self, pin):
         return pin.wirefmt(self.ifacefmtoutfn, self.ifacefmtinfn,
                            self.ifacefmtdecfn2)
@@ -330,16 +398,6 @@ class Interface(PeripheralIface, InterfaceFmt):
         return pin.ifacedef(outfn, self.ifacefmtinfn,
                             decfn)
 
-    def ifacedef2pin(self, pin):
-        decfn = self.ifacefmtdecfn2
-        outfn = self.ifacefmtoutfn
-        # print pin, pin.outenmode
-        if pin.outenmode:
-            decfn = self.ifacefmtdecfn3
-            outfn = self.ifacefmtoutenfn
-        return pin.ifacedef2(outfn, self.ifacefmtinfn,
-                             decfn)
-
     def ifacedef(self, *args):
         res = '\n'.join(map(self.ifacefmtpin, self.pins))
         res = res.format(*args)
@@ -348,60 +406,6 @@ class Interface(PeripheralIface, InterfaceFmt):
     def ifacedef2(self, *args):
         res = '\n'.join(map(self.ifacedef2pin, self.pins))
         res = res.format(*args)
-        return '\n' + res + '\n'
-
-    def vectorifacedef2(self, pins, count, names, bitfmt, *args):
-        tput = []
-        tget = []
-        tputen = []
-        # XXX HACK! assume in, out and inout, create set of indices
-        # that are repeated three times.
-        plens = []
-        # ARG even worse hack for LCD *sigh*...
-        if names[1] is None and names[2] is None:
-            plens = range(len(pins))
-        else:
-            for i in range(0, len(pins), 3):
-                plens += [i / 3, i / 3, i / 3]
-        for (typ, txt) in map(self.ifacedef3pin, plens, pins):
-            if typ == 'tput':
-                tput.append(txt)
-            elif typ == 'tget':
-                tget.append(txt)
-            elif typ == 'tputen':
-                tputen.append(txt)
-        tput = '\n'.join(tput).format(*args)
-        tget = '\n'.join(tget).format(*args)
-        tputen = '\n'.join(tputen).format(*args)
-        bitfmt = bitfmt.format(count)
-        template = ["""\
-              interface {3} = interface Put#({0})
-                 method Action put({2} in);
-{1}
-                 endmethod
-               endinterface;
-""",
-                    """\
-               interface {3} = interface Put#({0})
-                 method Action put({2} in);
-{1}
-                 endmethod
-               endinterface;
-""",
-                    """\
-               interface {3} = interface Get#({0})
-                 method ActionValue#({2}) get;
-                   {2} tget;
-{1}
-                   return tget;
-                 endmethod
-               endinterface;
-"""]
-        res = ''
-        tlist = [tput, tputen, tget]
-        for i, n in enumerate(names):
-            if n:
-                res += template[i].format(count, tlist[i], bitfmt, n)
         return '\n' + res + '\n'
 
 
@@ -513,15 +517,15 @@ class InterfaceMultiBus(object):
         self.multibus_specs[0].nonbuspins = nbuspins
 
     def ifacepfmt(self, *args):
-        res = Interface.ifacepfmt(self, *args)
-        return res
+        res = ''
+        #res = Interface.ifacepfmt(self, *args)
         for b in self.multibus_specs:
             res += b.ifacepfmt(*args)
         return res
 
     def ifacedef2(self, *args):
-        res = Interface.ifacedef2(self, *args)
-        return res
+        res = ''
+        #res = Interface.ifacedef2(self, *args)
         for b in self.multibus_specs:
             res += b.ifacedef2(*args)
         return res
@@ -541,8 +545,12 @@ class InterfaceFlexBus(InterfaceMultiBus, Interface):
         InterfaceMultiBus.__init__(self, self.pins)
         self.add_bus(True, ['ad_out', 'ad_out_en', 'ad_in'],
                               "Bit#({0})", "ad")
-        self.add_bus(True, ['bwe', None, None],
+        self.add_bus(False, ['bwe', None, None],
                               "Bit#({0})", "bwe")
+        self.add_bus(False, ['tsiz', None, None],
+                              "Bit#({0})", "tsiz")
+        self.add_bus(False, ['cs', None, None],
+                              "Bit#({0})", "cs")
 
     def ifacedef2(self, *args):
         return InterfaceMultiBus.ifacedef2(self, *args)
