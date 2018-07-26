@@ -1,5 +1,6 @@
 import types
 
+
 def li(txt, indent):
     indent = ' ' * indent
     istxt = False
@@ -279,7 +280,7 @@ else"""
 
     def extifinstance(self, name, count):
         return self._extifinstance(name, count, "",
-                                            "pinmux.peripheral_side.")
+                                   "pinmux.peripheral_side.")
 
 
 mkplic_rule = """\
@@ -291,7 +292,7 @@ rule rl_connect_{0}_to_plic_{2};
 endrule
 """
 
-axi_master_declarations= """\
+axi_master_declarations = """\
 typedef 0 Dmem_master_num;
 typedef 1 Imem_master_num;
 {0}
@@ -646,13 +647,13 @@ class PeripheralInterfaces(object):
 
         cnct = list(filter(None, cnct))
         ct = self.dma_count
-        _cnct    = ["rule rl_connect_interrupt_to_DMA;",
-                    "  Bit #(%d) lv_interrupt_to_DMA={" % ct]
+        _cnct = ["rule rl_connect_interrupt_to_DMA;",
+                 "  Bit #(%d) lv_interrupt_to_DMA={" % ct]
         spc = "                      "
         spcsep = ",\n" + spc
         cnct = _cnct + [spc + spcsep.join(cnct)]
         cnct.append("   };")
-        cnct.append("   dma.interrupt_from_peripherals(\n" + \
+        cnct.append("   dma.interrupt_from_peripherals(\n" +
                     "       lv_interrupt_to_DMA);")
         cnct.append("endrule;")
 

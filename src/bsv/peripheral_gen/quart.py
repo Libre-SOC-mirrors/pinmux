@@ -14,7 +14,7 @@ class quart(PBase):
                "method Bit#(1) %s;" % self.irq_name()
 
     def get_clock_reset(self, name, count):
-        return "slow_clock,slow_reset" # XXX TODO: change to uart_clock/reset
+        return "slow_clock,slow_reset"  # XXX TODO: change to uart_clock/reset
 
     def num_axi_regs32(self):
         return 8

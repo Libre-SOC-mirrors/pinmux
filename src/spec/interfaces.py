@@ -98,7 +98,7 @@ class Pinouts(object):
 
     def setganged(self, fname, grp):
         grp = map(lambda x: x[:-1], grp)
-        if not self.ganged.has_key(fname):
+        if fname not in self.ganged:
             self.ganged[fname] = []
         self.ganged[fname] += grp
 

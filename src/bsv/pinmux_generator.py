@@ -126,11 +126,12 @@ def write_slow(slow, slowt, p, ifaces, iocells):
                                     numsloirqs, ifacedef,
                                     inst2))
 
+
 def write_soc(soc, soct, p, ifaces, iocells):
     """ write out the soc.bsv file.
         joins all the peripherals together as AXI Masters
     """
-    ifaces.fastbusmode = True # side-effects... shouldn't really do this
+    ifaces.fastbusmode = True  # side-effects... shouldn't really do this
     with open(soct) as bsv_file:
         soct = bsv_file.read()
     imports = ifaces.slowimport()
@@ -152,13 +153,9 @@ def write_soc(soc, soct, p, ifaces, iocells):
     num_dmachannels = ifaces.num_dmachannels()
     with open(soc, "w") as bsv_file:
         bsv_file.write(soct.format(imports, ifdecl, mkfast,
-                            slavedecl, mastdecl, mkcon,
-                            inst, dma, num_dmachannels,
-                            #'', '' #regdef, slavedecl,
-                            #'', mkslow, #fnaddrmap, mkslow, mkcon, mkcellcon,
-                            #pincon, inst, mkplic,
-                            #numsloirqs, ifacedef))
-                                  ))
+                                   slavedecl, mastdecl, mkcon,
+                                   inst, dma, num_dmachannels,
+                                   ))
 
 
 def write_bus(bus, p, ifaces):

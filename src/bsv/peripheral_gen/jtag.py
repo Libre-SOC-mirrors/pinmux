@@ -9,10 +9,9 @@ class jtag(PBase):
     def extfastifinstance(self, name, count):
         return self._extifinstance(name, count, "_out", "", True)
 
-
     def fastifdecl(self, name, count):
         # YUK!
-        return "Ifc_jtagdtm jtag{0}_out;".format(count);
+        return "Ifc_jtagdtm jtag{0}_out;".format(count)
 
     def mkfast_peripheral(self):
         return """\
@@ -25,6 +24,7 @@ rule drive_tmp_scan_outs;
     jtag{0}.scan_out_5_i(1'b0);
 endrule
 """
+
     def axi_slave_name(self, name, ifacenum, typ=''):
         return ''
 
