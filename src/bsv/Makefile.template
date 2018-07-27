@@ -1,11 +1,13 @@
 ### Makefile for the cclass project
 
-TOP_MODULE:=mkslow_peripherals
-TOP_FILE:=slow_peripherals.bsv
+TOP_MODULE:=mkSoc
+TOP_FILE:=soc.bsv
 TOP_DIR:=./
 WORKING_DIR := $(shell pwd)
 
 BSVINCDIR:= .:%/Prelude:%/Libraries:%/Libraries/BlueNoC:./bsv_lib/
+BSVINCDIR:= $(BSVINCDIR):../../../src/core/src/core
+BSVINCDIR:= $(BSVINCDIR):../../../src/core/src/lib
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/core
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/uncore/axi4
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/uncore/axi4lite
