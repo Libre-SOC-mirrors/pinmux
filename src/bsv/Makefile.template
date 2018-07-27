@@ -1,7 +1,7 @@
 ### Makefile for the cclass project
 
 TOP_MODULE:=mkSoc
-TOP_FILE:=soc.bsv
+TOP_FILE:=socgen.bsv
 TOP_DIR:=./
 WORKING_DIR := $(shell pwd)
 

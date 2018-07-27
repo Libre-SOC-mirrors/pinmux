@@ -86,7 +86,7 @@ def pinmuxgen(pth=None, verify=True):
     idef = os.path.join(bp, 'instance_defines.bsv')
     slow = os.path.join(bp, 'slow_peripherals.bsv')
     slowt = os.path.join(cwd, 'slow_peripherals_template.bsv')
-    soc = os.path.join(bp, 'soc.bsv')
+    soc = os.path.join(bp, 'socgen.bsv')
     soct = os.path.join(cwd, 'soc_template.bsv')
 
     write_pmp(pmp, p, ifaces, iocells)
