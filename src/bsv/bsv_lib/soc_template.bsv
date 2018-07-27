@@ -98,7 +98,7 @@ package Soc;
         `ifdef SDRAM 
             (*always_ready*) interface Ifc_sdram_out sdram_out; 
         `endif
-        ifdef DDR
+        `ifdef DDR
             (*prefix="M_AXI"*) interface
                    AXI4_Master_IFC#(`PADDR, `Reg_width, `USERSPACE) master;
         `endif
