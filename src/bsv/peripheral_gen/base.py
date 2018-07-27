@@ -486,9 +486,14 @@ class PeripheralInterfaces(object):
                 ret.append(self.data[name].slowifdecl().format(i, name))
         return '\n'.join(list(filter(None, ret)))
 
+    def axi_fastmem_def(self, *args):
+        return self._axi_reg_def(0x50000000, *args)
+
     def axi_reg_def(self, *args):
+        return self._axi_reg_def(0x00011100, *args)
+
+    def _axi_reg_def(self, start, *args):
         ret = []
-        start = 0x00011100  # start of AXI peripherals address
         for (name, count) in self.ifacecount:
             for i in range(count):
                 if self.is_on_fastbus(name, i):

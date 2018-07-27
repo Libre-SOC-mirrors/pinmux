@@ -52,7 +52,8 @@ package slow_peripherals;
 			method Bit#(1) mtip_int;
 			method Bit#(`DATA) mtime;
 		`endif
-		`ifdef PLIC method ActionValue#(Tuple2#(Bool,Bool)) intrpt_note; `endif
+		`ifdef PLIC method ActionValue#(SlowTuple2#(Bool,Bool)) intrpt_note;
+        `endif
         interface IOCellSide iocell_side; // mandatory interface
         `ifdef PLIC
 {1}
@@ -60,7 +61,7 @@ package slow_peripherals;
 	endinterface
 	/*================================*/
 
-	function Tuple2#(Bool, Bit#(TLog#(Num_Slow_Slaves)))
+	function SlowTuple2#(Bool, Bit#(TLog#(Num_Slow_Slaves)))
                      fn_address_mapping (Bit#(`ADDR) addr);
         `ifdef CLINT
             if(addr>=`ClintBase && addr<=`ClintEnd)

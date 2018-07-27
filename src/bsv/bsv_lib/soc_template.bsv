@@ -39,6 +39,7 @@ package Soc;
     import Connectable::*;
     import Clocks::*;
     /*========================== */
+{10}
     /*=== Project imports === */
     import ConcatReg::*;
     import AXI4_Types::*;
@@ -113,6 +114,39 @@ package Soc;
         `endif
 {1}
     endinterface
+
+function FastTuple2 #(Bool, Bit#(TLog#(Num_Slaves)))
+                fn_addr_to_slave_num  (Bit#(`PADDR) addr);
+
+    if(addr>=`SDRAMMemBase && addr<=`SDRAMMemEnd)
+        return tuple2(True,fromInteger(valueOf(Sdram_slave_num)));
+    else if(addr>=`DebugBase && addr<=`DebugEnd)
+        return tuple2(True,fromInteger(valueOf(Debug_slave_num)));
+    `ifdef SDRAM
+        else if(addr>=`SDRAMCfgBase && addr<=`SDRAMCfgEnd )
+            return tuple2(True,fromInteger(valueOf(Sdram_cfg_slave_num)));
+    `endif
+    `ifdef BOOTROM
+        else if(addr>=`BootRomBase && addr<=`BootRomEnd)
+            return tuple2(True,fromInteger(valueOf(BootRom_slave_num)));
+    `endif
+    `ifdef DMA
+        else if(addr>=`DMABase && addr<=`DMAEnd)
+            return tuple2(True,fromInteger(valueOf(Dma_slave_num)));
+    `endif
+    `ifdef VME
+        else if(addr>=`VMEBase && addr<=`VMEEnd)
+            return tuple2(True,fromInteger(valueOf(VME_slave_num)));
+    `endif
+    `ifdef TCMemory
+        else if(addr>=`TCMBase && addr<=`TCMEnd)
+            return tuple2(True,fromInteger(valueOf(TCM_slave_num)));
+    `endif
+        else 
+{11}
+            return tuple2(False,?);
+endfunction
+
 
     (*synthesize*)
     module mkSoc #(Bit#(`VADDR) reset_vector,
