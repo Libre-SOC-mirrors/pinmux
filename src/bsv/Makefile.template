@@ -49,7 +49,18 @@ gen_verilog: check-restore check-blue
 	@echo Compiling mkTbSoc in Verilog for simulations ...
 	@mkdir -p $(BSVBUILDDIR); 
 	@mkdir -p $(VERILOGDIR); 
-	bsc -u -verilog -elab -vdir $(VERILOGDIR) -bdir $(BSVBUILDDIR) -info-dir $(BSVBUILDDIR) $(define_macros) -D verilog=True $(BSVCOMPILEOPTS) -verilog-filter ${BLUESPECDIR}/bin/basicinout -p $(BSVINCDIR) -g $(TOP_MODULE) $(TOP_DIR)/$(TOP_FILE) 2>&1 | tee bsv_compile.log
+	bsc -u -verilog -elab -vdir $(VERILOGDIR) -bdir $(BSVBUILDDIR) \
+	        -info-dir $(BSVBUILDDIR) $(define_macros) \
+	        -D RV64=True -D muldiv=True -D sequential=True \
+	        -D atomic=True -D spfpu=True -D dpfpu=True \
+	        -D bpu=True -D MMU=True -D perf=True \
+	        -D prefetch=True -D CLINT=True \
+	        -D      simulate=True -D SDRAM=True \
+	        -D GPIO_MUX=True \
+	        -D verilog=True $(BSVCOMPILEOPTS) -verilog-filter \
+	        ${BLUESPECDIR}/bin/basicinout -p $(BSVINCDIR) \
+	        -g $(TOP_MODULE) $(TOP_DIR)/$(TOP_FILE) \
+	        2>&1 | tee bsv_compile.log
 	@echo Compilation finished
 
 #############################################################################
