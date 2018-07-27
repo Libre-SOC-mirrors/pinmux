@@ -100,7 +100,7 @@ package Soc;
         `endif
         `ifdef DDR
             (*prefix="M_AXI"*) interface
-                   AXI4_Master_IFC#(`PADDR, `Reg_width, `USERSPACE) master;
+                   AXI4_Master_IFC#(`ADDR, `DATA, `USERSPACE) master;
         `endif
         `ifdef HYPER
              (*always_ready,always_enabled*)	
@@ -154,7 +154,7 @@ package Soc;
 
         // Fabric
         AXI4_Fabric_IFC #(Num_Masters, Num_Slaves,
-                          `PADDR, `Reg_width,`USERSPACE)
+                          `ADDR, `DATA,`USERSPACE)
                         fabric <- mkAXI4_Fabric(fn_addr_to_slave_num);
 
         // Connect traffic generators to fabric
@@ -270,7 +270,7 @@ package Soc;
                                         mkSyncBitToCC(slow_clock,slow_reset);
             SyncBitIfc#(Bit#(1)) clint_msip_int <-
                                         mkSyncBitToCC(slow_clock,slow_reset);
-            Reg#(Bit#(`Reg_width)) clint_mtime_value <-
+            Reg#(Bit#(`DATA)) clint_mtime_value <-
                                         mkSyncRegToCC(0,slow_clock,slow_reset);
             rule synchronize_clint_data;
                 clint_mtip_int.send(slow_peripherals.mtip_int);
