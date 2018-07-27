@@ -26,7 +26,7 @@ class quart(PBase):
                "                    reset_by sp_reset, sp_clock, sp_reset);"
 
     def _mk_connection(self, name=None, count=0):
-        return "quart{0}.slave_axi_uart"
+        return "quart{0}.slave"
 
     def pinname_out(self, pname):
         return {'tx': 'out.stx_out',
