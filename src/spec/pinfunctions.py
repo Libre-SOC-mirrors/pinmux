@@ -144,7 +144,8 @@ def flexbus1(suffix, bank):
     for i in range(2):
         buspins.append("CS%d+" % i)
     buspins += ['ALE+', 'OE+', 'RW+', 'TA-',
-                'TS+', 'TBST+',
+                # 'TS+',  commented out for now, mirrors ALE, for mux'd mode
+                'TBST+',
                 'TSIZ0+', 'TSIZ1+']
     for i in range(4):
         buspins.append("BWE%d+" % i)

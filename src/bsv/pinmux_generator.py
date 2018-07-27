@@ -155,6 +155,7 @@ def write_soc(soc, soct, p, ifaces, iocells):
         bsv_file.write(soct.format(imports, ifdecl, mkfast,
                                    slavedecl, mastdecl, mkcon,
                                    inst, dma, num_dmachannels,
+                                   pincon,
                                    ))
 
 

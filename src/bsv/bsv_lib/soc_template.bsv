@@ -213,6 +213,9 @@ package Soc;
                               vme.slave_axi_vme);
             `endif
 
+//          pin connections
+{9}
+
             // fabric connections
 {5}
 

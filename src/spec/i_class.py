@@ -86,7 +86,7 @@ def pinspec():
 
     # see comment in spec.interfaces.PinGen, this is complicated.
     flexspec = {
-        'FB_TS': ('FB_ALE', 2),
+        #'FB_TS': ('FB_ALE', 2), # commented out for now
         'FB_CS2': ('FB_BWE2', 2),
         'FB_AD0': ('FB_BWE2', 3),
         'FB_CS3': ('FB_BWE3', 2),
