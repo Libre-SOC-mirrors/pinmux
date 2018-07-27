@@ -442,6 +442,11 @@ def write_instances(idef, p, ifaces):
 `define PERFMONITORS                            64
 `define DCACHE_WAYS 4
 `define DCACHE_TAG_BITS 20      // tag_bits = 52
+
+// CLINT
+    `define ClintBase       'h02000000
+    `define ClintEnd        'h020BFFFF
+
 `define PLIC
 	`define PLICBase		'h0c000000
 	`define PLICEnd		'h10000000
