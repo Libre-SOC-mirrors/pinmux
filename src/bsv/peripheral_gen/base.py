@@ -178,7 +178,9 @@ else"""
                     n_ = "{0}{1}".format(n, count)
                     n_ = '{0}.{1}'.format(n_, fname)
                     n_ = self.ifname_tweak(pname, 'in', n_)
-                    ret.append("mkConnection({1},\n\t\t\t{0});".format(ps_, n_))
+                    ret.append(
+                        "mkConnection({1},\n\t\t\t{0});".format(
+                            ps_, n_))
         return '\n'.join(ret)
 
     def mk_cellconn(self, *args):

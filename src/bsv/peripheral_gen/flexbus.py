@@ -7,7 +7,7 @@ class flexbus(PBase):
         return "import FlexBus_Types::*;"
 
     def num_axi_regs32(self):
-        return 0x4000000 # defines an entire memory range
+        return 0x4000000  # defines an entire memory range
 
     def extfastifinstance(self, name, count):
         return self._extifinstance(name, count, "_out", "", True,
@@ -26,13 +26,13 @@ class flexbus(PBase):
 
     def pinname_in(self, pname):
         return {'ta': 'flexbus_side.tAn',
-               }.get(pname, '')
+                }.get(pname, '')
 
     def pinname_out(self, pname):
         return {'ale': 'flexbus_side.m_ALE',
-                'oe' : 'flexbus_side.m_OEn',
-                'rw' : 'flexbus_side.m_R_Wn',
-               }.get(pname, '')
+                'oe': 'flexbus_side.m_OEn',
+                'rw': 'flexbus_side.m_R_Wn',
+                }.get(pname, '')
 
     def mk_pincon(self, name, count):
         ret = [PBase.mk_pincon(self, name, count)]
@@ -44,13 +44,13 @@ class flexbus(PBase):
         ps = "pinmux.peripheral_side.%s" % sname
         n = "{0}".format(name)
         for stype, ptype in [
-                ('cs', 'm_FBCSn'),
-                ('bwe', 'm_BWEn'),
-                ('tbst', 'm_TBSTn'),
-                ('tsiz', 'm_TSIZ'),
-                ('ad_in', 'm_AD'),
-                ('ad_out', 'm_din'),
-                ('ad_en', 'm_OE32n'),
-            ]:
+            ('cs', 'm_FBCSn'),
+            ('bwe', 'm_BWEn'),
+            ('tbst', 'm_TBSTn'),
+            ('tsiz', 'm_TSIZ'),
+            ('ad_in', 'm_AD'),
+            ('ad_out', 'm_din'),
+            ('ad_en', 'm_OE32n'),
+        ]:
             ret.append(template.format(ps, ptype, n, stype))
         return '\n'.join(ret)

@@ -242,7 +242,6 @@ class InterfaceFmt(object):
         return '\n' + res + '\n'
 
 
-
 class Interface(PeripheralIface, InterfaceFmt):
     """ create an interface from a list of pinspecs.
         each pinspec is a dictionary, see Pin class arguments
@@ -443,7 +442,7 @@ class InterfaceBus(InterfaceFmt):
         self.buspins = filter(lambda x: x.name_.startswith(self.fbus),
                               self.pins_)
         self.nonbuspins = filter(lambda x: not x.name_.startswith(self.fbus),
-                              self.pins_)
+                                 self.pins_)
 
     def get_nonbuspins(self):
         return self.nonbuspins
@@ -538,22 +537,24 @@ class InterfaceLCD(InterfaceBus, Interface):
         InterfaceBus.__init__(self, self.pins, False, ['data_out', None, None],
                               "Bit#({0})", "out")
 
+
 class InterfaceFlexBus(InterfaceMultiBus, Interface):
 
     def __init__(self, ifacename, pinspecs, ganged=None, single=False):
         Interface.__init__(self, ifacename, pinspecs, ganged, single)
         InterfaceMultiBus.__init__(self, self.pins)
         self.add_bus(True, ['ad_out', 'ad_out_en', 'ad_in'],
-                              "Bit#({0})", "ad")
+                     "Bit#({0})", "ad")
         self.add_bus(False, ['bwe', None, None],
-                              "Bit#({0})", "bwe")
+                     "Bit#({0})", "bwe")
         self.add_bus(False, ['tsiz', None, None],
-                              "Bit#({0})", "tsiz")
+                     "Bit#({0})", "tsiz")
         self.add_bus(False, ['cs', None, None],
-                              "Bit#({0})", "cs")
+                     "Bit#({0})", "cs")
 
     def ifacedef2(self, *args):
         return InterfaceMultiBus.ifacedef2(self, *args)
+
 
 class InterfaceSD(InterfaceBus, Interface):
 
@@ -562,6 +563,7 @@ class InterfaceSD(InterfaceBus, Interface):
         InterfaceBus.__init__(self, self.pins, True, ['out', 'out_en', 'in'],
                               "Bit#({0})", "d")
 
+
 class InterfaceNSPI(InterfaceBus, Interface):
 
     def __init__(self, *args):
@@ -569,6 +571,7 @@ class InterfaceNSPI(InterfaceBus, Interface):
         InterfaceBus.__init__(self, self.pins, True,
                               ['io_out', 'io_out_en', 'io_in'],
                               "Bit#({0})", "io")
+
 
 class InterfaceEINT(Interface):
     """ uses old-style (non-get/put) for now
@@ -591,6 +594,7 @@ class InterfaceGPIO(InterfaceBus, Interface):
         Interface.__init__(self, ifacename, pinspecs, ganged, single)
         InterfaceBus.__init__(self, self.pins, True, ['out', 'out_en', 'in'],
                               "Vector#({0},Bit#(1))", ifacename[-1])
+
 
 class Interfaces(InterfacesBase, PeripheralInterfaces):
     """ contains a list of interface definitions
