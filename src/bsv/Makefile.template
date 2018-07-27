@@ -11,6 +11,7 @@ BSVINCDIR:= $(BSVINCDIR):../../../src/core/src/lib
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/core
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/uncore/axi4
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/uncore/axi4lite
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/uncore/debug
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/lib
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/gpio
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/rgbttl

@@ -46,7 +46,9 @@ package Soc;
     import defined_types::*;
     import MemoryMap		 :: *;
     import slow_peripherals::*;
+`ifdef DEBUG
     `include "defines.bsv"
+`endif
     `include "instance_defines.bsv"
 {8}
     /*====== AXI4 slave declarations =======*/
