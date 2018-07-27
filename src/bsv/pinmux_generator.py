@@ -431,6 +431,7 @@ def write_instances(idef, p, ifaces):
 `define DATA {1}
 `define Reg_width {1}
 `define USERSPACE 0
+`define RV64
 
 // TODO: work out if these are needed
 `define PWM_AXI4Lite
