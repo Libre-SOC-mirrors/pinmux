@@ -4,13 +4,13 @@ from bsv.peripheral_gen.base import PBase
 class quart(PBase):
 
     def slowimport(self):
-        return "import Uart16550         :: *;"
+        return "import quart :: *;"
 
     def irq_name(self):
         return "quart{0}_intr"
 
     def slowifdecl(self):
-        return "interface RS232_PHY_Ifc quart{0}_coe;\n" + \
+        return "interface QUART_out quart{0};\n" + \
                "method Bit#(1) %s;" % self.irq_name()
 
     def get_clock_reset(self, name, count):
@@ -29,19 +29,19 @@ class quart(PBase):
         return "quart{0}.slave_axi_uart"
 
     def pinname_out(self, pname):
-        return {'tx': 'coe_rs232.stx_out',
-                'rts': 'coe_rs232.rts_out',
+        return {'tx': 'out.stx_out',
+                'rts': 'out.rts_out',
                 }.get(pname, '')
 
     def pinname_in(self, pname):
-        return {'rx': 'coe_rs232.srx_in',
-                'cts': 'coe_rs232.cts_in'
+        return {'rx': 'out.srx_in',
+                'cts': 'out.cts_in'
                 }.get(pname, '')
 
     def __disabled_mk_pincon(self, name, count):
         ret = [PBase.mk_pincon(self, name, count)]
         ret.append("rule con_%s%d_io_in;" % (name, count))
-        ret.append("    {0}{1}.coe_rs232.modem_input(".format(name, count))
+        ret.append("    {0}{1}.out.modem_input(".format(name, count))
         for idx, pname in enumerate(['rx', 'cts']):
             sname = self.peripheral.pname(pname).format(count)
             ps = "pinmux.peripheral_side.%s" % sname
