@@ -10,7 +10,7 @@ class quart(PBase):
         return "quart{0}_intr"
 
     def slowifdecl(self):
-        return "interface QUART_out quart{0};\n" + \
+        return "interface QUART_AXI4_Lite_Ifc quart{0};\n" + \
                "method Bit#(1) %s;" % self.irq_name()
 
     def get_clock_reset(self, name, count):
@@ -21,7 +21,7 @@ class quart(PBase):
 
     def mkslow_peripheral(self, size=0):
         return "// XXX TODO: change to uart_clock/reset\n" + \
-               "Uart16550_AXI4_Lite_Ifc quart{0} <- \n" + \
+               "QUART_AXI4_Lite_Ifc quart{0} <- \n" + \
                "                mkUart16550(clocked_by sp_clock,\n" + \
                "                    reset_by sp_reset, sp_clock, sp_reset);"
 
