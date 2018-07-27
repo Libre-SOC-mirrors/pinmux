@@ -28,7 +28,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -------------------------------------------------------------------
 */
-package Soc;
+package soc;
     /*====== Package imports === */
     import FIFO::*;
     import FIFOF::*;
