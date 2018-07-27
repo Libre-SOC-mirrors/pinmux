@@ -7,6 +7,7 @@ WORKING_DIR := $(shell pwd)
 
 BSVINCDIR:= .:%/Prelude:%/Libraries:%/Libraries/BlueNoC:./bsv_lib/
 BSVINCDIR:= $(BSVINCDIR):../../../src/core/src/core
+BSVINCDIR:= $(BSVINCDIR):../../../src/core/src/core/fpu
 BSVINCDIR:= $(BSVINCDIR):../../../src/core/src/lib
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/core
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/uncore/axi4
@@ -18,6 +19,8 @@ BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/rgbttl
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/i2c
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/mux
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/plic
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/clint
+BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/sdram
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/pwm
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/qspi
 BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/spi
