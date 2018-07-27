@@ -51,7 +51,7 @@ package Soc;
     `include "defines.bsv"
 `endif
     `include "instance_defines.bsv"
-    `include "core_parameters.bsv"
+    `include "core_defines.bsv"
 {8}
     /*====== AXI4 slave declarations =======*/
 {3}
