@@ -9,7 +9,7 @@ from spec.ifaceprint import display_fixed
 def pinspec():
     pinbanks = {
         'A': 28,
-        'B': 32,
+        'B': 18,
         'C': 24,
     }
     fixedpins = {
