@@ -151,7 +151,7 @@ package socgen;
                           `ifdef PWM_AXI4Lite , ext_pwm_clock `endif );	
 
         // Fabric
-        AXI4_Fabric_IFC #(Num_Masters, Num_Slaves,
+        AXI4_Fabric_IFC #(Num_Masters, Num_Fast_Slaves,
                           `ADDR, `DATA,`USERSPACE)
                         fabric <- mkAXI4_Fabric(fn_addr_to_slave_num);
 
