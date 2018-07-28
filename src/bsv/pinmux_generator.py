@@ -130,6 +130,7 @@ def write_slow(slow, slowt, slowmf, slowmt, p, ifaces, iocells):
                                     pincon, inst, mkplic,
                                     numsloirqs, ifacedef,
                                     inst2))
+
     with open(slowmf, "w") as bsv_file:
         bsv_file.write(slowmt.format(regdef, slavedecl, fnaddrmap))
 
