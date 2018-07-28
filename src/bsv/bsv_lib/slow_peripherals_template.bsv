@@ -48,7 +48,7 @@ package slow_peripherals;
 			method Bit#(1) mtip_int;
 			method Bit#(`DATA) mtime;
 		`endif
-		`ifdef PLIC method ActionValue#(SlowTuple2#(Bool,Bool)) intrpt_note;
+		`ifdef PLIC method ActionValue#(Tuple2#(Bool,Bool)) intrpt_note;
         `endif
         interface IOCellSide iocell_side; // mandatory interface
         `ifdef PLIC
