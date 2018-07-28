@@ -25,7 +25,7 @@ class flexbus(PBase):
         return "fb{0}.axi_side"
 
     def pinname_in(self, pname):
-        return {'ta': 'flexbus_side.tAn',
+        return {'ta': 'flexbus_side.m_tAn',
                 }.get(pname, '')
 
     def pinname_out(self, pname):
