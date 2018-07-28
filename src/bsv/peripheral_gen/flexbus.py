@@ -34,14 +34,16 @@ class flexbus(PBase):
                 'rw': 'flexbus_side.m_R_Wn',
                 }.get(pname, '')
 
-    def mk_pincon(self, name, count):
-        ret = [PBase.mk_pincon(self, name, count)]
+    def _mk_pincon(self, name, count, typ):
+        ret = [PBase._mk_pincon(self, name, count, typ)]
         # special-case for gpio in, store in a temporary vector
         plen = len(self.peripheral.pinspecs)
         template = "mkConnection({0}.{3},\n\t\t\t{2}.flexbus_side.{1});"
-        sname = self.peripheral.iname().format(count)
+        sname = self.get_iname(count)
+        # SLOW -->sname = self.peripheral.iname().format(count)
         name = self.get_iname(count)
-        ps = "pinmux.peripheral_side.%s" % sname
+        assert typ == 'fast' # TODO slow?
+        ps = "slow_peripherals.%s" % sname
         n = "{0}".format(name)
         for stype, ptype in [
             ('cs', 'm_FBCSn'),

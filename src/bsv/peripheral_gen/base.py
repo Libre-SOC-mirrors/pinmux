@@ -135,7 +135,7 @@ if(addr>=`{0} && addr<=`{1})
 else"""
         return template.format(bname, bend, name)
 
-    def mk_pincon(self, name, count):
+    def _mk_pincon(self, name, count, ptyp):
         # TODO: really should be using bsv.interface_decl.Interfaces
         # pin-naming rules.... logic here is hard-coded to duplicate
         # it (see Interface.__init__ outen)
@@ -146,9 +146,14 @@ else"""
             #n = "{0}{1}".format(self.name, self.mksuffix(name, count))
             n = name  # "{0}{1}".format(self.name, self.mksuffix(name, count))
             ret.append("//%s %s" % (n, str(p)))
-            sname = self.peripheral.iname().format(count)
-            sname = "{0}.{1}".format(sname, pname)
-            ps = "pinmux.peripheral_side.%s" % sname
+            if ptyp == 'fast':
+                sname = self.get_iname(count)
+                sname = "{0}.{1}".format(sname, pname)
+                ps = "slow_peripherals.%s" % sname
+            else:
+                sname = self.peripheral.iname().format(count)
+                sname = "{0}.{1}".format(sname, pname)
+                ps = "pinmux.peripheral_side.%s" % sname
             if typ == 'out' or typ == 'inout':
                 fname = self.pinname_out(pname)
                 if not n.startswith('gpio'):  # XXX EURGH! horrible hack
@@ -379,7 +384,7 @@ class PeripheralIface(object):
                       'mk_dma_sync', 'mk_dma_connect', 'mk_dma_rule',
                       'mkfast_peripheral',
                       'mk_plic', 'mk_ext_ifacedef',
-                      'mk_connection', 'mk_cellconn', 'mk_pincon']:
+                      'mk_connection', 'mk_cellconn', '_mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
 
@@ -631,12 +636,18 @@ class PeripheralInterfaces(object):
         return li(pinmux_cellrule.format(ret), 4)
 
     def mk_pincon(self):
+        return self._mk_pincon("slow")
+
+    def mk_fast_pincon(self):
+        return self._mk_pincon("fast")
+
+    def _mk_pincon(self, typ):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                txt = self.data[name].mk_pincon(name, i)
+                txt = self.data[name]._mk_pincon(name, i, typ)
                 ret.append(txt)
         return '\n'.join(li(list(filter(None, ret)), 4))
 

@@ -152,7 +152,7 @@ def write_soc(soc, soct, fastmf, fastmt, p, ifaces, iocells):
     mkfast = ifaces.mkfast_peripheral()
     mkcon = ifaces.mk_fast_connection()
     mkcellcon = ifaces.mk_cellconn()
-    pincon = ifaces.mk_pincon()
+    pincon = ifaces.mk_fast_pincon()
     inst = ifaces.extfastifinstance()
     mkplic = ifaces.mk_plic()
     numsloirqs = ifaces.mk_sloirqsdef()
