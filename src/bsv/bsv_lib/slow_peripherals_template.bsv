@@ -84,7 +84,7 @@ package slow_peripherals;
 		/*=======================================================*/
 
    	    AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `ADDR, `DATA,`USERSPACE)
-                slow_fabric <- mkAXI4_Lite_Fabric(fn_address_mapping);
+                slow_fabric <- mkAXI4_Lite_Fabric(fn_slow_address_mapping);
 		Ifc_AXI4Lite_AXI4_Bridge
                 bridge<-mkAXI4Lite_AXI4_Bridge(fast_clock,fast_reset);
    	
