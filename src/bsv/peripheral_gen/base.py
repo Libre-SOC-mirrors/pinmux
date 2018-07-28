@@ -122,10 +122,13 @@ class PBase(object):
         name = self.axi_slave_name(name, ifacenum, typ)
         return ("typedef {0} {1};".format(idx, name), 1)
 
-    def axi_addr_map(self, name, ifacenum):
+    def axi_fastaddr_map(self, name, ifacenum):
+        return self.axi_addr_map(name, ifacenum, 'fast')
+
+    def axi_addr_map(self, name, ifacenum, typ=""):
         bname = self.axibase(name, ifacenum)
         bend = self.axiend(name, ifacenum)
-        name = self.axi_slave_name(name, ifacenum)
+        name = self.axi_slave_name(name, ifacenum, typ)
         template = """\
 if(addr>=`{0} && addr<=`{1})
     return tuple2(True,fromInteger(valueOf({2})));
@@ -320,16 +323,12 @@ typedef TAdd#(BootRom_slave_num  ,`ifdef Debug      1 `else 0 `endif )
                 Debug_slave_num ;
 typedef  TAdd#(Debug_slave_num   , `ifdef TCMemory  1 `else 0 `endif )
                 TCM_slave_num;
-typedef  TAdd#(TCM_slave_num     ,`ifdef DMA            1 `else 0 `endif )
+typedef  TAdd#(TCM_slave_num     ,`ifdef DMA        1 `else 0 `endif )
                 Dma_slave_num;
 typedef  TAdd#(Dma_slave_num      ,1 )      SlowPeripheral_slave_num;
 typedef  TAdd#(SlowPeripheral_slave_num,`ifdef VME  1 `else 0 `endif )
                 VME_slave_num;
-typedef  TAdd#(VME_slave_num,`ifdef FlexBus 1 `else 0 `endif )
-                FlexBus_slave_num;
-typedef TAdd#(FlexBus_slave_num,1)
-                Num_Slaves;
-
+typedef TAdd#(VME_slave_num,1) Num_Fast_Slaves;
 """
 
 axi_slave_declarations = """\
@@ -406,6 +405,11 @@ class PeripheralIface(object):
         if not self.slow:
             return ('', 0)
         return self.slow.axi_slave_idx(start, self.ifacename, count, typ)
+
+    def axi_fastaddr_map(self, count):
+        if not self.slow:
+            return ''
+        return self.slow.axi_fastaddr_map(self.ifacename, count)
 
     def axi_addr_map(self, count):
         if not self.slow:
@@ -540,6 +544,15 @@ class PeripheralInterfaces(object):
     def axi_fastslave_idx(self, *args):
         return self._axi_num_idx(0, axi_fastslave_declarations, 'fastslave',
                                  'fast', *args)
+
+    def axi_fastaddr_map(self, *args):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
+                ret.append(self.data[name].axi_fastaddr_map(i))
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def axi_addr_map(self, *args):
         ret = []

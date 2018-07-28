@@ -148,7 +148,7 @@ def write_soc(soc, soct, fastmf, fastmt, p, ifaces, iocells):
     regdef = ifaces.axi_fastmem_def()
     slavedecl = ifaces.axi_fastslave_idx()
     mastdecl = ifaces.axi_master_idx()
-    fnaddrmap = ifaces.axi_addr_map()
+    fnaddrmap = ifaces.axi_fastaddr_map()
     mkfast = ifaces.mkfast_peripheral()
     mkcon = ifaces.mk_fast_connection()
     mkcellcon = ifaces.mk_cellconn()

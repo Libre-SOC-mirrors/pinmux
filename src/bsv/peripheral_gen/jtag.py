@@ -25,11 +25,11 @@ rule drive_tmp_scan_outs;
 endrule
 """
 
-    def axi_slave_name(self, name, ifacenum, typ=''):
+    def axi_slave_name(self, name, ifacenum, typ=None):
         return ''
 
     def axi_slave_idx(self, idx, name, ifacenum, typ):
         return ('', 0)
 
-    def axi_addr_map(self, name, ifacenum):
+    def axi_addr_map(self, name, ifacenum, typ=None):
         return ''
