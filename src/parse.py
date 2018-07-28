@@ -15,7 +15,7 @@ class Parse(object):
     N_MUX_IO = 0
     Addressing = 'WORD'
     ADDR_WIDTH = 32  # TODO parameterise
-    DATA_WIDTH = 32  # TODO parameterise
+    DATA_WIDTH = 64  # TODO parameterise
     # ================ #
 
     # Generating the number of bits for memory map #
