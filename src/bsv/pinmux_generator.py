@@ -443,7 +443,7 @@ def write_instances(idef, p, ifaces):
     with open(idef, 'w') as bsv_file:
         txt = '''\
 `define ADDR {0}
-`define PADDR 32
+`define PADDR {2}
 `define DATA {1}
 `define Reg_width {1}
 `define USERSPACE 0
@@ -473,4 +473,6 @@ def write_instances(idef, p, ifaces):
   `define BAUD_RATE 5 //130 //
 `endif
 '''
-        bsv_file.write(txt.format(p.ADDR_WIDTH, p.DATA_WIDTH))
+        bsv_file.write(txt.format(p.ADDR_WIDTH,
+                                  p.DATA_WIDTH,
+                                  p.PADDR_WIDTH))

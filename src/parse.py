@@ -15,6 +15,7 @@ class Parse(object):
     N_MUX_IO = 0
     Addressing = 'WORD'
     ADDR_WIDTH = 32  # TODO parameterise
+    PADDR_WIDTH = 32  # TODO parameterise
     DATA_WIDTH = 64  # TODO parameterise
     # ================ #
 
