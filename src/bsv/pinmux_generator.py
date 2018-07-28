@@ -123,6 +123,7 @@ def write_slow(slow, slowt, slowmf, slowmt, p, ifaces, iocells):
     numsloirqs = ifaces.mk_sloirqsdef()
     ifacedef = ifaces.mk_ext_ifacedef()
     ifacedef = ifaces.mk_ext_ifacedef()
+
     with open(slow, "w") as bsv_file:
         bsv_file.write(slowt.format(imports, ifdecl, regdef, slavedecl,
                                     fnaddrmap, mkslow, mkcon, mkcellcon,
