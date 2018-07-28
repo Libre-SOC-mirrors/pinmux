@@ -311,7 +311,7 @@ typedef TAdd#(DMA_master_num,1)
 
 axi_fastslave_declarations = """\
 {0}
-typedef  TAdd#(LastGen_fastslave_num,1)      Sdram_cfg_slave_num;
+typedef  TAdd#(LastGen_fastslave_num,1)      Sdram_slave_num;
 typedef  TAdd#(Sdram_slave_num   ,`ifdef SDRAM      1 `else 0 `endif )
                       Sdram_cfg_slave_num;
 typedef TAdd#(Sdram_cfg_slave_num,`ifdef BOOTROM    1 `else 0 `endif )
