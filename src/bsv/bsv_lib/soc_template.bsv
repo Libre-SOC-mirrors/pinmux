@@ -96,7 +96,7 @@ package socgen;
         `endif
         `ifdef DDR
             (*prefix="M_AXI"*) interface
-                   AXI4_Master_IFC#(`ADDR, `DATA, `USERSPACE) master;
+                   AXI4_Master_IFC#(`PADDR, `DATA, `USERSPACE) master;
         `endif
         `ifdef HYPER
              (*always_ready,always_enabled*)	
@@ -152,7 +152,7 @@ package socgen;
 
         // Fabric
         AXI4_Fabric_IFC #(Num_Masters, Num_Fast_Slaves,
-                          `ADDR, `DATA,`USERSPACE)
+                          `PADDR, `DATA,`USERSPACE)
                         fabric <- mkAXI4_Fabric(fn_addr_to_slave_num);
 
         // Connect traffic generators to fabric

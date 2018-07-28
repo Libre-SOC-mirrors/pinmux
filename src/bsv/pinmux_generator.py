@@ -443,7 +443,7 @@ def write_instances(idef, p, ifaces):
     with open(idef, 'w') as bsv_file:
         txt = '''\
 `define ADDR {0}
-`define PADDR {0}
+`define PADDR 32
 `define DATA {1}
 `define Reg_width {1}
 `define USERSPACE 0

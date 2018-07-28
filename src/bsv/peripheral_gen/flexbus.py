@@ -18,7 +18,7 @@ class flexbus(PBase):
 
     def mkfast_peripheral(self):
         return "AXI4_Slave_to_FlexBus_Master_Xactor_IFC " + \
-               "#(`ADDR, `DATA, `USERSPACE)\n" + \
+               "#(`PADDR, `DATA, `USERSPACE)\n" + \
                "        fb{0} <- mkAXI4_Slave_to_FlexBus_Master_Xactor;"
 
     def _mk_connection(self, name=None, count=0):

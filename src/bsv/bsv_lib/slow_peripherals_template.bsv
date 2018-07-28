@@ -41,7 +41,7 @@ package slow_peripherals;
 		`endif
 	endinterface
 	interface Ifc_slow_peripherals;
-		interface AXI4_Slave_IFC#(`ADDR,`DATA,`USERSPACE) axi_slave;
+		interface AXI4_Slave_IFC#(`PADDR,`DATA,`USERSPACE) axi_slave;
 		interface SP_dedicated_ios slow_ios;
 		`ifdef CLINT
 			method Bit#(1) msip_int;
@@ -83,7 +83,7 @@ package slow_peripherals;
 
 		/*=======================================================*/
 
-   	    AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `ADDR, `DATA,`USERSPACE)
+   	    AXI4_Lite_Fabric_IFC #(1, Num_Slow_Slaves, `PADDR, `DATA,`USERSPACE)
                 slow_fabric <- mkAXI4_Lite_Fabric(fn_slow_address_mapping);
 		Ifc_AXI4Lite_AXI4_Bridge
                 bridge<-mkAXI4Lite_AXI4_Bridge(fast_clock,fast_reset);
