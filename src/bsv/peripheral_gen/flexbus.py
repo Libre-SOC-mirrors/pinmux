@@ -50,8 +50,8 @@ class flexbus(PBase):
             ('bwe', 'm_BWEn'),
             ('tbst', 'm_TBSTn'),
             ('tsiz', 'm_TSIZ'),
-            ('ad_in', 'm_AD'),
-            ('ad_out', 'm_din'),
+            ('ad_out', 'm_AD'),
+            ('ad_in', 'm_din'),
             ('ad_en', 'm_OE32n'),
         ]:
             ret.append(template.format(ps, ptype, n, stype))
