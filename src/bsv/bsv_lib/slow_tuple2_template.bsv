@@ -10,8 +10,8 @@ package slow_memory_map;
 
     /* ==== define the number of slow peripheral irqs ==== */
 
-	function SlowTuple2#(Bool, Bit#(TLog#(Num_Slow_Slaves)))
-                     fn_address_mapping (Bit#(`ADDR) addr);
+	function Tuple2#(Bool, Bit#(TLog#(Num_Slow_Slaves)))
+                     fn_slow_address_mapping (Bit#(`ADDR) addr);
         `ifdef CLINT
             if(addr>=`ClintBase && addr<=`ClintEnd)
                 return tuple2(True,fromInteger(valueOf(CLINT_slave_num)));

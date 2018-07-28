@@ -44,8 +44,8 @@ package fast_memory_map;
 
 
 
-function FastTuple2 #(Bool, Bit#(TLog#(Num_Fast_Slaves)))
-                fn_addr_to_slave_num  (Bit#(`PADDR) addr);
+function Tuple2 #(Bool, Bit#(TLog#(Num_Fast_Slaves)))
+                fn_addr_to_fastslave_num  (Bit#(`PADDR) addr);
 
     if(addr>=`SDRAMMemBase && addr<=`SDRAMMemEnd)
         return tuple2(True,fromInteger(valueOf(Sdram_slave_num)));
