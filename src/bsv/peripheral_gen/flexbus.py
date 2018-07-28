@@ -7,7 +7,7 @@ class flexbus(PBase):
         return "import FlexBus_Types::*;"
 
     def num_axi_regs32(self):
-        return 0x4000000  # defines an entire memory range
+        return 0x400000  # defines an entire memory range
 
     def extfastifinstance(self, name, count):
         return self._extifinstance(name, count, "_out", "", True,
