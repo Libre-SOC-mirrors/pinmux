@@ -46,6 +46,8 @@ package socgen;
     import defined_types::*;
     import MemoryMap		 :: *;
     import slow_peripherals::*;
+    import fast_memory_map::*;
+    import slow_memory_map::*;
 `ifdef DEBUG
     `include "defines.bsv"
 `endif
@@ -87,7 +89,7 @@ package socgen;
 
     /*========================= */
     interface Ifc_Soc;
-        interface SP_ios slow_ios;
+        interface SP_dedicated_ios slow_ios;
         (*always_ready,always_enabled*)
         method Action boot_sequence(Bit#(1) bootseq);
             
