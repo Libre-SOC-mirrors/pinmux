@@ -199,6 +199,7 @@ else"""
     def _mk_actual_connection(self, ctype, name, count, typ,
                               pname, ps, n, fname):
         ret = []
+        ck = self.get_clock_reset(name, count)
         if ctype == 'out':
             if ck == PBase.get_clock_reset(self, name, count):
                 ret.append("mkConnection({0},\n\t\t\t{1}.{2});"
@@ -206,15 +207,14 @@ else"""
             else:
                 n2 = "{0}{1}".format(name, count)
                 sync = '{0}_{1}_sync'.format(n2, pname)
-                ret.append("mkConnection({0}.put,\n\t\t\t{1});"
+                ret.append("mkConnection({0},\n\t\t\t{1}.get);"
                            .format(ps, sync))
-                ret.append("mkConnection({0},\n\t\t\t{1}.{2}.get);"
+                ret.append("mkConnection({0}.put,\n\t\t\t{1}.{2});"
                            .format(sync, n, fname))
         elif ctype == 'outen':
             ret.append("mkConnection({0}_outen,\n\t\t\t{1});"
                        .format(ps, fname))
         elif ctype == 'in':
-            ck = self.get_clock_reset(name, count)
             if ck == PBase.get_clock_reset(self, name, count):
                 ret.append("mkConnection({1},\n\t\t\t{0});".format(
                             ps, n))
