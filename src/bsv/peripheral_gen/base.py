@@ -200,8 +200,16 @@ else"""
                               pname, ps, n, fname):
         ret = []
         if ctype == 'out':
-            ret.append("mkConnection({0},\n\t\t\t{1}.{2});"
-                       .format(ps, n, fname))
+            if ck == PBase.get_clock_reset(self, name, count):
+                ret.append("mkConnection({0},\n\t\t\t{1}.{2});"
+                           .format(ps, n, fname))
+            else:
+                n2 = "{0}{1}".format(name, count)
+                sync = '{0}_{1}_sync'.format(n2, pname)
+                ret.append("mkConnection({0}.put,\n\t\t\t{1});"
+                           .format(ps, sync))
+                ret.append("mkConnection({0},\n\t\t\t{1}.{2}.get);"
+                           .format(sync, n, fname))
         elif ctype == 'outen':
             ret.append("mkConnection({0}_outen,\n\t\t\t{1});"
                        .format(ps, fname))
