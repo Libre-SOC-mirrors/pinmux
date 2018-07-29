@@ -14,7 +14,7 @@ package slow_peripherals;
 	/*===========================*/
 	/*=== package imports ===*/
 	import Clocks::*;
-	import Ifc_sync:: *;
+	import ifc_sync:: *;
 	import GetPut::*;
 	import ClientServer::*;
 	import Connectable::*;
