@@ -245,6 +245,7 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
                     n_ = "{0}{1}".format(n, count)
                 else:
                     n_ = n
+                n_ = '{0}_{1}'.format(n_, pname)
                 ret.append(template.format("Bit#(1)", n_, ck, spc))
             if typ == 'in' or typ == 'inout':
                 #fname = self.pinname_in(pname)
