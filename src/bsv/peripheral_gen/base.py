@@ -232,6 +232,12 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             typ = p['type']
             pname = p['name']
             n = name  
+            if typ == 'out' or typ == 'inout':
+                if not n.startswith('gpio'):  # XXX EURGH! horrible hack
+                    n_ = "{0}{1}".format(n, count)
+                else:
+                    n_ = n
+                ret.append(template.format("Bit#(1)", n_, ck, spc))
             if typ == 'in' or typ == 'inout':
                 #fname = self.pinname_in(pname)
                 n_ = "{0}{1}".format(n, count)
