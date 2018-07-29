@@ -14,6 +14,7 @@ package slow_peripherals;
 	/*===========================*/
 	/*=== package imports ===*/
 	import Clocks::*;
+	import Ifc_sync:: *;
 	import GetPut::*;
 	import ClientServer::*;
 	import Connectable::*;
@@ -80,6 +81,7 @@ package slow_peripherals;
 			Ifc_AxiExpansion axiexp1 <- mkAxiExpansion();	
 		`endif
         Ifc_pinmux pinmux <- mkpinmux; // mandatory
+{14}
 
 		/*=======================================================*/
 

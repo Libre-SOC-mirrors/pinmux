@@ -165,8 +165,10 @@ else"""
                         ps_ = ps + '_out'
                     else:
                         ps_ = ps
-                    ret.append("mkConnection({0},\n\t\t\t{1}.{2});"
-                               .format(ps_, n_, fname))
+                    cn = self._mk_actual_connection('out', name,
+                                                    count, typ, 
+                                                    pname, ps_, n_, fname)
+                    ret += cn
                 fname = None
                 if p.get('outen'):
                     fname = self.pinname_outen(pname)
@@ -174,8 +176,10 @@ else"""
                     if isinstance(fname, str):
                         fname = "{0}.{1}".format(n_, fname)
                     fname = self.pinname_tweak(pname, 'outen', fname)
-                    ret.append("mkConnection({0}_outen,\n\t\t\t{1});"
-                               .format(ps, fname))
+                    cn = self._mk_actual_connection('outen', name,
+                                                    count, typ, 
+                                                    pname, ps, n, fname)
+                    ret += cn
             if typ == 'in' or typ == 'inout':
                 fname = self.pinname_in(pname)
                 if fname:
@@ -186,10 +190,56 @@ else"""
                     n_ = "{0}{1}".format(n, count)
                     n_ = '{0}.{1}'.format(n_, fname)
                     n_ = self.ifname_tweak(pname, 'in', n_)
-                    ret.append(
-                        "mkConnection({1},\n\t\t\t{0});".format(
-                            ps_, n_))
+                    cn = self._mk_actual_connection('in', name,
+                                                    count, typ,
+                                                    pname, ps_, n_, fname)
+                    ret += cn
         return '\n'.join(ret)
+
+    def _mk_actual_connection(self, ctype, name, count, typ,
+                              pname, ps, n, fname):
+        ret = []
+        if ctype == 'out':
+            ret.append("mkConnection({0},\n\t\t\t{1}.{2});"
+                       .format(ps, n, fname))
+        elif ctype == 'outen':
+            ret.append("mkConnection({0}_outen,\n\t\t\t{1});"
+                       .format(ps, fname))
+        elif ctype == 'in':
+            ck = self.get_clock_reset(name, count)
+            if ck == PBase.get_clock_reset(self, name, count):
+                ret.append("mkConnection({1},\n\t\t\t{0});".format(
+                            ps, n))
+            else:
+                n2 = "{0}{1}".format(name, count)
+                sync = '{0}_{1}_sync'.format(n2, pname)
+                ret.append("mkConnection({1}.put,\n\t\t\t{0});".format(
+                            ps, sync))
+                ret.append("mkConnection({1},\n\t\t\t{0}.get);".format(
+                            sync, n))
+        return ret
+
+    def mk_clk_con(self, name, count):
+        ret = []
+        ck = self.get_clock_reset(name, count)
+        if ck == PBase.get_clock_reset(self, name, count):
+            return ''
+        spc = "sp_clock, sp_reset"
+        template = """\
+Ifc_sync#({0}) {1}_sync <-mksyncconnection(
+            {2}, {3});"""
+        for p in self.peripheral.pinspecs:
+            typ = p['type']
+            pname = p['name']
+            n = name  
+            if typ == 'in' or typ == 'inout':
+                #fname = self.pinname_in(pname)
+                n_ = "{0}{1}".format(n, count)
+                n_ = '{0}_{1}'.format(n_, pname)
+                #n_ = self.ifname_tweak(pname, 'in', n_)
+                ret.append(template.format("Bit#(1)", n_, spc, ck))
+        return '\n'.join(ret)
+
 
     def mk_cellconn(self, *args):
         return ''
@@ -384,6 +434,7 @@ class PeripheralIface(object):
                       'mk_dma_sync', 'mk_dma_connect', 'mk_dma_rule',
                       'mkfast_peripheral',
                       'mk_plic', 'mk_ext_ifacedef',
+                      'mk_clk_con', 'mk_ext_ifacedef',
                       'mk_connection', 'mk_cellconn', '_mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
@@ -725,6 +776,16 @@ class PeripheralInterfaces(object):
 
     def mk_sloirqsdef(self):
         return "    `define NUM_SLOW_IRQS {0}".format(self.num_slow_irqs)
+
+    def mk_clk_con(self):
+        ret = []
+        for (name, count) in self.ifacecount:
+            for i in range(count):
+                if self.is_on_fastbus(name, i):
+                    continue
+                txt = self.data[name].mk_clk_con(name, i)
+                ret.append(txt)
+        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def is_on_fastbus(self, name, i):
         #print "fastbus mode", self.fastbusmode, name, i

@@ -14,16 +14,15 @@ class quart(PBase):
                "method Bit#(1) %s;" % self.irq_name()
 
     def get_clock_reset(self, name, count):
-        return "slow_clock,slow_reset"  # XXX TODO: change to uart_clock/reset
+        return "uart_clock,uart_reset"  # XXX TODO: change to uart_clock/reset
 
     def num_axi_regs32(self):
         return 8
 
     def mkslow_peripheral(self, size=0):
-        return "// XXX TODO: change to uart_clock/reset\n" + \
-               "QUART_AXI4_Lite_Ifc quart{0} <- \n" + \
-               "                mkQUART(clocked_by sp_clock,\n" + \
-               "                    reset_by sp_reset, sp_clock, sp_reset);"
+        return "QUART_AXI4_Lite_Ifc quart{0} <- \n" + \
+               "                mkQUART(clocked_by uart_clock,\n" + \
+               "                    reset_by uart_reset, sp_clock, sp_reset);"
 
     def _mk_connection(self, name=None, count=0):
         return "quart{0}.slave"

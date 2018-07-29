@@ -121,6 +121,7 @@ def write_slow(slow, slowt, slowmf, slowmt, p, ifaces, iocells):
     numsloirqs = ifaces.mk_sloirqsdef()
     ifacedef = ifaces.mk_ext_ifacedef()
     ifacedef = ifaces.mk_ext_ifacedef()
+    clockcon = ifaces.mk_clk_con()
 
     with open(slow, "w") as bsv_file:
         with open(slowt) as f:
@@ -129,7 +130,7 @@ def write_slow(slow, slowt, slowmf, slowmt, p, ifaces, iocells):
                                     fnaddrmap, mkslow, mkcon, mkcellcon,
                                     pincon, inst, mkplic,
                                     numsloirqs, ifacedef,
-                                    inst2))
+                                    inst2, clockcon))
 
     with open(slowmf, "w") as bsv_file:
         with open(slowmt) as f:
