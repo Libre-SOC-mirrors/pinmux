@@ -22,7 +22,7 @@ class sdmmc(PBase):
 
     def _mk_pincon(self, name, count, typ):
         assert typ == 'slow', "TODO: mkConnection for fast"
-        ret = [PBase.mk_pincon(self, name, count, typ)]
+        ret = [PBase._mk_pincon(self, name, count, typ)]
         # special-case for gpio in, store in a temporary vector
         plen = len(self.peripheral.pinspecs)
         template = "mkConnection({0}.{1},\n\t\t\t{2}.{1});"
