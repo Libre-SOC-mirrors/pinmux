@@ -91,6 +91,7 @@ package socgen;
     /*========================= */
     interface Ifc_Soc;
         interface SP_dedicated_ios slow_ios;
+        interface IOCellSide iocell_side;
         (*always_ready,always_enabled*)
         method Action boot_sequence(Bit#(1) bootseq);
             
