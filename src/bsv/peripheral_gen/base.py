@@ -253,10 +253,10 @@ else"""
         if ck == PBase.get_clock_reset(self, name, count):
             return ''
         if ctype == 'slow':
-            spc = "sp_clock, sp_reset"
+            spc = self.get_clk_spc(ctype)
         else:
             spc = ck
-            ck = "core_clock, core_reset"
+            ck = self.get_clk_spc(ctype)
         template = """\
 Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             {2}, {3});"""
@@ -285,15 +285,21 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
                 ret.append(template.format("Bit#(1)", n_, spc, ck))
         return '\n'.join(ret)
 
+    def get_clk_spc(self, ctype):
+        if ctype == 'slow':
+            return "sp_clock, sp_reset"
+        else:
+            return "core_clock, core_reset"
+
     def _mk_clk_vcon(self, name, count, ctype, typ, pname, bitspec):
         ck = self.get_clock_reset(name, count)
         if ck == PBase.get_clock_reset(self, name, count):
             return ''
         if ctype == 'slow':
-            spc = "sp_clock, sp_reset"
+            spc = self.get_clk_spc(ctype)
         else:
             spc = ck
-            ck = "core_clock, core_reset"
+            ck = self.get_clk_spc(ctype)
         template = """\
 Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             {2}, {3});"""
