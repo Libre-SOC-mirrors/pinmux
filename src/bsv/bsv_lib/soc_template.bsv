@@ -40,6 +40,7 @@ package socgen;
     import Clocks::*;
 
     /*=== Project imports === */
+    import ifc_sync:: *;
     import ConcatReg::*;
     import AXI4_Types::*;
     import AXI4_Fabric::*;

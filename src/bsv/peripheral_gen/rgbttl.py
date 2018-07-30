@@ -35,8 +35,7 @@ class rgbttl(PBase):
         else:
             sname = self.peripheral.iname().format(count)
             ps = "pinmux.peripheral_side.%s" % sname
-        name = self.get_iname(count)
-        n = "{0}".format(name)
+        n = self.get_iname(count)
         for ptype in ['data_out']:
             ps_ = "{0}.{1}".format(ps, ptype)
             ret += self._mk_actual_connection('out', name, count, 'out',
@@ -51,7 +50,8 @@ class rgbttl(PBase):
         if ctype == 'slow':
             spc = "sp_clock, sp_reset"
         else:
-            spc = "fast_clock, fast_reset"
+            spc = ck
+            ck = "core_clock, core_reset"
         template = """\
 Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             {2}, {3});"""

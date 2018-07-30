@@ -235,7 +235,8 @@ else"""
         if ctype == 'slow':
             spc = "sp_clock, sp_reset"
         else:
-            spc = "fast_clock, fast_reset"
+            spc = ck
+            ck = "core_clock, core_reset"
         template = """\
 Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             {2}, {3});"""
