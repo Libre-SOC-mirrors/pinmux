@@ -16,7 +16,9 @@ class rgbttl(PBase):
         sz = len(self.peripheral.pinspecs) - 4  # subtract CK, DE, HS, VS
         return "Ifc_rgbttl_dummy lcd{0} <-  mkrgbttl_dummy();"
 
-    def _mk_connection(self, name=None, count=0):
+    def _mk_connection(self, name=None, count=0, master=False):
+        if master:
+            return "lcd{0}.master"
         return "lcd{0}.slave"
 
     def pinname_out(self, pname):

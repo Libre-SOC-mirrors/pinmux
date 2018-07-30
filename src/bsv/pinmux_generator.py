@@ -152,6 +152,7 @@ def write_soc(soc, soct, fastmf, fastmt, p, ifaces, iocells):
     fnaddrmap = ifaces.axi_fastaddr_map()
     mkfast = ifaces.mkfast_peripheral()
     mkcon = ifaces.mk_fast_connection()
+    mkmstcon = ifaces.mk_master_connection()
     mkcellcon = ifaces.mk_cellconn()
     pincon = ifaces.mk_fast_pincon()
     inst = ifaces.extfastifinstance()
@@ -169,7 +170,7 @@ def write_soc(soc, soct, fastmf, fastmt, p, ifaces, iocells):
                                    slavedecl, mastdecl, mkcon,
                                    inst, dma, num_dmachannels,
                                    pincon, regdef, fnaddrmap,
-                                   clockcon,
+                                   clockcon, mkmstcon,
                                    ))
 
     with open(fastmf, "w") as bsv_file:

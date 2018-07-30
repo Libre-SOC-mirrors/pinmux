@@ -175,6 +175,7 @@ package socgen;
          mkConnection (dma.mmu, fabric.v_from_masters
                               [fromInteger(valueOf(DMA_master_num))]);
         `endif
+{13}
 
 
         // Connect fabric to memory slaves

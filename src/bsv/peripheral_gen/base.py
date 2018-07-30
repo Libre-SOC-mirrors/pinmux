@@ -333,23 +333,30 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             return ''
         return txt.format(con, aname, fabricname)
 
-    def __mk_master_connection(self, con, aname):
-        txt = "mkConnection (slow_fabric.v_to_slaves\n" + \
-              "            [fromInteger(valueOf({1}))],\n" + \
-              "            {0});"
+    def __mk_master_connection(self, con, aname, fabricname):
+        txt = "mkConnection ({0}, {2}.v_from_masters\n" + \
+              "            [fromInteger(valueOf({1}))]);\n" 
 
-        print "PBase __mk_connection", self.name, aname
+        print "PBase __mk_master_connection", self.name, aname
         if not con:
             return ''
-        return txt.format(con, aname)
+        return txt.format(con, aname, fabricname)
+
+    def mk_master_connection(self, count, fabricname, typ, name=None):
+        if not self.has_axi_master():
+            return ''
+        if name is None:
+            name = self.name
+        print "PBase mk_master_conn", self.name, count
+        aname = self.axi_master_name(name, count, typ)
+        con = self._mk_connection(name, count, True).format(count, aname)
+        return self.__mk_master_connection(con, aname, fabricname)
 
     def mk_connection(self, count, fabricname, typ, name=None):
         if name is None:
             name = self.name
         print "PBase mk_conn", self.name, count
         aname = self.axi_slave_name(name, count, typ)
-        #dname = self.mksuffix(name, count)
-        #dname = "{0}{1}".format(name, dname)
         con = self._mk_connection(name, count).format(count, aname)
         return self.__mk_connection(con, aname, fabricname)
 
@@ -505,7 +512,8 @@ class PeripheralIface(object):
                       'mkfast_peripheral',
                       'mk_plic', 'mk_ext_ifacedef',
                       '_mk_clk_con', 'mk_ext_ifacedef',
-                      'mk_connection', 'mk_cellconn', '_mk_pincon']:
+                      'mk_connection', 'mk_master_connection',
+                      'mk_cellconn', '_mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
 
@@ -715,31 +723,29 @@ class PeripheralInterfaces(object):
                 ret.append(x.format(suffix))
         return '\n'.join(li(list(filter(None, ret)), 8))
 
-    def mk_fast_connection(self, *args):
+    def _mk_connection(self, fabric, typ, indent, master, *args):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                txt = self.data[name].mk_connection(i, "fabric", "fast")
+                if master:
+                    txt = self.data[name].mk_master_connection(i, fabric, typ)
+                else:
+                    txt = self.data[name].mk_connection(i, fabric, typ)
                 if name == 'gpioa':
                     print "txt", txt
-                    print self.data[name].mk_connection
                 ret.append(txt)
-        return '\n'.join(li(list(filter(None, ret)), 12))
+        return '\n'.join(li(list(filter(None, ret)), indent))
+
+    def mk_master_connection(self, *args):
+        return self._mk_connection("fabric", "fast", 8, True, *args)
+
+    def mk_fast_connection(self, *args):
+        return self._mk_connection("fabric", "fast", 12, False, *args)
 
     def mk_connection(self, *args):
-        ret = []
-        for (name, count) in self.ifacecount:
-            for i in range(count):
-                if self.is_on_fastbus(name, i):
-                    continue
-                txt = self.data[name].mk_connection(i, "slow_fabric", "")
-                if name == 'gpioa':
-                    print "txt", txt
-                    print self.data[name].mk_connection
-                ret.append(txt)
-        return '\n'.join(li(list(filter(None, ret)), 8))
+        return self._mk_connection("slow_fabric", "", 8, False, *args)
 
     def mk_cellconn(self):
         ret = []
