@@ -200,6 +200,7 @@ else"""
         if stype is None:
             stype = pname
         ret = []
+        ret.append("//%s %s %s %s %s" % (name, ptyp, typ, pname, stype))
         if ptyp == 'fast':
             sname = self.get_iname(count)
             ps = "slow_peripherals.%s" % sname

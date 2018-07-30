@@ -34,6 +34,7 @@ class flexbus(PBase):
     def pinname_out(self, pname):
         return {'ale': 'flexbus_side.m_ALE',
                 'oe': 'flexbus_side.m_OEn',
+                'tbst': 'flexbus_side.m_TBSTn',
                 'rw': 'flexbus_side.m_R_Wn',
                 }.get(pname, '')
 
@@ -42,7 +43,6 @@ class flexbus(PBase):
         for pname, sz, ptype in [
             ('cs', 6, 'out'),
             ('bwe', 4, 'out'),
-            ('tbst', 2, 'out'),
             ('tsiz', 2, 'out'),
             ('ad_out', 32, 'out'),
             ('ad_in', 32, 'in'),
@@ -59,7 +59,6 @@ class flexbus(PBase):
         for pname, stype, ptype in [
             ('cs', 'm_FBCSn', 'out'),
             ('bwe', 'm_BWEn', 'out'),
-            ('tbst', 'm_TBSTn', 'out'),
             ('tsiz', 'm_TSIZ', 'out'),
             ('ad_out', 'm_AD', 'out'),
             ('ad_in', 'm_din', 'in'),
