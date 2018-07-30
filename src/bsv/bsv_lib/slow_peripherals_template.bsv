@@ -36,6 +36,7 @@ package slow_peripherals;
 	
 	/*===== interface declaration =====*/
 	interface SP_dedicated_ios;
+    interface IOCellSide iocell_side;
 		`ifdef AXIEXP
 			interface Get#(Bit#(67)) axiexp1_out;
 			interface Put#(Bit#(67)) axiexp1_in;
