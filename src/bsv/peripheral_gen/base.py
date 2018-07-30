@@ -300,6 +300,8 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
 
         n_ = "{0}{1}".format(name, count)
         n_ = '{0}_{1}'.format(n_, pname)
+        if typ == 'in' or typ == 'inout':
+            ck, spc = spc, ck
         return template.format(bitspec,  n_, ck, spc)
 
 
