@@ -196,6 +196,20 @@ else"""
                     ret += cn
         return '\n'.join(ret)
 
+    def _mk_vpincon(self, name, count, ptyp, typ, pname):
+        ret = []
+        if ptyp == 'fast':
+            sname = self.get_iname(count)
+            ps = "slow_peripherals.%s" % sname
+        else:
+            sname = self.peripheral.iname().format(count)
+            ps = "pinmux.peripheral_side.%s" % sname
+        n = self.get_iname(count)
+        ps_ = "{0}.{1}".format(ps, pname)
+        ret += self._mk_actual_connection(typ, name, count, typ,
+                                          pname, ps_, n, pname)
+        return '\n'.join(ret)
+
     def _mk_actual_connection(self, ctype, name, count, typ,
                               pname, ps, n, fname):
         ret = []
@@ -226,6 +240,7 @@ else"""
                 ret.append("mkConnection({1},\n\t\t\t{0}.get);".format(
                             sync, n))
         return ret
+
 
     def _mk_clk_con(self, name, count, ctype):
         ret = []
@@ -264,6 +279,23 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
                 #n_ = self.ifname_tweak(pname, 'in', n_)
                 ret.append(template.format("Bit#(1)", n_, spc, ck))
         return '\n'.join(ret)
+
+    def _mk_clk_vcon(self, name, count, ctype, typ, pname, bitspec):
+        ck = self.get_clock_reset(name, count)
+        if ck == PBase.get_clock_reset(self, name, count):
+            return ''
+        if ctype == 'slow':
+            spc = "sp_clock, sp_reset"
+        else:
+            spc = ck
+            ck = "core_clock, core_reset"
+        template = """\
+Ifc_sync#({0}) {1}_sync <-mksyncconnection(
+            {2}, {3});"""
+
+        n_ = "{0}{1}".format(name, count)
+        n_ = '{0}_{1}'.format(n_, pname)
+        return template.format(bitspec,  n_, ck, spc)
 
 
     def mk_cellconn(self, *args):

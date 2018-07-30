@@ -29,39 +29,16 @@ class rgbttl(PBase):
 
     def _mk_pincon(self, name, count, ptyp):
         ret = [PBase._mk_pincon(self, name, count, ptyp)]
-        if ptyp == 'fast':
-            sname = self.get_iname(count)
-            ps = "slow_peripherals.%s" % sname
-        else:
-            sname = self.peripheral.iname().format(count)
-            ps = "pinmux.peripheral_side.%s" % sname
-        n = self.get_iname(count)
-        for ptype in ['data_out']:
-            ps_ = "{0}.{1}".format(ps, ptype)
-            ret += self._mk_actual_connection('out', name, count, 'out',
-                                              ptype, ps_, n, ptype)
+        txt = self._mk_vpincon(name, count, ptyp, "out", "data_out")
+        ret.append(txt)
         return '\n'.join(ret)
 
     def _mk_clk_con(self, name, count, ctype):
         ret = [PBase._mk_clk_con(self, name, count, ctype)]
-        ck = self.get_clock_reset(name, count)
-        if ck == PBase.get_clock_reset(self, name, count):
-            return ret
-        if ctype == 'slow':
-            spc = "sp_clock, sp_reset"
-        else:
-            spc = ck
-            ck = "core_clock, core_reset"
-        template = """\
-Ifc_sync#({0}) {1}_sync <-mksyncconnection(
-            {2}, {3});"""
 
-        # one pin, data_out, might as well hard-code it
-        typ = 'out'
-        pname = 'data_out'
-        n = name
-        n_ = "{0}{1}".format(n, count)
-        n_ = '{0}_{1}'.format(n_, pname)
+        # data_out (hard-coded)
         sz = len(self.peripheral.pinspecs) - 4  # subtract CK, DE, HS, VS
-        ret.append(template.format("Bit#(%d)" % sz, n_, ck, spc))
+        bitspec = "Bit#(%d)" % sz
+        txt = self._mk_clk_vcon(name, count, ctype, "out", "data_out", bitspec)
+        ret.append(txt)
         return '\n'.join(ret)
