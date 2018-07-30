@@ -38,8 +38,9 @@ class nspi(PBase):
                 'nss': 1,
                 }.get(pname, '')
 
-    def mk_pincon(self, name, count):
-        ret = [PBase.mk_pincon(self, name, count)]
+    def _mk_pincon(self, name, count, typ):
+        assert typ == 'slow', "TODO, make slow mkConnection"
+        ret = [PBase.mk_pincon(self, name, count, typ)]
         # special-case for gpio in, store in a temporary vector
         plen = len(self.peripheral.pinspecs)
         template = "mkConnection({0}.{1},\n\t\t\t{2}.{1});"
