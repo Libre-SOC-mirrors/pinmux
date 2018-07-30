@@ -13,6 +13,19 @@ class jtag(PBase):
         # YUK!
         return "interface Ifc_jtagdtm jtag{0}_out;".format(count)
 
+    def get_clock_reset(self, name, count):
+        return "tck, trst"
+
+    def pinname_in(self, pname):
+        return {'tms': 'tms',
+                'tdi': 'tdi',
+                }.get(pname, '')
+
+    def pinname_out(self, pname):
+        return {'tck': 'tck',
+                'tdo': 'tdo',
+                }.get(pname, '')
+
     def mkfast_peripheral(self):
         return """\
 Ifc_jtagdtm jtag{0} <-mkjtagdtm(clocked_by tck, reset_by trst);

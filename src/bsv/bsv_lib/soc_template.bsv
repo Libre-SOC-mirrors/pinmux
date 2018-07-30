@@ -313,7 +313,9 @@ package socgen;
           interface master=fabric.v_to_slaves
                                 [fromInteger(valueOf(Sdram_slave_num))];
         `endif
-        interface slow_ios=slow_peripherals.slow_ios;
+        interface slow_ios = slow_peripherals.slow_ios;
+        interface iocell_side = slow_peripherals.iocell_side;
+
 {6}
     endmodule
 endpackage
