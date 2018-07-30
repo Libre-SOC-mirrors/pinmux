@@ -207,6 +207,8 @@ else"""
             sname = self.peripheral.iname().format(count)
             ps = "pinmux.peripheral_side.%s" % sname
         n = self.get_iname(count)
+        if typ == 'in':
+            n = "{0}.{1}".format(n, stype)
         ps_ = "{0}.{1}".format(ps, pname)
         ret += self._mk_actual_connection(typ, name, count, typ,
                                           pname, ps_, n, stype)
@@ -237,7 +239,6 @@ else"""
             else:
                 n2 = "{0}{1}".format(name, count)
                 sync = '{0}_{1}_sync'.format(n2, pname)
-                n = "{0}.{1}".format(n, fname)
                 ret.append("mkConnection({1}.put,\n\t\t\t{0});".format(
                             ps, sync))
                 ret.append("mkConnection({1},\n\t\t\t{0}.get);".format(
