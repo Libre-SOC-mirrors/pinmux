@@ -26,8 +26,9 @@ class eint(PBase):
         print "ifnameweak", pname, typ, txt
         return "wr_interrupt[{0}] <= ".format(pname)
 
-    def mk_pincon(self, name, count):
-        ret = [PBase.mk_pincon(self, name, count)]
+    def _mk_pincon(self, name, count, typ):
+        assert typ == 'slow', 'TODO: mkConnection for fast'
+        ret = [PBase._mk_pincon(self, name, count, typ)]
         size = len(self.peripheral.pinspecs)
         ret.append(eint_pincon_template.format(size))
         ret.append("rule con_%s%d_io_in;" % (name, count))
