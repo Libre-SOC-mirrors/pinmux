@@ -65,6 +65,7 @@ class flexbus(PBase):
             ('ad_in', 'm_din', 'in'),
             ('ad_out_en', 'm_OE32n', 'out'),
         ]:
-            ret.append(self._mk_vpincon(name, count, typ, ptype, pname))
+            ret.append(self._mk_vpincon(name, count, typ, ptype, pname,
+                                        stype))
 
         return '\n'.join(ret)

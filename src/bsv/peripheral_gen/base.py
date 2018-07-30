@@ -196,7 +196,9 @@ else"""
                     ret += cn
         return '\n'.join(ret)
 
-    def _mk_vpincon(self, name, count, ptyp, typ, pname):
+    def _mk_vpincon(self, name, count, ptyp, typ, pname, stype=None):
+        if stype is None:
+            stype = pname
         ret = []
         if ptyp == 'fast':
             sname = self.get_iname(count)
@@ -207,7 +209,7 @@ else"""
         n = self.get_iname(count)
         ps_ = "{0}.{1}".format(ps, pname)
         ret += self._mk_actual_connection(typ, name, count, typ,
-                                          pname, ps_, n, pname)
+                                          pname, ps_, n, stype)
         return '\n'.join(ret)
 
     def _mk_actual_connection(self, ctype, name, count, typ,
