@@ -24,15 +24,18 @@ class rgbttl(PBase):
             return pname
         return ''
 
-    def mk_pincon(self, name, count):
-        ret = [PBase.mk_pincon(self, name, count)]
-        # special-case for gpio in, store in a temporary vector
-        sname = self.peripheral.iname().format(count)
-        plen = len(self.peripheral.pinspecs)
-        template = "mkConnection({0}.{1},\n\t\t\t{2}.{1});"
+    def _mk_pincon(self, name, count, ptyp):
+        ret = [PBase._mk_pincon(self, name, count, ptyp)]
+        if ptyp == 'fast':
+            sname = self.get_iname(count)
+            ps = "slow_peripherals.%s" % sname
+        else:
+            sname = self.peripheral.iname().format(count)
+            ps = "pinmux.peripheral_side.%s" % sname
         name = self.get_iname(count)
-        ps = "pinmux.peripheral_side.%s" % sname
         n = "{0}".format(name)
         for ptype in ['data_out']:
-            ret.append(template.format(ps, ptype, n))
+            ps_ = "{0}.{1}".format(ps, ptype)
+            ret += self._mk_actual_connection('out', name, count, 'out',
+                                              ptype, ps_, n, ptype)
         return '\n'.join(ret)
