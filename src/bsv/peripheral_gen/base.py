@@ -45,7 +45,7 @@ class PBase(object):
         if not irqname:
             return ''
         pirqname = self.irq_name().format(count)
-        template = "   {0}_interrupt.send(\n" + \
+        template = "   {0}.send(\n" + \
                    "           slow_peripherals.{1});"
         return template.format(irqname, pirqname)
 
