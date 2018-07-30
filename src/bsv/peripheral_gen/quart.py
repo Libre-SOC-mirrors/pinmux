@@ -14,7 +14,7 @@ class quart(PBase):
                "method Bit#(1) %s;" % self.irq_name()
 
     def get_clock_reset(self, name, count):
-        return "uart_clock,uart_reset"  # XXX TODO: change to uart_clock/reset
+        return "uart_clock,uart_reset"
 
     def num_axi_regs32(self):
         return 8
@@ -76,7 +76,7 @@ class quart(PBase):
 uart_plic_template = """\
 // PLIC {0} synchronisation with irq {1}
 SyncBitIfc#(Bit#(1)) {0}_interrupt <-
-                            mkSyncBitToCC(sp_clock, uart_reset);
+                            mkSyncBitToCC(uart_clock, uart_reset);
 rule plic_synchronize_{0}_interrupt_{1};
      {0}_interrupt.send({0}.irq);
 endrule
