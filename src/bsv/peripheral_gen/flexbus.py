@@ -13,6 +13,9 @@ class flexbus(PBase):
         return self._extifinstance(name, count, "_out", "", True,
                                    ".flexbus_side")
 
+    def get_clock_reset(self, name, count):
+        return "slow_clock, slow_reset"
+
     def fastifdecl(self, name, count):
         return "interface FlexBus_Master_IFC fb{0}_out;".format(count)
 
@@ -34,25 +37,34 @@ class flexbus(PBase):
                 'rw': 'flexbus_side.m_R_Wn',
                 }.get(pname, '')
 
+    def _mk_clk_con(self, name, count, ctype):
+        ret = [PBase._mk_clk_con(self, name, count, ctype)]
+        for pname, sz, ptype in [
+            ('cs', 6, 'out'),
+            ('bwe', 4, 'out'),
+            ('tbst', 2, 'out'),
+            ('tsiz', 2, 'out'),
+            ('ad_out', 32, 'out'),
+            ('ad_in', 32, 'in'),
+            ('ad_out_en', 32, 'out'),
+        ]:
+            bitspec = "Bit#(%d)" % sz
+            txt = self._mk_clk_vcon(name, count, ctype, ptype, pname, bitspec)
+            ret.append(txt)
+        return '\n'.join(ret)
+
     def _mk_pincon(self, name, count, typ):
         ret = [PBase._mk_pincon(self, name, count, typ)]
-        # special-case for gpio in, store in a temporary vector
-        plen = len(self.peripheral.pinspecs)
-        template = "mkConnection({0}.{3},\n\t\t\t{2}.flexbus_side.{1});"
-        sname = self.get_iname(count)
-        # SLOW -->sname = self.peripheral.iname().format(count)
-        name = self.get_iname(count)
         assert typ == 'fast' # TODO slow?
-        ps = "slow_peripherals.%s" % sname
-        n = "{0}".format(name)
-        for stype, ptype in [
-            ('cs', 'm_FBCSn'),
-            ('bwe', 'm_BWEn'),
-            ('tbst', 'm_TBSTn'),
-            ('tsiz', 'm_TSIZ'),
-            ('ad_out', 'm_AD'),
-            ('ad_in', 'm_din'),
-            ('ad_out_en', 'm_OE32n'),
+        for pname, stype, ptype in [
+            ('cs', 'm_FBCSn', 'out'),
+            ('bwe', 'm_BWEn', 'out'),
+            ('tbst', 'm_TBSTn', 'out'),
+            ('tsiz', 'm_TSIZ', 'out'),
+            ('ad_out', 'm_AD', 'out'),
+            ('ad_in', 'm_din', 'in'),
+            ('ad_out_en', 'm_OE32n', 'out'),
         ]:
-            ret.append(template.format(ps, ptype, n, stype))
+            ret.append(self._mk_vpincon(name, count, typ, ptype, pname))
+
         return '\n'.join(ret)
