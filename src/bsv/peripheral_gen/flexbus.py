@@ -10,14 +10,14 @@ class flexbus(PBase):
         return 0x400000  # defines an entire memory range
 
     def extfastifinstance(self, name, count):
-        return self._extifinstance(name, count, "_out", "", True,
+        return "// TODO" + self._extifinstance(name, count, "_out", "", True,
                                    ".flexbus_side")
+
+    def fastifdecl(self, name, count):
+        return "//interface FlexBus_Master_IFC fb{0}_out;".format(count)
 
     def get_clock_reset(self, name, count):
         return "slow_clock, slow_reset"
-
-    def fastifdecl(self, name, count):
-        return "interface FlexBus_Master_IFC fb{0}_out;".format(count)
 
     def mkfast_peripheral(self):
         return "AXI4_Slave_to_FlexBus_Master_Xactor_IFC " + \
