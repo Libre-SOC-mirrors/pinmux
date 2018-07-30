@@ -121,7 +121,7 @@ def write_slow(slow, slowt, slowmf, slowmt, p, ifaces, iocells):
     numsloirqs = ifaces.mk_sloirqsdef()
     ifacedef = ifaces.mk_ext_ifacedef()
     ifacedef = ifaces.mk_ext_ifacedef()
-    clockcon = ifaces.mk_clk_con()
+    clockcon = ifaces.mk_slowclk_con()
 
     with open(slow, "w") as bsv_file:
         with open(slowt) as f:
@@ -160,6 +160,7 @@ def write_soc(soc, soct, fastmf, fastmt, p, ifaces, iocells):
     ifacedef = ifaces.mk_ext_ifacedef()
     dma = ifaces.mk_dma_irq()
     num_dmachannels = ifaces.num_dmachannels()
+    clockcon = ifaces.mk_fastclk_con()
 
     with open(soc, "w") as bsv_file:
         with open(soct) as f:
@@ -168,6 +169,7 @@ def write_soc(soc, soct, fastmf, fastmt, p, ifaces, iocells):
                                    slavedecl, mastdecl, mkcon,
                                    inst, dma, num_dmachannels,
                                    pincon, regdef, fnaddrmap,
+                                   clockcon,
                                    ))
 
     with open(fastmf, "w") as bsv_file:

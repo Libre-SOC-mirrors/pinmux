@@ -227,12 +227,15 @@ else"""
                             sync, n))
         return ret
 
-    def mk_clk_con(self, name, count):
+    def _mk_clk_con(self, name, count, ctype):
         ret = []
         ck = self.get_clock_reset(name, count)
         if ck == PBase.get_clock_reset(self, name, count):
             return ''
-        spc = "sp_clock, sp_reset"
+        if ctype == 'slow':
+            spc = "sp_clock, sp_reset"
+        else:
+            spc = "fast_clock, fast_reset"
         template = """\
 Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             {2}, {3});"""
@@ -241,6 +244,9 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             pname = p['name']
             n = name  
             if typ == 'out' or typ == 'inout':
+                fname = self.pinname_out(pname)
+                if not fname:
+                    continue
                 if not n.startswith('gpio'):  # XXX EURGH! horrible hack
                     n_ = "{0}{1}".format(n, count)
                 else:
@@ -248,6 +254,9 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
                 n_ = '{0}_{1}'.format(n_, pname)
                 ret.append(template.format("Bit#(1)", n_, ck, spc))
             if typ == 'in' or typ == 'inout':
+                fname = self.pinname_in(pname)
+                if not fname:
+                    continue
                 #fname = self.pinname_in(pname)
                 n_ = "{0}{1}".format(n, count)
                 n_ = '{0}_{1}'.format(n_, pname)
@@ -449,7 +458,7 @@ class PeripheralIface(object):
                       'mk_dma_sync', 'mk_dma_connect', 'mk_dma_rule',
                       'mkfast_peripheral',
                       'mk_plic', 'mk_ext_ifacedef',
-                      'mk_clk_con', 'mk_ext_ifacedef',
+                      '_mk_clk_con', 'mk_ext_ifacedef',
                       'mk_connection', 'mk_cellconn', '_mk_pincon']:
             fn = CallFn(self, fname)
             setattr(self, fname, types.MethodType(fn, self))
@@ -792,13 +801,19 @@ class PeripheralInterfaces(object):
     def mk_sloirqsdef(self):
         return "    `define NUM_SLOW_IRQS {0}".format(self.num_slow_irqs)
 
-    def mk_clk_con(self):
+    def mk_fastclk_con(self):
+        return self._mk_clk_con("fast")
+
+    def mk_slowclk_con(self):
+        return self._mk_clk_con("slow")
+
+    def _mk_clk_con(self, ctype):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                txt = self.data[name].mk_clk_con(name, i)
+                txt = self.data[name]._mk_clk_con(name, i, ctype)
                 ret.append(txt)
         return '\n'.join(li(list(filter(None, ret)), 8))
 

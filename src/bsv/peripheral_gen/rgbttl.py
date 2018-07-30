@@ -24,6 +24,9 @@ class rgbttl(PBase):
             return pname
         return ''
 
+    def get_clock_reset(self, name, count):
+        return "slow_clock, slow_reset"
+
     def _mk_pincon(self, name, count, ptyp):
         ret = [PBase._mk_pincon(self, name, count, ptyp)]
         if ptyp == 'fast':
@@ -38,4 +41,27 @@ class rgbttl(PBase):
             ps_ = "{0}.{1}".format(ps, ptype)
             ret += self._mk_actual_connection('out', name, count, 'out',
                                               ptype, ps_, n, ptype)
+        return '\n'.join(ret)
+
+    def _mk_clk_con(self, name, count, ctype):
+        ret = [PBase._mk_clk_con(self, name, count, ctype)]
+        ck = self.get_clock_reset(name, count)
+        if ck == PBase.get_clock_reset(self, name, count):
+            return ret
+        if ctype == 'slow':
+            spc = "sp_clock, sp_reset"
+        else:
+            spc = "fast_clock, fast_reset"
+        template = """\
+Ifc_sync#({0}) {1}_sync <-mksyncconnection(
+            {2}, {3});"""
+
+        # one pin, data_out, might as well hard-code it
+        typ = 'out'
+        pname = 'data_out'
+        n = name
+        n_ = "{0}{1}".format(n, count)
+        n_ = '{0}_{1}'.format(n_, pname)
+        sz = len(self.peripheral.pinspecs) - 4  # subtract CK, DE, HS, VS
+        ret.append(template.format("Bit#(%d)" % sz, n_, ck, spc))
         return '\n'.join(ret)

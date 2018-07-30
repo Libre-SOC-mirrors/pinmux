@@ -147,10 +147,13 @@ package socgen;
             Ifc_vme_top             vme             <-mkvme_top();
             `endif	
         Ifc_slow_peripherals slow_peripherals <-mkslow_peripherals(
-                          core_clock, core_reset, uart_clock, 
-                          uart_reset, clocked_by slow_clock ,
-                          reset_by slow_reset 
+                          core_clock, core_reset,
+                          uart_clock, uart_reset,
+                          clocked_by slow_clock, reset_by slow_reset
                           `ifdef PWM_AXI4Lite , ext_pwm_clock `endif );	
+
+        // clock sync mkConnections
+{12}
 
         // Fabric
         AXI4_Fabric_IFC #(Num_Masters, Num_Fast_Slaves,
