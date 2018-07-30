@@ -14,7 +14,8 @@ class jtag(PBase):
         return "interface Ifc_jtagdtm jtag{0}_out;".format(count)
 
     def get_clock_reset(self, name, count):
-        return "tck, trst"
+        return "slow_clock, slow_reset"
+    #    return "tck, trst"
 
     def pinname_in(self, pname):
         return {'tms': 'tms',
