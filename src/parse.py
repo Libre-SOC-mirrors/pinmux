@@ -120,7 +120,7 @@ class Parse(object):
         return int(math.log(max_num_cells + 1, 2))
 
     def get_muxwidth(self, cellnum):
-        return self.muxed_cells_width[cellnum]
+        return self.muxed_cells_width[int(cellnum)]
 
 
 if __name__ == '__main__':

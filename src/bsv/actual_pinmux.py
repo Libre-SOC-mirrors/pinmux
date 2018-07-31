@@ -103,13 +103,15 @@ def mkmux(p, ifaces, cell, suffix, outenmode):
         multiple inputs and, based on an "address" routes
         a given indexed input through to the (one) output
     """
+    cellnum = cell[0]
     comment = 'outen' if outenmode else 'output'
     fmtstr = "\t\t\twr%s==%d?%s:%s\n"  # mux-selector format
     ret = ''
-    ret += "      // %s muxer for cell idx %s\n" % (comment, cell[0])
-    ret += "      %s%s=\n" % (cn(cell[0]), suffix)
+    ret += "      // %s muxer for cell idx %s\n" % (comment, cellnum)
+    ret += "      %s%s=\n" % (cn(cellnum), suffix)
+    i = 0
     for i in range(
-            0, (1 << p.cell_bitwidth) - 1):  # full mux range (minus 1)
+            0, p.get_muxwidth(cellnum) - 1):  # full mux range (minus 1)
         comment = mkcomment(ifaces, cell, i, outenmode)
         cf = fmt(ifaces, cell, i, suffix)
         ret += fmtstr % (cn(cell[0]), i, cf, comment)
