@@ -8,9 +8,9 @@ from spec.ifaceprint import display_fixed
 
 def pinspec():
     pinbanks = {
-        'A': 28,
-        'B': 18,
-        'C': 24,
+        'A': (28, 4),
+        'B': (18, 4),
+        'C': (24, 1),
     }
     fixedpins = {
         'CTRL_SYS': [
@@ -98,8 +98,7 @@ def pinspec():
     ps.gpio("", ('B', 0), 0, 0, 18)
     ps.flexbus1("", ('B', 0), 1, spec=flexspec)
 
-    ps.gpio("", ('C', 0), 0, 0, 24)
-    ps.flexbus2("", ('C', 0), 1)
+    ps.flexbus2("", ('C', 0), 0)
 
     # Scenarios below can be spec'd out as either "find first interface"
     # by name/number e.g. SPI1, or as "find in bank/mux" which must be
