@@ -61,6 +61,7 @@ def fmt(ifaces, cells, idx, suffix=None):
         cell = cells[idx]
     else:
         cell = ''
+    #print "fmt", idx, cells, cell
     if not cell:
         return 'val0'
     temp = transfn(cell)
@@ -110,13 +111,15 @@ def mkmux(p, ifaces, cell, suffix, outenmode):
     ret += "      // %s muxer for cell idx %s\n" % (comment, cellnum)
     ret += "      %s%s=\n" % (cn(cellnum), suffix)
     i = 0
-    for i in range(
-            0, p.get_muxwidth(cellnum) - 1):  # full mux range (minus 1)
-        comment = mkcomment(ifaces, cell, i, outenmode)
-        cf = fmt(ifaces, cell, i, suffix)
-        ret += fmtstr % (cn(cell[0]), i, cf, comment)
-    comment = mkcomment(ifaces, cell, i + 1, outenmode)
-    ret += "\t\t\t" + fmt(ifaces, cell, i + 1, suffix)  # last line
+    mwid = p.get_muxwidth(cellnum)
+    if mwid > 1:
+        for i in range(0, mwid - 1):  # full mux range (minus 1)
+            comment = mkcomment(ifaces, cell, i, outenmode)
+            cf = fmt(ifaces, cell, i, suffix)
+            ret += fmtstr % (cn(cell[0]), i, cf, comment)
+        i += 1
+    comment = mkcomment(ifaces, cell, i, outenmode)
+    ret += "\t\t\t" + fmt(ifaces, cell, i, suffix)  # last line
     ret += ";%s\n" % comment
 
     return ret
