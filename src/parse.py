@@ -22,6 +22,8 @@ class Parse(object):
 
         max_io = 0
         self.muxed_cells = []
+        self.muxed_cells_width = []
+        self.muxed_cells_bank = []
         self.dedicated_cells = []
         self.pinnumbers = []
         self.bankwidths = {} 
@@ -45,17 +47,21 @@ class Parse(object):
         with open(fname) as pinmapfile:
             for lineno, line in enumerate(pinmapfile):
                 line1 = line[:-1].split('\t')
-                if len(line1) <= 2:
+                if len(line1) <= 3:
                     continue
                 self.pinnumbers.append(int(line1[0]))
+                self.muxed_cells_bank.append(line1[1])
+                self.muxed_cells_width.append(int(line1[2]))
                 # XXX TODO: dedicated pins in separate file
                 #if len(line1) == 2:  # dedicated
                 #    self.dedicated_cells.append(line1)
                 #else:
-                for i in range(1, len(line1)):
+                for i in range(3, len(line1)):
                     # XXX HORRIBLE HACK!!
                     if line1[i].startswith('pwm'):
                         line1[i] = 'pwm%s_out' % line1[i][4:]
+                line1 = [line1[0]] + line1[3:]
+                print "line", line1
                 self.muxed_cells.append(line1)
 
         self.pinnumbers = sorted(self.pinnumbers)
@@ -106,12 +112,15 @@ class Parse(object):
 
         # TODO
 
-    def get_cell_bit_widths(self, banks):
+    def get_max_cell_bitwidth(self):
         max_num_cells = 0
         for cell in self.muxed_cells:
             print cell
             max_num_cells = max(len(cell) - 1, max_num_cells)
         return int(math.log(max_num_cells + 1, 2))
+
+    def get_muxwidth(self, cellnum):
+        return self.muxed_cells_width[cellnum]
 
 
 if __name__ == '__main__':
