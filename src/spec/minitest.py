@@ -8,7 +8,8 @@ from spec.ifaceprint import display_fixed
 
 def pinspec():
     pinbanks = {
-        'A': 28,
+        'A': (28, 4),
+        'B': (4, 1),
     }
     fixedpins = {
         'CTRL_SYS': [
@@ -63,7 +64,7 @@ def pinspec():
     ps.gpio("", ('A', 0), 0, 0, 28)
     ps.rgbttl("", ('A', 0), 1, limit=22)
     ps.mspi("0", ('A', 10), 2)
-    ps.mquadspi("", ('A', 4), 2)
+    ps.mquadspi("0", ('A', 4), 2)
     ps.uart("0", ('A', 16), 2)
     ps.i2c("1", ('A', 18), 2)
     ps.pwm("", ('A', 21), 2, 0, 3)
@@ -80,6 +81,8 @@ def pinspec():
     ps.i2c("0", ('A', 0), 2)
     ps.uart("1", ('A', 2), 2)
     ps.uart("2", ('A', 14), 2)
+
+    ps.mquadspi("1", ('B', 0), 0)
 
     # Scenarios below can be spec'd out as either "find first interface"
     # by name/number e.g. SPI1, or as "find in bank/mux" which must be
