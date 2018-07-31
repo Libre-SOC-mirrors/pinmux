@@ -57,18 +57,34 @@ def specgen(of, pth, pinouts, bankspec, muxwidths, pinbanks, fixedpins,
                             g.write("\tbus")
                         g.write("\n")
 
+    # work out range of bankspecs
+    bankpins = []
+    for k, v in bankspec.items():
+        bankpins.append((v, k))
+    bankpins.sort()
+    bankpins.reverse()
+    muxentries = {}
+    cellbank = {}
+
     pks = sorted(pinouts.keys())
 
     # truly dreadful way to work out the max mux size...
-    muxsz = 0
     for k in pks:
-        for m in pinouts[k].keys():
-            muxsz = max(muxsz, m + 1)
+        for (sz, bname) in bankpins:
+            print "keys", k, sz, bname
+            if k >= sz:
+                print "found", bname
+                muxentries[k] = muxwidths[bname]
+                cellbank[k] = bname
+                break
 
+    print muxentries
     # write out the mux...
     with open(os.path.join(pth, 'pinmap.txt'), 'w') as g:
         for k in pks:
-            res = [str(k)]
+            muxsz = muxentries[k]
+            bank = cellbank[k]
+            res = [str(k), bank, str(muxsz)]
             # append pin mux
             for midx in range(muxsz):
                 if midx in pinouts[k]:
