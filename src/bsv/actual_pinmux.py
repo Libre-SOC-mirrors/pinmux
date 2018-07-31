@@ -146,6 +146,11 @@ def init(p, ifaces):
     global dedicated_wire
     for cell in p.muxed_cells:
 
+        cellidx = cell[0]
+
+        p.pinmux += "      // --------------------\n"
+        p.pinmux += "      // ----- cell %s -----\n\n" % (cellidx)
+
         # first do the outputs
         p.pinmux += mkmux(p, ifaces, cell, '_out', False)
         p.pinmux += "\n"
@@ -161,7 +166,7 @@ def init(p, ifaces):
         # since the interfaces are always standard and cannot change from
         # user-to-user. Plus this also reduces human-error as well :)
         p.pinmux += "\n"
-        p.pinmux += "      // priority-in-muxer for cell idx %s\n" % (cell[0])
+        p.pinmux += "      // priority-in-muxer for cell idx %s\n" % (cellidx)
         for i in range(0, len(cell) - 1):
             cname = cell[i + 1]
             if not cname:  # skip blank entries, no need to test
@@ -173,14 +178,11 @@ def init(p, ifaces):
                 str(cname) + \
                 " of pinmap.txt isn't present \nin the current" + \
                 " dictionary. Update dictionary or fix-typo."
-            if x == "input":
-                p.pinmux += \
-                    mux_wire.format(cell[0], i, "wr" + cname) + "\n"
-            elif x == "inout":
-                p.pinmux += \
-                    mux_wire.format(cell[0], i, "wr" + cname +
-                                                "_in") + "\n"
-    # ============================================================ #
+            bwid = p.get_muxbitwidth(cellidx)
+            if bwid > 0:
+                muxcell(p, cname, x, cell, i)
+            else:
+                dedcell(p, x, cell)
 
     # ==================  Logic for dedicated pins ========= #
     p.pinmux += "\n      /*=========================================*/\n"
@@ -191,12 +193,20 @@ def init(p, ifaces):
         temp = transfn(cell[1])
         x = ifaces.getifacetype(temp)
         #print cell, temp, x
-        if x == "input":
-            p.pinmux += \
-                dedicated_wire.format(cell[0], "wr" + cell[1]) + "\n"
-        elif x == "inout":
-            p.pinmux += \
-                dedicated_wire.format(cell[0], "wr" + cell[1] + "_in") + "\n"
-        else:
-            p.pinmux += "\n"
-    # =======================================================#
+        dedcell(p, x, cell)
+
+def muxcell(p, cname, x, cell, i):
+    if x == "input":
+        p.pinmux += \
+            mux_wire.format(cell[0], i, "wr" + cname) + "\n"
+    elif x == "inout":
+        p.pinmux += \
+            mux_wire.format(cell[0], i, "wr" + cname +
+                                        "_in") + "\n"
+def dedcell(p, x, cell):
+    if x == "input":
+        p.pinmux += \
+            dedicated_wire.format(cell[0], "wr" + cell[1]) + "\n"
+    elif x == "inout":
+        p.pinmux += \
+            dedicated_wire.format(cell[0], "wr" + cell[1] + "_in") + "\n"
