@@ -190,7 +190,7 @@ def write_pmp(pmp, p, ifaces, iocells):
     with open(pmp, "w") as bsv_file:
         bsv_file.write(header)
 
-        cell_bit_width = 'Bit#(%d)' % p.cell_bitwidth
+        bwid_template = 'Bit#(%d)'
         bsv_file.write('''\
       (*always_ready,always_enabled*)
       interface MuxSelectionLines;
@@ -201,7 +201,9 @@ def write_pmp(pmp, p, ifaces, iocells):
       // where each IO will have the same number of muxes.''')
 
         for cell in p.muxed_cells:
-            bsv_file.write(mux_interface.ifacefmt(cell[0], cell_bit_width))
+            cellnum = cell[0]
+            cell_bit_width = bwid_template % p.get_muxwidth(cellnum)
+            bsv_file.write(mux_interface.ifacefmt(cellnum, cell_bit_width))
 
         bsv_file.write("\n      endinterface\n")
 
