@@ -50,14 +50,15 @@ class Parse(object):
                 if len(line1) <= 1:
                     continue
                 self.pinnumbers.append(int(line1[0]))
-                if len(line1) == 2:  # dedicated
-                    self.dedicated_cells.append(line1)
-                else:
-                    for i in range(1, len(line1)):
-                        # XXX HORRIBLE HACK!!
-                        if line1[i].startswith('pwm'):
-                            line1[i] = 'pwm%s_out' % line1[i][4:]
-                    self.muxed_cells.append(line1)
+                # XXX TODO: dedicated pins in separate file
+                #if len(line1) == 2:  # dedicated
+                #    self.dedicated_cells.append(line1)
+                #else:
+                for i in range(1, len(line1)):
+                    # XXX HORRIBLE HACK!!
+                    if line1[i].startswith('pwm'):
+                        line1[i] = 'pwm%s_out' % line1[i][4:]
+                self.muxed_cells.append(line1)
 
         self.pinnumbers = sorted(self.pinnumbers)
         self.upper_offset = self.lower_offset + \
