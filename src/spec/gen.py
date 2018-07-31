@@ -3,7 +3,8 @@ import os.path
 from spec.interfaces import Pinouts
 
 
-def specgen(of, pth, pinouts, bankspec, pinbanks, fixedpins, fastbus):
+def specgen(of, pth, pinouts, bankspec, muxwidths, pinbanks, fixedpins,
+            fastbus):
     """ generates a specification of pinouts (tsv files)
         for reading in by pinmux.
 
@@ -28,7 +29,7 @@ def specgen(of, pth, pinouts, bankspec, pinbanks, fixedpins, fastbus):
     #print pinouts.ganged.items()
     if not os.path.exists(pth):
         os.makedirs(pth)
-    with open(os.path.join(pth, 'bankwidths.txt'), 'w') as f:
+    with open(os.path.join(pth, 'muxwidths.txt'), 'w') as f:
         for k, v in pinouts.muxwidths.items():
             f.write("%s\t%d\n" % (k, v))
     with open(os.path.join(pth, 'interfaces.txt'), 'w') as f:
@@ -93,5 +94,6 @@ def specgen(of, pth, pinouts, bankspec, pinbanks, fixedpins, fastbus):
         keys = sorted(bankspec.keys())
         for bank in keys:
             pinstart = bankspec[bank]
-            of.write("* %s %d %d\n" % (bank, pinstart, pinbanks[bank]))
-            g.write("%s\t%d\t%d\n" % (bank, pinstart, pinbanks[bank]))
+            wid = muxwidths[bank]
+            of.write("* %s %d %d %d\n" % (bank, pinstart, pinbanks[bank], wid))
+            g.write("%s\t%d\t%d\t%d\n" % (bank, pinstart, pinbanks[bank], wid))

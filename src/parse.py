@@ -25,14 +25,18 @@ class Parse(object):
         self.dedicated_cells = []
         self.pinnumbers = []
         self.bankwidths = {} 
+        self.banksize = {}
+        self.bankstart = {}
 
-        fname = 'bankwidths.txt'
+        fname = 'pinspec.txt'
         if pth:
             fname = os.path.join(pth, fname)
         with open(fname) as bankwidths:
             for lineno, line in enumerate(bankwidths):
                 line1 = line[:-1].split('\t')
-                self.bankwidths[line1[0]] = int(line1[1])
+                self.bankwidths[line1[0]] = int(line1[3])
+                self.banksize[line1[0]] = int(line1[2])
+                self.bankstart[line1[0]] = int(line1[1])
             
         # == capture the number of IO cells required == #
         fname = 'pinmap.txt'
