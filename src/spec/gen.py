@@ -28,6 +28,9 @@ def specgen(of, pth, pinouts, bankspec, pinbanks, fixedpins, fastbus):
     #print pinouts.ganged.items()
     if not os.path.exists(pth):
         os.makedirs(pth)
+    with open(os.path.join(pth, 'bankwidths.txt'), 'w') as f:
+        for k, v in pinouts.muxwidths.items():
+            f.write("%s\t%d\n" % (k, v))
     with open(os.path.join(pth, 'interfaces.txt'), 'w') as f:
         for k in pinouts.fnspec.keys():
             s = pinouts.fnspec[k]

@@ -81,7 +81,6 @@ def pinmuxgen(pth=None, verify=True):
 
     bus = os.path.join(bp, 'busenable.bsv')
     pmp = os.path.join(bp, 'pinmux.bsv')
-    ptp = os.path.join(bp, 'PinTop.bsv')
     bvp = os.path.join(bp, 'bus.bsv')
     idef = os.path.join(bp, 'instance_defines.bsv')
     slow = os.path.join(bp, 'slow_peripherals.bsv')
@@ -94,7 +93,6 @@ def pinmuxgen(pth=None, verify=True):
     soct = os.path.join(cwd, 'soc_template.bsv')
 
     write_pmp(pmp, p, ifaces, iocells)
-    write_ptp(ptp, p, ifaces)
     write_bvp(bvp, p, ifaces)
     write_bus(bus, p, ifaces)
     write_instances(idef, p, ifaces)
@@ -320,82 +318,6 @@ def write_pmp(pmp, p, ifaces, iocells):
         bsv_file.write(footer)
         print("BSV file successfully generated: bsv_src/pinmux.bsv")
         # ======================================================================
-
-
-def write_ptp(ptp, p, ifaces):
-    with open(ptp, 'w') as bsv_file:
-        bsv_file.write(copyright + '''
-package PinTop;
-    import pinmux::*;
-    interface Ifc_PintTop;
-        method ActionValue#(Bool) write(Bit#({0}) addr, Bit#({1}) data);
-        method Tuple2#(Bool,Bit#({1})) read(Bit#({0}) addr);
-        interface PeripheralSide peripheral_side;
-    endinterface
-
-    module mkPinTop(Ifc_PintTop);
-        // instantiate the pin-mux module here
-        Ifc_pinmux pinmux <-mkpinmux;
-
-        // declare the registers which will be used to mux the IOs
-'''.format(p.ADDR_WIDTH, p.DATA_WIDTH))
-
-        cell_bit_width = str(p.cell_bitwidth)
-        for cell in p.muxed_cells:
-            bsv_file.write('''
-                Reg#(Bit#({0})) rg_muxio_{1} <-mkReg(0);'''.format(
-                cell_bit_width, cell[0]))
-
-        bsv_file.write('''
-        // rule to connect the registers to the selection lines of the
-        // pin-mux module
-        rule connect_selection_registers;''')
-
-        for cell in p.muxed_cells:
-            bsv_file.write('''
-          pinmux.mux_lines.cell{0}_mux(rg_muxio_{0});'''.format(cell[0]))
-
-        bsv_file.write('''
-        endrule
-        // method definitions for the write user interface
-        method ActionValue#(Bool) write(Bit#({2}) addr, Bit#({3}) data);
-          Bool err=False;
-          case (addr[{0}:{1}])'''.format(p.upper_offset, p.lower_offset,
-                                         p.ADDR_WIDTH, p.DATA_WIDTH))
-        index = 0
-        for cell in p.muxed_cells:
-            bsv_file.write('''
-            {0}: rg_muxio_{1}<=truncate(data);'''.format(index, cell[0]))
-            index = index + 1
-
-        bsv_file.write('''
-            default: err=True;
-          endcase
-          return err;
-        endmethod''')
-
-        bsv_file.write('''
-        // method definitions for the read user interface
-        method Tuple2#(Bool,Bit#({3})) read(Bit#({2}) addr);
-          Bool err=False;
-          Bit#(32) data=0;
-          case (addr[{0}:{1}])'''.format(p.upper_offset, p.lower_offset,
-                                         p.ADDR_WIDTH, p.DATA_WIDTH))
-        index = 0
-        for cell in p.muxed_cells:
-            bsv_file.write('''
-                {0}: data=zeroExtend(rg_muxio_{1});'''.format(index, cell[0]))
-            index = index + 1
-
-        bsv_file.write('''
-            default:err=True;
-          endcase
-          return tuple2(err,data);
-        endmethod
-        interface peripheral_side=pinmux.peripheral_side;
-    endmodule
-endpackage
-''')
 
 
 def write_bvp(bvp, p, ifaces):
