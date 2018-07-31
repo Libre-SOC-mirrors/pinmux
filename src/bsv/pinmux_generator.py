@@ -202,7 +202,10 @@ def write_pmp(pmp, p, ifaces, iocells):
 
         for cell in p.muxed_cells:
             cellnum = cell[0]
-            cell_bit_width = bwid_template % p.get_muxwidth(cellnum)
+            bitwidth = p.get_muxbitwidth(cellnum)
+            if bitwidth == 0:
+                continue
+            cell_bit_width = bwid_template % bitwidth
             bsv_file.write(mux_interface.ifacefmt(cellnum, cell_bit_width))
 
         bsv_file.write("\n      endinterface\n")
@@ -275,8 +278,12 @@ def write_pmp(pmp, p, ifaces, iocells):
       // values for each mux assigned to a CELL
 ''')
         for cell in p.muxed_cells:
-            bsv_file.write(mux_interface.wirefmt(
-                cell[0], cell_bit_width))
+            cellnum = cell[0]
+            bitwidth = p.get_muxbitwidth(cellnum)
+            if bitwidth == 0:
+                continue
+            cell_bit_width = bwid_template % bitwidth
+            bsv_file.write(mux_interface.wirefmt(cellnum, cell_bit_width))
 
         iocells.wirefmt(bsv_file)
         ifaces.wirefmt(bsv_file)
@@ -298,9 +305,14 @@ def write_pmp(pmp, p, ifaces, iocells):
     interface mux_lines = interface MuxSelectionLines
 ''')
         for cell in p.muxed_cells:
+            cellnum = cell[0]
+            bitwidth = p.get_muxbitwidth(cellnum)
+            if bitwidth == 0:
+                continue
+            cell_bit_width = bwid_template % bitwidth
             bsv_file.write(
                 mux_interface.ifacedef(
-                    cell[0], cell_bit_width))
+                    cellnum, cell_bit_width))
         bsv_file.write("\n    endinterface;")
 
         bsv_file.write('''

@@ -122,6 +122,12 @@ class Parse(object):
     def get_muxwidth(self, cellnum):
         return self.muxed_cells_width[int(cellnum)]
 
+    def get_muxbitwidth(self, cellnum):
+        wid = self.get_muxwidth(cellnum)
+        if wid == 1:
+            return 0
+        return int(math.log(wid + 1, 2))
+
 
 if __name__ == '__main__':
     p = Parse()
