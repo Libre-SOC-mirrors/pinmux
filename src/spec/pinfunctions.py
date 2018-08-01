@@ -252,8 +252,8 @@ def gpio(suffix, bank):
 # list functions by name here
 
 pinspec = (('IIS', i2s),
-           ('MMC', emmc),
-           ('SD', sdmmc),
+           ('EMMC', emmc),
+           ('MMC', sdmmc),
            ('MSPI', mspi),
            ('MQSPI', mquadspi),
            ('SPI', spi),

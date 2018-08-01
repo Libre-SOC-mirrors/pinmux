@@ -904,7 +904,7 @@ class PFactory(object):
                      'spi': spi,
                      'pwm': pwm,
                      'eint': eint,
-                     'sd': sdmmc,
+                     'mmc': sdmmc,
                      'jtag': jtag,
                      'lcd': rgbttl,
                      'fb': flexbus,
