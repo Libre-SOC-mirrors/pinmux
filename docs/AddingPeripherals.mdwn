@@ -29,6 +29,31 @@ for the SDRAM peripheral, we find its interface is defined as follows:
         interface Clock sdram_clk;
     endinterface
 
+Also note further down that the code to map, for example, the 8 actual dqm
+pins into a single 8-bit interface has also been auto-generated.  Generally
+it is a good idea to verify that correspondingly the three data in/out/outen
+interfaces have also been correctly generated.
+
+    interface sdr = interface PeripheralSideSDR
+
+          ...
+          ...
+
+          interface dqm = interface Put#(8)
+             method Action put(Bit#(8) in);
+               wrsdr_sdrdqm0 <= in[0];
+               wrsdr_sdrdqm1 <= in[1];
+               wrsdr_sdrdqm2 <= in[2];
+               wrsdr_sdrdqm3 <= in[3];
+               wrsdr_sdrdqm4 <= in[4];
+               wrsdr_sdrdqm5 <= in[5];
+               wrsdr_sdrdqm6 <= in[6];
+               wrsdr_sdrdqm7 <= in[7];
+             endmethod
+           endinterface;
+
+    endinterface;
+
 So now we go to src/spec/pinfunctions.py and add a corresponding function
 that returns a list of all of the required pin signals.  However, we note
 that it is a huge number of pins so a decision is made to split it into
