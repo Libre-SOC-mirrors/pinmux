@@ -586,3 +586,42 @@ that drop sdram.axi4\_slave\_sdram and its associated cntrl reg from
 the soc\_template.bsv file.
 
 ## Connecting up the pins
+
+We are still not done!  It is however worth pointing out that if this peripheral
+were not wired into the pinmux, we would in fact be finished.  However there
+is a task that (previously having been left to outside tools) now needs to
+be specified, which is to connect the sdram's pins, declared in this
+instance in Ifc\_sdram\_out, and the PeripheralSideSDR instance that
+was kindly / strategically / thoughtfully / absolutely-necessarily exported
+from slow\_peripherals for exactly this purpose.
+
+Recall earlier that we took a cut/paste copy of the flexbus.py code.  If
+we now examine socgen.bsv we find that it contains connections to pins
+that match the FlexBus specification, not SDRAM.  So, returning to the
+declaration of the Ifc\_sdram\_out interface, we first identify the
+single-bit output-only pins, and add a mapping table between them:
+
+    class sdram(PBase):
+
+        def pinname_out(self, pname):
+            return {'sdrwen': 'ifc_sdram_out.osdr_we_n',
+                    'sdrcsn0': 'ifc_sdram_out.osdr_cs_n',
+                    'sdrcke': 'ifc_sdram_out.osdr_cke',
+                    'sdrrasn': 'ifc_sdram_out.osdr_ras_n',
+                    'sdrcasn': 'ifc_sdram_out.osdr_cas_n',
+                    }.get(pname, '')
+
+Re-running the tool confirms that the relevant mkConnections are generated:
+
+    //sdr {'action': True, 'type': 'out', 'name': 'sdrcke'}
+    mkConnection(slow_peripherals.sdr0.sdrcke,
+                sdr0_sdrcke_sync.get);
+    mkConnection(sdr0_sdrcke_sync.put,
+                sdr0.ifc_sdram_out.osdr_cke);
+    //sdr {'action': True, 'type': 'out', 'name': 'sdrrasn'}
+    mkConnection(slow_peripherals.sdr0.sdrrasn,
+                sdr0_sdrrasn_sync.get);
+    mkConnection(sdr0_sdrrasn_sync.put,
+                sdr0.ifc_sdram_out.osdr_ras_n);
+
+Next, the multi-

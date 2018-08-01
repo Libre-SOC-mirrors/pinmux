@@ -28,16 +28,12 @@ class sdram(PBase):
         return ["sdr{0}.axi4_slave_sdram",
                 "sdr{0}.axi4_slave_cntrl_reg"]
                 
-
-    def pinname_in(self, pname):
-        return {'ta': 'sdram_side.m_tAn',
-                }.get(pname, '')
-
     def pinname_out(self, pname):
-        return {'ale': 'sdram_side.m_ALE',
-                'oe': 'sdram_side.m_OEn',
-                'tbst': 'sdram_side.m_TBSTn',
-                'rw': 'sdram_side.m_R_Wn',
+        return {'sdrwen': 'ifc_sdram_out.osdr_we_n',
+                'sdrcsn0': 'ifc_sdram_out.osdr_cs_n',
+                'sdrcke': 'ifc_sdram_out.osdr_cke',
+                'sdrrasn': 'ifc_sdram_out.osdr_ras_n',
+                'sdrcasn': 'ifc_sdram_out.osdr_cas_n',
                 }.get(pname, '')
 
     def _mk_clk_con(self, name, count, ctype):
