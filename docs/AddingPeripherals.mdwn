@@ -302,4 +302,26 @@ at the bottom of src/bsv/peripheral\_gen/base.py, in the "PFactory"
                  'quart': quart,
 
 Note that the name "SDR" matches with the prefix used in the pinspec
-declaration, back in src/spec/pinfunctions.py, except lower-cased.
+declaration, back in src/spec/pinfunctions.py, except lower-cased.  Once this
+is done, and the auto-generation tool re-run, examining the
+slow\_peripherals.bsv file again shows the following (correct) and only
+the following (correct) additions:
+
+    method Bit#(1) quart0_intr;
+    method Bit#(1) quart1_intr;
+    interface GPIO_config#(28) pad_configa;
+    interface PeripheralSideSDR sdr0;        <--
+    interface PeripheralSideFB fb0;
+
+    ....
+    ....
+    interface iocell_side=pinmux.iocell_side;
+    interface sdr0 = pinmux.peripheral_side.sdr;   <--
+    interface fb0 = pinmux.peripheral_side.fb;
+
+These automatically-generated declarations are sufficient to "pass through"
+the SDRAM "Peripheral Side", which as we know from examination of the code
+is directly connected to the relevant IO pad cells, so that the *actual*
+peripheral may be declared in the "fast" fabric and connected up to the
+relevant and required "fast" bus.
+
