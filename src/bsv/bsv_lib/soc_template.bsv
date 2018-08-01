@@ -89,9 +89,6 @@ package socgen;
         (*always_ready,always_enabled*)
         method Action boot_sequence(Bit#(1) bootseq);
             
-        `ifdef SDRAM 
-            (*always_ready*) interface Ifc_sdram_out sdram_out; 
-        `endif
         `ifdef DDR
             (*prefix="M_AXI"*) interface
                    AXI4_Master_IFC#(`PADDR, `DATA, `USERSPACE) master;
@@ -299,9 +296,6 @@ package socgen;
         `endif 
          method Action boot_sequence(Bit#(1) bootseq) = 
                             core.boot_sequence(bootseq);
-        `ifdef SDRAM
-            interface sdram_out=sdram.ifc_sdram_out;
-        `endif
         `ifdef DDR
           interface master=fabric.v_to_slaves
                                 [fromInteger(valueOf(Sdram_slave_num))];

@@ -424,8 +424,7 @@ now they are to be connected *automatically* (on the peripheral side)
 to the IO pads in the pinmux.  However, at the time of writing this is
 not fully understood by the author, so the fastifdecl and extfastifinstance
 functions are modified to generate the correct output but the code is
-*commented out*, and the corresponding manual declarations of sdram_out
-removed.
+*commented out*
 
     def extfastifinstance(self, name, count):
         return "// TODO" + self._extifinstance(name, count, "_out", "", True,
@@ -434,6 +433,20 @@ removed.
     def fastifdecl(self, name, count):
         return "// (*always_ready*) interface " + \
                 "Ifc_sdram_out sdr{0}_out;".format(count)
+
+Also the corresponding (old) manual declarations of sdram\_out
+removed from the template:
+
+    `ifdef SDRAM                                            <-- xxxx
+        (*always_ready*) interface Ifc_sdram_out sdram_out; <-- xxxx
+    `endif                                                  <-- xxxx
+    ...
+    ...
+    `ifdef SDRAM                                  <--- xxxx
+        interface sdram_out=sdram.ifc_sdram_out;  <--- xxxx
+    `endif                                        <--- xxxx
+
+
 
 Next, again searching for signs of the "hand-written" code, we encounter
 the fabric connectivity, which wires the SDRAM to the AXI4.  We note however
