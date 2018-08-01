@@ -24,7 +24,9 @@ class sdram(PBase):
         return "Ifc_sdr_slave sdr{0} <- mksdr_axi4_slave(clk0);"
 
     def _mk_connection(self, name=None, count=0):
-        return "sdr{0}.axi_side"
+        return ["sdr{0}.axi4_slave_sdram",
+                "sdr{0}.axi4_slave_cntrl_reg"]
+                
 
     def pinname_in(self, pname):
         return {'ta': 'sdram_side.m_tAn',

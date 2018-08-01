@@ -424,7 +424,8 @@ now they are to be connected *automatically* (on the peripheral side)
 to the IO pads in the pinmux.  However, at the time of writing this is
 not fully understood by the author, so the fastifdecl and extfastifinstance
 functions are modified to generate the correct output but the code is
-*commented out*:
+*commented out*, and the corresponding manual declarations of sdram_out
+removed.
 
     def extfastifinstance(self, name, count):
         return "// TODO" + self._extifinstance(name, count, "_out", "", True,
@@ -434,4 +435,23 @@ functions are modified to generate the correct output but the code is
         return "// (*always_ready*) interface " + \
                 "Ifc_sdram_out sdr{0}_out;".format(count)
 
+Next, again searching for signs of the "hand-written" code, we encounter
+the fabric connectivity, which wires the SDRAM to the AXI4.  We note however
+that there is not just one AXI slave device but *two*: one for the SDRAM
+itself and one for *configuring* the SDRAM.  We therefore need to be
+quite careful about assigning these, as will be subsequently explained.
+First however, the two AXI4 slave interfaces of this peripheral are
+declared:
 
+    class sdram(PBase):
+
+        ...
+        ...
+        def _mk_connection(self, name=None, count=0):
+            return ["sdr{0}.axi4_slave_sdram",
+                    "sdr{0}.axi4_slave_cntrl_reg"]
+
+Note that, again, in case multiple instances are ever to be added, the
+python "format" string "{0}" is inserted so that it can be substituted
+with the numerical identifier suffix.  Also note that the order
+of declaration of these two AXI4 slave is **important**.

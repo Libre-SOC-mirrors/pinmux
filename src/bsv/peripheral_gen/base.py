@@ -349,16 +349,28 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
             name = self.name
         print "PBase mk_master_conn", self.name, count
         aname = self.axi_master_name(name, count, typ)
-        con = self._mk_connection(name, count, True).format(count, aname)
-        return self.__mk_master_connection(con, aname, fabricname)
+        ret = []
+        connections = self._mk_connection(name, count, True)
+        if not isinstance(connections, list):
+            connections = [connections]
+        for con in connections:
+            con = con.format(count, aname)
+            ret.append(self.__mk_master_connection(con, aname, fabricname))
+        return '\n'.join(ret)
 
     def mk_connection(self, count, fabricname, typ, name=None):
         if name is None:
             name = self.name
         print "PBase mk_conn", self.name, count
         aname = self.axi_slave_name(name, count, typ)
-        con = self._mk_connection(name, count).format(count, aname)
-        return self.__mk_connection(con, aname, fabricname)
+        ret = []
+        connections = self._mk_connection(name, count)
+        if not isinstance(connections, list):
+            connections = [connections]
+        for con in connections:
+            con = con.format(count, aname)
+            ret.append(self.__mk_connection(con, aname, fabricname))
+        return '\n'.join(ret)
 
     def _mk_connection(self, name=None, count=0):
         return ''
