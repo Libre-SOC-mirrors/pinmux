@@ -165,7 +165,7 @@ def sdram1(suffix, bank):
     buspins = []
     inout = []
     for i in range(8):
-        pname = "SDRDQM%d*" % i
+        pname = "SDRDQM%d+" % i
         buspins.append(pname)
     for i in range(8):
         pname = "SDRD%d*" % i
