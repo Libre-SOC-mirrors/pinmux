@@ -55,14 +55,14 @@ class sdram(PBase):
         ret = [PBase._mk_pincon(self, name, count, typ)]
         assert typ == 'fast' # TODO slow?
         for pname, stype, ptype in [
-            ('cs', 'm_FBCSn', 'out'),
-            ('bwe', 'm_BWEn', 'out'),
-            ('tsiz', 'm_TSIZ', 'out'),
-            ('ad_out', 'm_AD', 'out'),
-            ('ad_in', 'm_din', 'in'),
-            ('ad_out_en', 'm_OE32n', 'out'),
+            ('sdrdqm', 'osdr_dqm', 'out'),
+            ('sdrba', 'osdr_ba', 'out'),
+            ('sdrad', 'osdr_addr', 'out'),
+            ('sdrd_out', 'osdr_dout', 'out'),
+            ('sdrd_in', 'ipad_sdr_din', 'in'),
+            ('sdrd_out_en', 'osdr_den_n', 'out'),
         ]:
             ret.append(self._mk_vpincon(name, count, typ, ptype, pname,
-                                        "sdram_side.{0}".format(stype)))
+                                        "ifc_sdram_out.{0}".format(stype)))
 
         return '\n'.join(ret)

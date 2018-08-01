@@ -271,6 +271,84 @@ straight-muxing for outputs, however in this instance, a deliberate
 pragmatic decision is being taken not to put 92 pins of 133mhz+ signalling
 through muxing.
 
+## Making the peripheral a "MultiBus" peripheral
+
+The sheer number of signals coming out of PeripheralSideSDR is so unwieldy
+that something has to be done.  We therefore create a "MultiBus" interface
+such that the pinmux knows which pins are grouped together by name.
+This is done in src/bsv/interface\_decl.py.
+
+The MultiBus code is quite sophisticated, in that buses can be identified
+by pattern, and removed one by one.  The *remaining* pins are left behind
+as individual single-bit pins.  Starting from a copy of InterfaceFlexBus
+as the most similar code, a cut/paste copy is taken and the new class
+InterfaceSDRAM created:
+
+    class InterfaceSDRAM(InterfaceMultiBus, Interface):
+
+        def __init__(self, ifacename, pinspecs, ganged=None, single=False):
+            Interface.__init__(self, ifacename, pinspecs, ganged, single)
+            InterfaceMultiBus.__init__(self, self.pins)
+            self.add_bus(False, ['dqm', None, None],
+                         "Bit#({0})", "sdrdqm")
+            self.add_bus(True, ['d_out', 'd_out_en', 'd_in'],
+                         "Bit#({0})", "sdrd")
+            self.add_bus(False, ['ad', None, None],
+                         "Bit#({0})", "sdrad")
+            self.add_bus(False, ['ba', None, None],
+                         "Bit#({0})", "sdrba")
+
+        def ifacedef2(self, *args):
+            return InterfaceMultiBus.ifacedef2(self, *args)
+
+Here, annoyingly, the data bus is a mess, requiring identification of
+the three separate names for in, out and outen.  The prefix "sdrd" is however
+unique and obvious in its purpose: anything beginning with "sdrd" is
+treated as a multi-bit bus, and a template for declaring a BSV type is
+given that is automatically passed the numerical quantity of pins detected
+that start with the word "sdrd".
+
+Note that it is critical to lexicographically identify pins correctly,
+so sdrdqm is done **before** sdrd.
+
+Once the buses have been identified the peripheral can be added into
+class Interfaces:
+
+    class Interfaces(InterfacesBase, PeripheralInterfaces):
+        """ contains a list of interface definitions
+        """
+
+        def __init__(self, pth=None):
+            InterfacesBase.__init__(self, Interface, pth,
+                                    {'gpio': InterfaceGPIO,
+                                     'fb': InterfaceFlexBus,
+                                     'sdr': InterfaceSDRAM,  <--
+
+Running the tool again results in a much smaller, tidier output
+that will be a lot less work, later.  Note the automatic inclusion of
+the correct length multi-bit interfaces.  d-out/in/out-en is identified
+as 64-bit, ad is identified as 13-bit, ba as 2 and dqm as 8.
+
+      // interface declaration between SDR and pinmux
+      (*always_ready,always_enabled*)
+      interface PeripheralSideSDR;
+          interface Put#(Bit#(1)) sdrcke;
+          interface Put#(Bit#(1)) sdrrasn;
+          interface Put#(Bit#(1)) sdrcasn;
+          interface Put#(Bit#(1)) sdrwen;
+          interface Put#(Bit#(1)) sdrcsn0;
+
+          interface Put#(Bit#(8)) dqm;
+          interface Put#(Bit#(64)) d_out;
+          interface Put#(Bit#(64)) d_out_en;
+          interface Get#(Bit#(64)) d_in;
+          interface Put#(Bit#(13)) ad;
+          interface Put#(Bit#(2)) ba;
+
+      endinterface
+
+## Adding the peripheral
+
 In examining the slow\_peripherals.bsv file, there should at this stage
 be no sign of an SDRAM peripheral having been added, at all.  This is
 because it is missing from the peripheral\_gen side of the tool.
@@ -624,4 +702,28 @@ Re-running the tool confirms that the relevant mkConnections are generated:
     mkConnection(sdr0_sdrrasn_sync.put,
                 sdr0.ifc_sdram_out.osdr_ras_n);
 
-Next, the multi-
+Next, the multi-value entries are tackled (both in and out).  At present
+the code is messy, as it does not automatically detect the multiple numerical
+declarations, nor that the entries are sometimes inout (in, out, outen),
+so it is *presently* done by hand:
+
+    class sdram(PBase):
+
+        def _mk_pincon(self, name, count, typ):
+            ret = [PBase._mk_pincon(self, name, count, typ)]
+            assert typ == 'fast' # TODO slow?
+            for pname, stype, ptype in [
+                ('sdrdqm', 'osdr_dqm', 'out'),
+                ('sdrba', 'osdr_ba', 'out'),
+                ('sdrad', 'osdr_addr', 'out'),
+                ('sdrd_out', 'osdr_dout', 'out'),
+                ('sdrd_in', 'ipad_sdr_din', 'in'),
+                ('sdrd_out_en', 'osdr_den_n', 'out'),
+            ]:
+                ret.append(self._mk_vpincon(name, count, typ, ptype, pname,
+                                            "ifc_sdram_out.{0}".format(stype)))
+
+This generates *one* mkConnection for each multi-entry pintype, and here we
+match up with the "InterfaceMultiBus" class from the specification side,
+where pin entries with numerically matching names were "grouped" into single
+multi-bit declarations.

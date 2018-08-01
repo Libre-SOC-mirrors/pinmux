@@ -538,6 +538,24 @@ class InterfaceLCD(InterfaceBus, Interface):
                               "Bit#({0})", "out")
 
 
+class InterfaceSDRAM(InterfaceMultiBus, Interface):
+
+    def __init__(self, ifacename, pinspecs, ganged=None, single=False):
+        Interface.__init__(self, ifacename, pinspecs, ganged, single)
+        InterfaceMultiBus.__init__(self, self.pins)
+        self.add_bus(False, ['dqm', None, None],
+                     "Bit#({0})", "sdrdqm")
+        self.add_bus(True, ['d_out', 'd_out_en', 'd_in'],
+                     "Bit#({0})", "sdrd")
+        self.add_bus(False, ['ad', None, None],
+                     "Bit#({0})", "sdrad")
+        self.add_bus(False, ['ba', None, None],
+                     "Bit#({0})", "sdrba")
+
+    def ifacedef2(self, *args):
+        return InterfaceMultiBus.ifacedef2(self, *args)
+
+
 class InterfaceFlexBus(InterfaceMultiBus, Interface):
 
     def __init__(self, ifacename, pinspecs, ganged=None, single=False):
@@ -608,6 +626,7 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
                                  'lcd': InterfaceLCD,
                                  'sd': InterfaceSD,
                                  'fb': InterfaceFlexBus,
+                                 'sdr': InterfaceSDRAM,
                                  'qspi': InterfaceNSPI,
                                  'mqspi': InterfaceNSPI,
                                  'eint': InterfaceEINT})
