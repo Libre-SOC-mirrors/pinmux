@@ -895,4 +895,10 @@ combinatorial logic.
 
 # Conclusion
 
-This is not a small project, by any means.
+This is not a small project, by any means.  However the payoff in saved
+time is enormous.  The conversion of SDRAM from a hand-crafted fixed and
+manually laborious task to an automated one took around a day, with debugging
+and testing to follow.  Once done (particularly, once done with *prior tested
+peripherals*), it becomes possible to add *any arbitrary number* of such
+peripherals with a single line of code, back in the specification.
+
