@@ -828,3 +828,71 @@ lines come in, only every 8th bit is actually utilised and passed
 through.  Whether this should be changed is a matter for debate that
 is outside of the scope of this document.
 
+Lastly for this phase we have two anomalous interfaces, exposing
+the control registers and the clock, that have been moved out of
+Ifc\_sdram\_out, to the level above (Ifc\_sdr\_slave) so that the sole
+set of interfaces exposed for inter-connection by the auto-generator is
+related exclusively to the actual pins.  Resolution of these two issues
+is currently outside of the scope of this document.
+
+## Clock synchronisation
+
+Astute readers, if their heads have not exploded by this point, will
+have noticed earlier that the SDRAM instance was declared with an entirely
+different clock domain from slow peripherals.  Whilst the pinmux is
+completely combinatorial logic that is entirely unclocked, BSV has no
+means of informing a *module* of this fact, and consequently a weird
+null-clock splicing trick is required.
+
+This code is again auto-generated.  However, it is slightly tricky to
+describe and there are several edge-cases, including ones where the
+peripheral is a slow peripheral (UART is an example) that is driven
+from a UART clock but it is connected up inside the slow peripherals
+code; FlexBus is a Fast Bus peripheral that needs syncing up; RGB/TTL
+likewise, but JTAG is specifically declared inside the SoC and passed
+through, but its instantiation requires a separate incoming clock.
+
+Examining the similarity between the creation of an SDRAM instance
+and the JTAG instance, the jtag code therefore looks like it is the
+best candidate fit.  However, it passes through a reset signal as well.
+Instead, we modify this to create clk0 but use the slow\_reset
+signal:
+
+    class sdram(PBase):
+
+        def get_clk_spc(self, typ):
+            return "tck, slow_reset"
+
+        def get_clock_reset(self, name, count):
+            return "slow_clock,  slow_reset"
+
+The resultant synchronisation code, that accepts pairs of clock/reset
+tuples in order to take care of the prerequisite null reset and clock
+"synchronisation", looks like this:
+
+        Ifc_sync#(Bit#(1)) sdr0_sdrcke_sync <-mksyncconnection(
+                    clk0, slow_reset, slow_clock, slow_reset);
+        Ifc_sync#(Bit#(1)) sdr0_sdrrasn_sync <-mksyncconnection(
+                    clk0, slow_reset, slow_clock, slow_reset);
+        ...
+        ...
+        Ifc_sync#(Bit#(64)) sdr0_d_in_sync <-mksyncconnection(
+            slow_clock, slow_reset, clk0, slow_reset);
+
+Note that inputs are in reverse order from outputs.  With the inclusion of
+clock synchronisation, automatic chains of mkConnections are set up between
+the actual peripheral and the peripheral side of the pinmux:
+
+    mkConnection(slow_peripherals.sdr0.sdrcke,
+                sdr0_sdrcke_sync.get);
+    mkConnection(sdr0_sdrcke_sync.put,
+                sdr0.ifc_sdram_out.osdr_cke);
+
+Interestingly, if *actual* clock synchronisation were ever to be needed,
+it could easily be taken care of with relatively little extra work.  However,
+it is worth emphasising that the pinmux is *entirely* unclocked zero-reset
+combinatorial logic.
+
+# Conclusion
+
+This is not a small project, by any means.

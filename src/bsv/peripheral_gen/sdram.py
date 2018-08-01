@@ -18,6 +18,9 @@ class sdram(PBase):
         return "// (*always_ready*) interface " + \
                 "Ifc_sdram_out sdr{0}_out;".format(count)
 
+    def get_clk_spc(self, typ):
+        return "clk0, slow_reset"
+
     def get_clock_reset(self, name, count):
         return "slow_clock, slow_reset"
 
