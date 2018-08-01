@@ -75,7 +75,7 @@ the address lines to 13-bit wide:
 
     def sdram3(suffix, bank):
         buspins = []
-        inout = [] 
+        inout = []
         for i in range(12, 13):
             buspins.append("SDRAD%d+" % i)
         for i in range(8, 64):
@@ -215,7 +215,7 @@ The first requirement is that the pins from the peripheral side be connected
 through to IO cells.  This can be verified by running the pinmux code
 generator (to activate "default" behaviour), just to see what happens:
 
-    $ python src/pinmux_generator.py -o i_class 
+    $ python src/pinmux_generator.py -o i_class
 
 Files are auto-generated in ./i\_class/bsv\_src and it is recommended
 to examine the pinmux.bsv file in an editor, and search for occurrences
@@ -445,8 +445,6 @@ removed from the template:
     `ifdef SDRAM                                  <--- xxxx
         interface sdram_out=sdram.ifc_sdram_out;  <--- xxxx
     `endif                                        <--- xxxx
-
-
 
 Next, again searching for signs of the "hand-written" code, we encounter
 the fabric connectivity, which wires the SDRAM to the AXI4.  We note however
