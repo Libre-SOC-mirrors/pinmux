@@ -1,0 +1,60 @@
+# How to add a new peripheral
+
+This document describes the process of adding a new peripheral to
+the pinmux and auto-generator, through a worked example, adding
+SDRAM.
+
+# Creating the specifications
+
+The tool is split into two halves that are separated by tab-separated
+files.  The first step is therefore to add a function that defines
+the peripheral as a python function.  That implies in turn that the
+pinouts of the peripheral must be known.  Looking at the BSV code
+for the SDRAM peripheral, we find its interface is defined as follows:
+
+    interface Ifc_sdram_out;
+        (*always_enabled,always_ready*)
+        method Action ipad_sdr_din(Bit#(64) pad_sdr_din);
+        method Bit#(9) sdram_sdio_ctrl();
+        method Bit#(64) osdr_dout();
+        method Bit#(8) osdr_den_n();
+        method Bool osdr_cke();
+        method Bool osdr_cs_n();
+        method Bool osdr_ras_n ();
+        method Bool osdr_cas_n ();
+        method Bool osdr_we_n ();
+        method Bit#(8) osdr_dqm ();
+        method Bit#(2) osdr_ba ();
+        method Bit#(13) osdr_addr ();
+        interface Clock sdram_clk;
+    endinterface
+
+So now we go to src/spec/pinfunctions.py and add a corresponding function
+that returns a list of all of the required pin signals.  However, we note
+that it is a huge number of pins so a decision is made to split it into
+groups: sdram1, sdram2 and sdram3.  Firstly, sdram1, covering the base
+functionality:
+
+def sdram1(suffix, bank):
+    buspins = []
+    inout = []
+    for i in range(8):
+        pname = "SDRDQM%d*" % i
+        buspins.append(pname)
+    for i in range(8):
+        pname = "SDRD%d*" % i
+        buspins.append(pname)
+        inout.append(pname)
+    for i in range(12):
+        buspins.append("SDRAD%d+" % i)
+    for i in range(8):
+        buspins.append("SDRDEN%d+" % i)
+    for i in range(2):
+        buspins.append("SDRBA%d+" % i)
+    buspins += ['SDRCKE+', 'SDRRASn+', 'SDRCASn+', 'SDRWEn+',
+                'SDRCSn0++']
+    return (buspins, inout)
+
+This function, if used on its own, would define an 8-bit SDRAM bus with
+12-bit addressing. Checking off the names against the corresponding BSV
+definition we find 
