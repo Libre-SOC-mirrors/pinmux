@@ -326,3 +326,92 @@ is directly connected to the relevant IO pad cells, so that the *actual*
 peripheral may be declared in the "fast" fabric and connected up to the
 relevant and required "fast" bus.
 
+Now we can begin the process of systematically inserting the correct
+"voodoo magic" incantations that, as far as this auto-generator tool is
+concerned, are just bits of ASCII text.  In this particular instance, an
+SDRAM peripheral happened to already be *in* the SoC's BSV source code,
+such that the process of adding it to the tool is primarily one of
+*conversion*.
+
+**Please note that it is NOT recommended to do two tasks at once.
+It is strongly recommended to add any new peripheral to a pre-existing
+verified project, manually, by hand, and ONLY then to carry out a
+conversion process to have this tool understand how to auto-generate
+the fabric**
+
+So examining the i\_class socgen.bsv file, we also open up
+src/bsv/bsv\_lib/soc\_template.bsv in side-by-side windows of maximum
+80 characters in width each, and *respect the coding convention for
+this exact purpose*, can easily fit two such windows side-by-side
+*as well as* a third containing the source code files that turn that
+same template into its corresponding output.
+
+We can now begin by searching for strings "SDRAM" and "sdr" in both
+the template and the auto-generated socgen.bsv file.  The first such
+encounter is the import, in the template:
+
+    `ifdef BOOTROM
+        import BootRom          ::*;
+    `endif
+    `ifdef SDRAM                         <-- xxxx
+        import sdr_top           :: *;   <-- xxxx
+    `endif                               <-- xxxx
+    `ifdef BRAM
+
+This we can **remove**, and drop the corresponding code-fragment into
+the sdram slowimport function:
+
+    class sdram(PBase):
+
+        def slowimport(self):
+            return "import sdr_top::*;"  <--
+
+        def num_axi_regs32(self):
+
+Now we re-run the auto-generator tool and confirm that, indeed, the
+ifdef'd code is gone and replaced with an unconditional import:
+
+    import mqspi              :: *;
+    import sdr_top::*;                  <--
+    import Uart_bs         :: *;
+    import RS232_modified::*;
+    import mspi              :: *;
+
+Progress!  Next, we examine the instance declaration clause.  Remember
+that we cut/paste the flexbus class, so we are expecting to find code
+that declares the sdr0 instance as a FlexBus peripheral.  We are
+also looking for the hand-created code that is to be *replaced*.  Sure enough:
+
+    AXI4_Slave_to_FlexBus_Master_Xactor_IFC #(`PADDR, `DATA, `USERSPACE)
+            sdr0 <- mkAXI4_Slave_to_FlexBus_Master_Xactor;               <--
+    AXI4_Slave_to_FlexBus_Master_Xactor_IFC #(`PADDR, `DATA, `USERSPACE)
+            fb0 <- mkAXI4_Slave_to_FlexBus_Master_Xactor;
+    ...
+    ...
+    `ifdef BOOTROM
+        BootRom_IFC bootrom <-mkBootRom;
+    `endif
+    `ifdef SDRAM                                       <--
+        Ifc_sdr_slave sdram<- mksdr_axi4_slave(clk0);  <--
+    `endif                                             <--
+
+So, the mksdr\_axi4\_slave call we *remove* from the template and cut/paste
+it into the sdram class's mkfast_peripheral function, making sure to
+substitute the hard-coded instance name "sdram" with a python-formatted
+template that can insert numerical instance identifiers, should it ever
+be desired that there be more than one SDRAM peripheral put into a chip:
+
+class sdram(PBase):
+
+    ...
+    ...
+    def mkfast_peripheral(self):
+        return "Ifc_sdr_slave sdr{0} <- mksdr_axi4_slave(clk0);"
+
+Re-run the tool and check that the correct-looking code has been created:
+
+    Ifc_sdr_slave sdr0 <- mksdr_axi4_slave(clk0);                        <--
+    AXI4_Slave_to_FlexBus_Master_Xactor_IFC #(`PADDR, `DATA, `USERSPACE)
+            fb0 <- mkAXI4_Slave_to_FlexBus_Master_Xactor;
+    Ifc_rgbttl_dummy lcd0 <-  mkrgbttl_dummy();
+

@@ -62,9 +62,6 @@ package socgen;
     `ifdef BOOTROM
         import BootRom			::*;
     `endif
-    `ifdef SDRAM
-        import sdr_top			 :: *;
-    `endif
     `ifdef BRAM
         import Memory_AXI4	::*;
     `endif
@@ -128,9 +125,6 @@ package socgen;
         `endif
         `ifdef BOOTROM
             BootRom_IFC bootrom <-mkBootRom;
-        `endif
-        `ifdef SDRAM
-            Ifc_sdr_slave sdram<- mksdr_axi4_slave(clk0);
         `endif
         `ifdef BRAM
             Memory_IFC#(`SDRAMMemBase,`Addr_space)main_memory <- 

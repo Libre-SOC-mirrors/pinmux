@@ -4,7 +4,7 @@ from bsv.peripheral_gen.base import PBase
 class sdram(PBase):
 
     def slowimport(self):
-        return "import FlexBus_Types::*;"
+        return "import sdr_top::*;"
 
     def num_axi_regs32(self):
         return 0x400000  # defines an entire memory range
@@ -20,9 +20,7 @@ class sdram(PBase):
         return "slow_clock, slow_reset"
 
     def mkfast_peripheral(self):
-        return "AXI4_Slave_to_FlexBus_Master_Xactor_IFC " + \
-               "#(`PADDR, `DATA, `USERSPACE)\n" + \
-               "        sdr{0} <- mkAXI4_Slave_to_FlexBus_Master_Xactor;"
+        return "Ifc_sdr_slave sdr{0} <- mksdr_axi4_slave(clk0);"
 
     def _mk_connection(self, name=None, count=0):
         return "sdr{0}.axi_side"
