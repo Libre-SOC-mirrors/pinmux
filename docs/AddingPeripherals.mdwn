@@ -326,6 +326,8 @@ is directly connected to the relevant IO pad cells, so that the *actual*
 peripheral may be declared in the "fast" fabric and connected up to the
 relevant and required "fast" bus.
 
+## Connecting in the fabric
+
 Now we can begin the process of systematically inserting the correct
 "voodoo magic" incantations that, as far as this auto-generator tool is
 concerned, are just bits of ASCII text.  In this particular instance, an
@@ -509,4 +511,78 @@ class sdram(PBase):
         return [0x400000,  # defines an entire memory range (hack...)
                 12]        # defines the number of configuration regs
 
+So after running the autogenerator again, to confirm that this has
+generated the correct code, we examine several files, starting with
+fast\+memory\_map.bsv:
 
+    /*====== Fast peripherals Memory Map ======= */
+    `define SDR0_0_Base 'h50000000
+    `define SDR0_0_End  'h5FFFFFFF // 4194304 32-bit regs
+    `define SDR0_1_Base 'h60000000
+    `define SDR0_1_End  'h600002FF // 12 32-bit regs
+
+This looks slightly awkward (and in need of an external specification
+section for addresses) but is fine: the range is 1GB for the main
+map and covers 12 32-bit registers for the SDR Config map.
+Next we note the slave numbering:
+
+    typedef 0 SDR0_0__fastslave_num;
+    typedef 1 SDR0_1__fastslave_num;
+    typedef 2 FB0_fastslave_num;
+    typedef 3 LCD0_fastslave_num;
+    typedef 3 LastGen_fastslave_num;
+    typedef  TAdd#(LastGen_fastslave_num,1)      Sdram_slave_num;
+    typedef  TAdd#(Sdram_slave_num   ,`ifdef SDRAM      1 `else 0 `endif )
+                          Sdram_cfg_slave_num;
+
+Again this looks reasonable and we may subsequently (carefully! noting
+the use of the TAdd# chain!) remove the #define for Sdram\_cfg\_slave\_num.
+The next phase is to examine the fn\_addr\_to\_fastslave\_num function,
+where we note that there were *two* hand-created sections previously,
+now joined by two *auto-generated* sections:
+
+    function Tuple2 #(Bool, Bit#(TLog#(Num_Fast_Slaves)))
+                    fn_addr_to_fastslave_num  (Bit#(`PADDR) addr);
+
+      if(addr>=`SDRAMMemBase && addr<=`SDRAMMemEnd)
+          return tuple2(True,fromInteger(valueOf(Sdram_slave_num)));  <--
+      else if(addr>=`DebugBase && addr<=`DebugEnd)
+          return tuple2(True,fromInteger(valueOf(Debug_slave_num)));  <--
+      `ifdef SDRAM
+          else if(addr>=`SDRAMCfgBase && addr<=`SDRAMCfgEnd )
+              return tuple2(True,fromInteger(valueOf(Sdram_cfg_slave_num)));
+      `endif
+
+      ...
+      ...
+      if(addr>=`SDR0_0_Base && addr<=`SDR0_0_End)                         <--
+          return tuple2(True,fromInteger(valueOf(SDR0_0__fastslave_num)));
+      else
+      if(addr>=`SDR0_1_Base && addr<=`SDR0_1_End)                         <--
+          return tuple2(True,fromInteger(valueOf(SDR0_1__fastslave_num)));
+      else
+      if(addr>=`FB0Base && addr<=`FB0End)
+
+Now, here is where, in a slightly unusual unique set of circumstances, we
+cannot just remove all instances of this address / typedef from the template
+code.  Looking in the shakti-core repository's src/lib/MemoryMap.bsv file,
+the SDRAMMemBase macro is utilise in the is\_IO\_Addr function.  So as a
+really bad hack, which will need to be properly resolved, whilst the
+hand-generated sections from fast\_tuple2\_template.bsv are removed,
+and the corresponding (now redundant) defines in src/core/core\_parameters.bsv
+are commented out, some temporary typedefs to deal with the name change are
+also added:
+
+    `define SDRAMMemBase SDR0_0_Base
+    `define SDRAMMemEnd SDR0_0_End
+
+This needs to be addressed (pun intended) including being able to specify
+the name(s) of the configuration parameters, as well as specifying which
+memory map range they must be added to.
+
+Now however finally, after carefully comparing the hard-coded fabric
+connections to what was formerly named sdram, we may remove the mkConnections
+that drop sdram.axi4\_slave\_sdram and its associated cntrl reg from
+the soc\_template.bsv file.
+
+## Connecting up the pins

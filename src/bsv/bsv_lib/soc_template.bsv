@@ -172,14 +172,6 @@ package socgen;
                               [fromInteger(valueOf(Debug_slave_num))],
                               core.debug_slave);
             `endif
-            `ifdef SDRAM	
-                mkConnection (fabric.v_to_slaves 
-                              [fromInteger(valueOf(Sdram_slave_num))],	
-                              sdram.axi4_slave_sdram); // 
-            mkConnection (fabric.v_to_slaves 
-                              [fromInteger(valueOf(Sdram_cfg_slave_num))],
-                              sdram.axi4_slave_cntrl_reg); // 
-      `endif
       `ifdef BRAM
                 mkConnection(fabric.v_to_slaves
                               [fromInteger(valueOf(Sdram_slave_num))],

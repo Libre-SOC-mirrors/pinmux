@@ -43,18 +43,15 @@ package fast_memory_map;
 {2}
 
 
+`define SDRAMMemBase SDR0_0_Base
+`define SDRAMMemEnd SDR0_0_End
+
 
 function Tuple2 #(Bool, Bit#(TLog#(Num_Fast_Slaves)))
                 fn_addr_to_fastslave_num  (Bit#(`PADDR) addr);
 
-    if(addr>=`SDRAMMemBase && addr<=`SDRAMMemEnd)
-        return tuple2(True,fromInteger(valueOf(Sdram_slave_num)));
-    else if(addr>=`DebugBase && addr<=`DebugEnd)
+    if(addr>=`DebugBase && addr<=`DebugEnd)
         return tuple2(True,fromInteger(valueOf(Debug_slave_num)));
-    `ifdef SDRAM
-        else if(addr>=`SDRAMCfgBase && addr<=`SDRAMCfgEnd )
-            return tuple2(True,fromInteger(valueOf(Sdram_cfg_slave_num)));
-    `endif
     `ifdef BOOTROM
         else if(addr>=`BootRomBase && addr<=`BootRomEnd)
             return tuple2(True,fromInteger(valueOf(BootRom_slave_num)));

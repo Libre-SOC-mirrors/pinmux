@@ -147,7 +147,7 @@ class PBase(object):
         res = []
         for (i, nregs) in enumerate(offs):
             if len(offs) == 1:
-                idx_ = i
+                idx_ = ""
             else:
                 idx_ = "_%d_" % i
             name_ = self.axi_slave_name(idx_, name, ifacenum, typ)
@@ -416,6 +416,10 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
         if not isinstance(connections, list):
             connections = [connections]
         for (idx, con) in enumerate(connections):
+            if len(connections) == 1:
+                idx = ""
+            else:
+                idx = "_%d_" % idx
             aname = self.axi_slave_name(idx, name, count, typ)
             ret.append(self.__mk_connection(con, aname, count, fabricname))
         return '\n'.join(ret)
