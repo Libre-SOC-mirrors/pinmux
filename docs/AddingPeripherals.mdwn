@@ -57,4 +57,53 @@ def sdram1(suffix, bank):
 
 This function, if used on its own, would define an 8-bit SDRAM bus with
 12-bit addressing. Checking off the names against the corresponding BSV
-definition we find 
+definition we find that most of them are straightforward.  Outputs
+must have a "+" after the name (in the python representation), inputs
+must have a "-".
+
+However we run smack into an interesting brick-wall with the in/out pins.
+In/out pins which are routed through the same IO pad need a *triplet* of
+signals: one input wire, one output wire and *one direction control wire*.
+Here however we find that the SDRAM controller, which is a wrapper around
+the opencores SDRAM controller, has a *banked* approach to direction-control
+that will need to be dealt with, later.
+
+The second function extends the 8-bit data bus to 64-bits, and extends
+the address lines to 13-bit wide:
+
+    def sdram3(suffix, bank):
+        buspins = []
+        inout = [] 
+        for i in range(12, 13):
+            buspins.append("SDRAD%d+" % i)
+        for i in range(8, 64):
+            pname = "SDRD%d*" % i
+            buspins.append(pname)
+            inout.append(pname)
+        return (buspins, inout)
+
+In this way, alternative SDRAM controller implementations can use sdram1
+on its own; implementors may add "extenders" (named sdram2, sdram4) that
+cover extra functionality, and, interestingly, in a pinbank scenario,
+the number of pins on any given GPIO bank may be kept to a sane level.
+
+The next phase is to add the (now supported) peripheral to the list
+of pinspecs at the bottom of the file, so that it can actually be used:
+
+    pinspec = (('IIS', i2s),
+               ('MMC', emmc),
+               ('FB', flexbus1),
+               ('FB', flexbus2),
+               ('SDR', sdram1),
+               ('SDR', sdram2),
+               ('SDR', sdram3), <---
+               ('EINT', eint),
+               ('PWM', pwm),
+               ('GPIO', gpio),
+               )
+
+This gives a declaration that any time the function(s) starting with
+"sdram" are used to add pins to a pinmux, it will be part of the
+"SDR" peripheral.  Note that flexbus is similarly subdivided into
+two groups.
+
