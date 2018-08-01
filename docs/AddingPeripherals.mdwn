@@ -285,4 +285,21 @@ is added.
 So first, we must identify the nearest similar class.  FlexBus looks
 like a good candidate, so we take a copy of src/bsv/peripheral\_gen/flexbus.py
 called sdram.py.  The simplest next step is to global/search/replace
-"flexbus" with "sdram".  
+"flexbus" with "sdram".  At this phase, despite knowing that it will
+auto-generate the wrong code, we add it as a "supported" peripheral
+at the bottom of src/bsv/peripheral\_gen/base.py, in the "PFactory"
+(Peripheral Factory) class:
+
+    from gpio import gpio
+    from rgbttl import rgbttl
+    from flexbus import flexbus
+    from sdram import sdram       <--
+
+    for k, v in {'uart': uart,
+                 'rs232': rs232,
+                 'sdr': sdram,
+                 'twi': twi,
+                 'quart': quart,
+
+Note that the name "SDR" matches with the prefix used in the pinspec
+declaration, back in src/spec/pinfunctions.py, except lower-cased.

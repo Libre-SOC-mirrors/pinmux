@@ -83,9 +83,6 @@ package socgen;
     `ifdef VME
         import vme_master::*;
     `endif
-    `ifdef FlexBus
-        import FlexBus_Types::*;
-    `endif
 {0}
 
     /*========================= */

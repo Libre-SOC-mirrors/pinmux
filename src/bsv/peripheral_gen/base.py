@@ -893,10 +893,12 @@ class PFactory(object):
         from gpio import gpio
         from rgbttl import rgbttl
         from flexbus import flexbus
+        from sdram import sdram
 
         for k, v in {'uart': uart,
                      'rs232': rs232,
                      'twi': twi,
+                     'sdr': sdram,
                      'quart': quart,
                      'mqspi': mqspi,
                      'mspi': mspi,
