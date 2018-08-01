@@ -39,12 +39,12 @@ class sdram(PBase):
     def _mk_clk_con(self, name, count, ctype):
         ret = [PBase._mk_clk_con(self, name, count, ctype)]
         for pname, sz, ptype in [
-            ('cs', 6, 'out'),
-            ('bwe', 4, 'out'),
-            ('tsiz', 2, 'out'),
-            ('ad_out', 32, 'out'),
-            ('ad_in', 32, 'in'),
-            ('ad_out_en', 32, 'out'),
+            ('dqm', 8, 'out'),
+            ('ba', 2, 'out'),
+            ('ad', 13, 'out'),
+            ('d_out', 64, 'out'),
+            ('d_in', 64, 'in'),
+            ('d_out_en', 64, 'out'),
         ]:
             bitspec = "Bit#(%d)" % sz
             txt = self._mk_clk_vcon(name, count, ctype, ptype, pname, bitspec)
@@ -55,12 +55,12 @@ class sdram(PBase):
         ret = [PBase._mk_pincon(self, name, count, typ)]
         assert typ == 'fast' # TODO slow?
         for pname, stype, ptype in [
-            ('sdrdqm', 'osdr_dqm', 'out'),
-            ('sdrba', 'osdr_ba', 'out'),
-            ('sdrad', 'osdr_addr', 'out'),
-            ('sdrd_out', 'osdr_dout', 'out'),
-            ('sdrd_in', 'ipad_sdr_din', 'in'),
-            ('sdrd_out_en', 'osdr_den_n', 'out'),
+            ('dqm', 'osdr_dqm', 'out'),
+            ('ba', 'osdr_ba', 'out'),
+            ('ad', 'osdr_addr', 'out'),
+            ('d_out', 'osdr_dout', 'out'),
+            ('d_in', 'ipad_sdr_din', 'in'),
+            ('d_out_en', 'osdr_den_n', 'out'),
         ]:
             ret.append(self._mk_vpincon(name, count, typ, ptype, pname,
                                         "ifc_sdram_out.{0}".format(stype)))
