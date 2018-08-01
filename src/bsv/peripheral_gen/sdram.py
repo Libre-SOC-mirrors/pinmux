@@ -11,10 +11,11 @@ class sdram(PBase):
 
     def extfastifinstance(self, name, count):
         return "// TODO" + self._extifinstance(name, count, "_out", "", True,
-                                   ".sdram_side")
+                                   ".if_sdram_out")
 
     def fastifdecl(self, name, count):
-        return "//interface FlexBus_Master_IFC sdr{0}_out;".format(count)
+        return "// (*always_ready*) interface " + \
+                "Ifc_sdram_out sdr{0}_out;".format(count)
 
     def get_clock_reset(self, name, count):
         return "slow_clock, slow_reset"

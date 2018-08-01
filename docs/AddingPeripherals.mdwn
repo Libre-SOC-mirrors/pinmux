@@ -415,3 +415,23 @@ Re-run the tool and check that the correct-looking code has been created:
             fb0 <- mkAXI4_Slave_to_FlexBus_Master_Xactor;
     Ifc_rgbttl_dummy lcd0 <-  mkrgbttl_dummy();
 
+The next thing to do: searching for the string "sdram\_out" shows that the
+original hand-generated code contains (contained) a declaration of the
+SDRAM Interface, presumably to which, when compiling to run on an FPGA,
+the SDRAM interface would be connected at the top level.  Through this
+interface, connections would be done *by hand* to the IO pads, whereas
+now they are to be connected *automatically* (on the peripheral side)
+to the IO pads in the pinmux.  However, at the time of writing this is
+not fully understood by the author, so the fastifdecl and extfastifinstance
+functions are modified to generate the correct output but the code is
+*commented out*:
+
+    def extfastifinstance(self, name, count):
+        return "// TODO" + self._extifinstance(name, count, "_out", "", True,
+                                   ".if_sdram_out")
+
+    def fastifdecl(self, name, count):
+        return "// (*always_ready*) interface " + \
+                "Ifc_sdram_out sdr{0}_out;".format(count)
+
+
