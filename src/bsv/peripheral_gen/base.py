@@ -85,55 +85,102 @@ class PBase(object):
     def get_iname(self, inum):
         return "{0}{1}".format(self.name, self.mksuffix(self.name, inum))
 
-    def axibase(self, name, ifacenum):
+    def axibase(self, name, ifacenum, idx):
         name = name.upper()
-        return "%(name)s%(ifacenum)dBase" % locals()
+        return "%(name)s%(ifacenum)d%(idx)sBase" % locals()
 
-    def axiend(self, name, ifacenum):
+    def axiend(self, name, ifacenum, idx):
         name = name.upper()
-        return "%(name)s%(ifacenum)dEnd" % locals()
+        return "%(name)s%(ifacenum)d%(idx)sEnd" % locals()
 
-    def axi_reg_def(self, start, name, ifacenum):
+    def _axi_reg_def(self, idx, numregs, start, name, ifacenum):
         name = name.upper()
-        offs = self.num_axi_regs32() * 4 * 16
+        offs = numregs * 4 * 16
         if offs == 0:
             return ('', 0)
         end = start + offs - 1
-        bname = self.axibase(name, ifacenum)
-        bend = self.axiend(name, ifacenum)
-        comment = "%d 32-bit regs" % self.num_axi_regs32()
+        bname = self.axibase(name, ifacenum, idx)
+        bend = self.axiend(name, ifacenum, idx)
+        comment = "%d 32-bit regs" % numregs
         return ("    `define %(bname)s 'h%(start)08X\n"
                 "    `define %(bend)s  'h%(end)08X // %(comment)s" % locals(),
                 offs)
+
+    def axi_reg_def(self, start, name, ifacenum):
+        offs = self.num_axi_regs32()
+        if offs == 0:
+            return ('', 0)
+        if not isinstance(offs, list):
+            offs = [offs]
+        res = []
+        offstotal = 0
+        print offs
+        for (idx, nregs) in enumerate(offs):
+            if len(offs) == 1:
+                idx = ""
+            else:
+                idx = "_%d_" % idx
+            (txt, off) = self._axi_reg_def(idx, nregs, start, name, ifacenum)
+            start += off
+            offstotal += off
+            res.append(txt)
+        return ('\n'.join(res), offstotal)
 
     def axi_master_name(self, name, ifacenum, typ=''):
         name = name.upper()
         return "{0}{1}_master_num".format(name, ifacenum)
 
-    def axi_slave_name(self, name, ifacenum, typ=''):
+    def axi_slave_name(self, idx, name, ifacenum, typ=''):
         name = name.upper()
-        return "{0}{1}_{2}slave_num".format(name, ifacenum, typ)
+        return "{0}{1}{3}_{2}slave_num".format(name, ifacenum, typ, idx)
 
     def axi_master_idx(self, idx, name, ifacenum, typ):
         name = self.axi_master_name(name, ifacenum, typ)
         return ("typedef {0} {1};".format(idx, name), 1)
 
     def axi_slave_idx(self, idx, name, ifacenum, typ):
-        name = self.axi_slave_name(name, ifacenum, typ)
-        return ("typedef {0} {1};".format(idx, name), 1)
+        offs = self.num_axi_regs32()
+        if offs == 0:
+            return ''
+        if not isinstance(offs, list):
+            offs = [offs]
+        res = []
+        for (i, nregs) in enumerate(offs):
+            if len(offs) == 1:
+                idx_ = i
+            else:
+                idx_ = "_%d_" % i
+            name_ = self.axi_slave_name(idx_, name, ifacenum, typ)
+            res.append("typedef {0} {1};".format(idx+i, name_))
+        return ('\n'.join(res), len(offs))
 
     def axi_fastaddr_map(self, name, ifacenum):
         return self.axi_addr_map(name, ifacenum, 'fast')
 
-    def axi_addr_map(self, name, ifacenum, typ=""):
-        bname = self.axibase(name, ifacenum)
-        bend = self.axiend(name, ifacenum)
-        name = self.axi_slave_name(name, ifacenum, typ)
+    def _axi_addr_map(self, idx, name, ifacenum, typ=""):
+        bname = self.axibase(name, ifacenum, idx)
+        bend = self.axiend(name, ifacenum, idx)
+        name = self.axi_slave_name(idx, name, ifacenum, typ)
         template = """\
 if(addr>=`{0} && addr<=`{1})
     return tuple2(True,fromInteger(valueOf({2})));
 else"""
         return template.format(bname, bend, name)
+
+    def axi_addr_map(self, name, ifacenum, typ=""):
+        offs = self.num_axi_regs32()
+        if offs == 0:
+            return ''
+        if not isinstance(offs, list):
+            offs = [offs]
+        res = []
+        for (idx, nregs) in enumerate(offs):
+            if len(offs) == 1:
+                idx = ""
+            else:
+                idx = "_%d_" % idx
+            res.append(self._axi_addr_map(idx, name, ifacenum, typ))
+        return '\n'.join(res)
 
     def _mk_pincon(self, name, count, ptyp):
         # TODO: really should be using bsv.interface_decl.Interfaces
@@ -323,7 +370,7 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
     def mksuffix(self, name, i):
         return i
 
-    def __mk_connection(self, con, aname, fabricname):
+    def __mk_connection(self, con, aname, count, fabricname):
         txt = "mkConnection ({2}.v_to_slaves\n" + \
               "            [fromInteger(valueOf({1}))],\n" + \
               "            {0});"
@@ -331,15 +378,17 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
         print "PBase __mk_connection", self.name, aname
         if not con:
             return ''
+        con = con.format(count, aname)
         return txt.format(con, aname, fabricname)
 
-    def __mk_master_connection(self, con, aname, fabricname):
+    def __mk_master_connection(self, con, aname, count, fabricname):
         txt = "mkConnection ({0}, {2}.v_from_masters\n" + \
               "            [fromInteger(valueOf({1}))]);\n" 
 
         print "PBase __mk_master_connection", self.name, aname
         if not con:
             return ''
+        con = con.format(count, aname)
         return txt.format(con, aname, fabricname)
 
     def mk_master_connection(self, count, fabricname, typ, name=None):
@@ -354,22 +403,21 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
         if not isinstance(connections, list):
             connections = [connections]
         for con in connections:
-            con = con.format(count, aname)
-            ret.append(self.__mk_master_connection(con, aname, fabricname))
+            ret.append(self.__mk_master_connection(con, aname, count,
+                                                   fabricname))
         return '\n'.join(ret)
 
     def mk_connection(self, count, fabricname, typ, name=None):
         if name is None:
             name = self.name
         print "PBase mk_conn", self.name, count
-        aname = self.axi_slave_name(name, count, typ)
         ret = []
         connections = self._mk_connection(name, count)
         if not isinstance(connections, list):
             connections = [connections]
-        for con in connections:
-            con = con.format(count, aname)
-            ret.append(self.__mk_connection(con, aname, fabricname))
+        for (idx, con) in enumerate(connections):
+            aname = self.axi_slave_name(idx, name, count, typ)
+            ret.append(self.__mk_connection(con, aname, count, fabricname))
         return '\n'.join(ret)
 
     def _mk_connection(self, name=None, count=0):

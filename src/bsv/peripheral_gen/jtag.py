@@ -41,7 +41,7 @@ rule drive_tmp_scan_outs;
 endrule
 """
 
-    def axi_slave_name(self, name, ifacenum, typ=None):
+    def axi_slave_name(self, idx, name, ifacenum, typ=None):
         return ''
 
     def axi_slave_idx(self, idx, name, ifacenum, typ):

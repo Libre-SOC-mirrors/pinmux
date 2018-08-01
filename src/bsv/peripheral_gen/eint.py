@@ -11,7 +11,7 @@ class eint(PBase):
         size = len(self.peripheral.pinspecs)
         return "Wire#(Bit#(%d)) wr_interrupt <- mkWire();" % size
 
-    def axi_slave_name(self, name, ifacenum, typ=''):
+    def axi_slave_name(self, idx, name, ifacenum, typ=''):
         return ''
 
     def axi_slave_idx(self, idx, name, ifacenum, typ):

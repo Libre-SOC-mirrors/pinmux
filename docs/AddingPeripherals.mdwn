@@ -466,3 +466,47 @@ Note that, again, in case multiple instances are ever to be added, the
 python "format" string "{0}" is inserted so that it can be substituted
 with the numerical identifier suffix.  Also note that the order
 of declaration of these two AXI4 slave is **important**.
+
+Re-running the auto-generator tool, we note the following output has
+been created, and match it against the corresponding hand-generated (old)
+code:
+
+    `ifdef SDRAM
+            mkConnection (fabric.v_to_slaves
+                              [fromInteger(valueOf(Sdram_slave_num))],
+                              sdram.axi4_slave_sdram); // 
+            mkConnection (fabric.v_to_slaves
+                              [fromInteger(valueOf(Sdram_cfg_slave_num))],
+                              sdram.axi4_slave_cntrl_reg); // 
+    `endif
+
+    // fabric connections
+    mkConnection (fabric.v_to_slaves
+                [fromInteger(valueOf(SDR0_fastslave_num))],
+                sdr0.axi4_slave_sdram);
+    mkConnection (fabric.v_to_slaves
+                [fromInteger(valueOf(SDR0_fastslave_num))],
+                sdr0.axi4_slave_cntrl_reg);
+
+Immediately we can spot an issue: whilst the correctly-named slave(s) have
+been added, they have been added with the *same* fabric slave index.  This
+is unsatisfactory and needs resolving.
+
+Here we need to explain a bit more about what is going on.  The fabric
+on an AXI4 Bus is allocated numerical slave numbers, and each slave is
+also allocated a memory-mapped region that must be resolved in a bi-directional
+fashion.  i.e whenever a particular memory region is accessed, the AXI
+slave peripheral responsible for dealing with it **must** be correctly
+identified.  So this requires some further crucial information, which is
+the size of the region that is to be allocated to each slave device.  Later
+this will be extended to being part of the specification, but for now
+it is auto-allocated based on the size.  As a huge hack, it is allocated
+in 32-bit chunks, as follows:
+
+class sdram(PBase):
+
+    def num_axi_regs32(self):
+        return [0x400000,  # defines an entire memory range (hack...)
+                12]        # defines the number of configuration regs
+
+

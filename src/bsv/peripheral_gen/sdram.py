@@ -7,7 +7,8 @@ class sdram(PBase):
         return "import sdr_top::*;"
 
     def num_axi_regs32(self):
-        return 0x400000  # defines an entire memory range
+        return [0x400000,  # defines an entire memory range (hack...)
+                12]        # defines the number of configuration regs
 
     def extfastifinstance(self, name, count):
         return "// TODO" + self._extifinstance(name, count, "_out", "", True,
