@@ -109,6 +109,12 @@ This gives a declaration that any time the function(s) starting with
 "SDR" peripheral.  Note that flexbus is similarly subdivided into
 two groups.
 
+Note however that due to a naming convention issue, interfaces must
+be declared with names that are lexicographically unique even in
+subsets of their names.  i.e two interfaces, one named "SD" which is
+shorthand for SDMMC and another named "SDRAM" may *not* be added:
+the first has to be the full "SDMMC" or renamed to "MMC".
+
 # Adding the peripheral to a chip's pinmux specification
 
 Next, we add the peripheral to an actual chip's specification.  In this
@@ -179,6 +185,16 @@ created and it is worth just showing the first few entries here:
 Returning to the definition of sdram1 and sdram3, this table clearly
 corresponds to the functions in src/spec/pinfunctions.py which is
 exactly what we want.  It is however extremely important to verify.
+
+Lastly, the peripheral is a "fast" peripheral, i.e. it must not
+be added to the "slow" peripherals AXI4-Lite Bus, so must be added
+to the list of "fast" peripherals, here:
+
+    ps = PinSpec(pinbanks, fixedpins, function_names,
+                 ['lcd', 'jtag', 'fb', 'sdr'])        <--
+
+    # Bank A, 0-27
+    ps.gpio("", ('A', 0), 0, 0, 28)
 
 This basically concludes the first stage of adding a peripheral to
 the pinmux / autogenerator tool.  It allows peripherals to be assessed
@@ -255,4 +271,18 @@ straight-muxing for outputs, however in this instance, a deliberate
 pragmatic decision is being taken not to put 92 pins of 133mhz+ signalling
 through muxing.
 
-In examining the slow\_peripherals.bsv file
+In examining the slow\_peripherals.bsv file, there should at this stage
+be no sign of an SDRAM peripheral having been added, at all.  This is
+because it is missing from the peripheral\_gen side of the tool.
+
+However, as the slow\_peripherals module takes care of the IO cells
+(because it contains a declared and configured instance of the pinmux
+package), signals from the pinmux PeripheralSideSDR instance need
+to be passed *through* the slow peripherals module as an external
+interface.  This will happen automatically once a code-generator class
+is added.
+
+So first, we must identify the nearest similar class.  FlexBus looks
+like a good candidate, so we take a copy of src/bsv/peripheral\_gen/flexbus.py
+called sdram.py.  The simplest next step is to global/search/replace
+"flexbus" with "sdram".  
