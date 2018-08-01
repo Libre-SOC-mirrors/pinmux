@@ -285,7 +285,8 @@ is added.
 So first, we must identify the nearest similar class.  FlexBus looks
 like a good candidate, so we take a copy of src/bsv/peripheral\_gen/flexbus.py
 called sdram.py.  The simplest next step is to global/search/replace
-"flexbus" with "sdram".  At this phase, despite knowing that it will
+"flexbus" with "sdram", and for peripheral instance declaration replace
+"fb" with "sdr".  At this phase, despite knowing that it will
 auto-generate the wrong code, we add it as a "supported" peripheral
 at the bottom of src/bsv/peripheral\_gen/base.py, in the "PFactory"
 (Peripheral Factory) class:

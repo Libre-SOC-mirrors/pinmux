@@ -14,7 +14,7 @@ class sdram(PBase):
                                    ".sdram_side")
 
     def fastifdecl(self, name, count):
-        return "//interface FlexBus_Master_IFC fb{0}_out;".format(count)
+        return "//interface FlexBus_Master_IFC sdr{0}_out;".format(count)
 
     def get_clock_reset(self, name, count):
         return "slow_clock, slow_reset"
@@ -22,10 +22,10 @@ class sdram(PBase):
     def mkfast_peripheral(self):
         return "AXI4_Slave_to_FlexBus_Master_Xactor_IFC " + \
                "#(`PADDR, `DATA, `USERSPACE)\n" + \
-               "        fb{0} <- mkAXI4_Slave_to_FlexBus_Master_Xactor;"
+               "        sdr{0} <- mkAXI4_Slave_to_FlexBus_Master_Xactor;"
 
     def _mk_connection(self, name=None, count=0):
-        return "fb{0}.axi_side"
+        return "sdr{0}.axi_side"
 
     def pinname_in(self, pname):
         return {'ta': 'sdram_side.m_tAn',
