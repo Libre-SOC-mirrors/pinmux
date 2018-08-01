@@ -35,25 +35,23 @@ that it is a huge number of pins so a decision is made to split it into
 groups: sdram1, sdram2 and sdram3.  Firstly, sdram1, covering the base
 functionality:
 
-def sdram1(suffix, bank):
-    buspins = []
-    inout = []
-    for i in range(8):
-        pname = "SDRDQM%d*" % i
-        buspins.append(pname)
-    for i in range(8):
-        pname = "SDRD%d*" % i
-        buspins.append(pname)
-        inout.append(pname)
-    for i in range(12):
-        buspins.append("SDRAD%d+" % i)
-    for i in range(8):
-        buspins.append("SDRDEN%d+" % i)
-    for i in range(2):
-        buspins.append("SDRBA%d+" % i)
-    buspins += ['SDRCKE+', 'SDRRASn+', 'SDRCASn+', 'SDRWEn+',
-                'SDRCSn0++']
-    return (buspins, inout)
+    def sdram1(suffix, bank):
+        buspins = []
+        inout = []
+        for i in range(8):
+            pname = "SDRDQM%d*" % i
+            buspins.append(pname)
+        for i in range(8):
+            pname = "SDRD%d*" % i
+            buspins.append(pname)
+            inout.append(pname)
+        for i in range(12):
+            buspins.append("SDRAD%d+" % i)
+        for i in range(2):
+            buspins.append("SDRBA%d+" % i)
+        buspins += ['SDRCKE+', 'SDRRASn+', 'SDRCASn+', 'SDRWEn+',
+                    'SDRCSn0++']
+        return (buspins, inout)
 
 This function, if used on its own, would define an 8-bit SDRAM bus with
 12-bit addressing. Checking off the names against the corresponding BSV
@@ -66,7 +64,11 @@ In/out pins which are routed through the same IO pad need a *triplet* of
 signals: one input wire, one output wire and *one direction control wire*.
 Here however we find that the SDRAM controller, which is a wrapper around
 the opencores SDRAM controller, has a *banked* approach to direction-control
-that will need to be dealt with, later.
+that will need to be dealt with, later.  So we do *not* make the mistake
+of adding 8 SDRDENx pins: the BSV code will need to be modified to
+add 64 one-for-one enabling pins.  We do not also make the mistake of
+adding separate unidirectional "in" and separate unidirectional "out" signals
+under different names, as the pinmux code is a *PAD* centric tool.
 
 The second function extends the 8-bit data bus to 64-bits, and extends
 the address lines to 13-bit wide:
@@ -107,3 +109,78 @@ This gives a declaration that any time the function(s) starting with
 "SDR" peripheral.  Note that flexbus is similarly subdivided into
 two groups.
 
+# Adding the peripheral to a chip's pinmux specification
+
+Next, we add the peripheral to an actual chip's specification.  In this
+case it is to be added to i\_class, so we open src/spec/i\_class.py.  The
+first thing to do is to add a single-mux (dedicated) bank of 92 pins (!)
+which covers all of the 64-bit Data lines, 13 addresses and supporting
+bank-selects and control lines.  It is added as Bank "D", the next
+contiguous bank:
+
+    def pinspec():
+        pinbanks = {
+            'A': (28, 4),
+            'B': (18, 4),
+            'C': (24, 1),
+            'D': (92, 1), <---
+        }
+        fixedpins = {
+            'CTRL_SYS': [
+
+This declares the width of the pinmux to one (a dedicated peripheral
+bank).  Note in passing that A and B are both 4-entry.
+Next, an SDRAM interface is conveniently added to the chip's pinmux
+with two simple lines of code:
+
+    ps.gpio("", ('B', 0), 0, 0, 18)
+    ps.flexbus1("", ('B', 0), 1, spec=flexspec)
+
+    ps.flexbus2("", ('C', 0), 0)
+
+    ps.sdram1("", ('D', 0), 0)   <--
+    ps.sdram3("", ('D', 35), 0)  <--
+
+Note that the first argument is blank, indicating that this is the only
+SDRAM interface to be added.  If more than one SDRAM interface is desired
+they would be numbered from 0 and identified by their suffix.  The second
+argument is a tuple of (Bank Name, Bank Row Number), and the third argument
+is the pinmux column (which in this case must be zero).
+
+At the top level the following command is then run:
+
+    $ python src/pinmux_generator.py -o i_class -s i_class
+
+The output may be found in the ./i\_class subdirectory, and it is worth
+examining the i\_class.mdwn file.  A table named "Bank D" will have been
+created and it is worth just showing the first few entries here:
+
+| Pin | Mux0        | Mux1        | Mux2        | Mux3        |
+| --- | ----------- | ----------- | ----------- | ----------- |
+|  70 | D SDR_SDRDQM0 |
+|  71 | D SDR_SDRDQM1 |
+|  72 | D SDR_SDRDQM2 |
+|  73 | D SDR_SDRDQM3 |
+|  74 | D SDR_SDRDQM4 |
+|  75 | D SDR_SDRDQM5 |
+|  76 | D SDR_SDRDQM6 |
+|  77 | D SDR_SDRDQM7 |
+|  78 | D SDR_SDRD0 |
+|  79 | D SDR_SDRD1 |
+|  80 | D SDR_SDRD2 |
+|  81 | D SDR_SDRD3 |
+|  82 | D SDR_SDRD4 |
+|  83 | D SDR_SDRD5 |
+|  84 | D SDR_SDRD6 |
+|  85 | D SDR_SDRD7 |
+|  86 | D SDR_SDRAD0 |
+|  87 | D SDR_SDRAD1 |
+
+Returning to the definition of sdram1 and sdram3, this table clearly
+corresponds to the functions in src/spec/pinfunctions.py which is
+exactly what we want.  It is however extremely important to verify.
+
+This basically concludes the first stage of adding a peripheral to
+the pinmux / autogenerator tool.  It allows peripherals to be assessed
+for viability prior to actually committing the engineering resources
+to their deployment.
