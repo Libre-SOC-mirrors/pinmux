@@ -164,32 +164,46 @@ def flexbus2(suffix, bank):
 def sdram1(suffix, bank):
     buspins = []
     inout = []
-    for i in range(16):
+    for i in range(8):
         pname = "SDRDQM%d*" % i
+        buspins.append(pname)
+    for i in range(8):
+        pname = "SDRD%d*" % i
         buspins.append(pname)
         inout.append(pname)
     for i in range(12):
         buspins.append("SDRAD%d+" % i)
     for i in range(8):
-        buspins.append("SDRDQ%d+" % i)
-    for i in range(3):
-        buspins.append("SDRCS%d#+" % i)
-    for i in range(2):
-        buspins.append("SDRDQ%d+" % i)
+        buspins.append("SDRDEN%d+" % i)
     for i in range(2):
         buspins.append("SDRBA%d+" % i)
-    buspins += ['SDRCKE+', 'SDRRAS#+', 'SDRCAS#+', 'SDRWE#+',
-                'SDRRST+']
+    buspins += ['SDRCKE+', 'SDRRASn+', 'SDRCASn+', 'SDRWEn+',
+                'SDRCSn0++']
     return (buspins, inout)
 
 
 def sdram2(suffix, bank):
     buspins = []
     inout = []
-    for i in range(3, 6):
-        buspins.append("SDRCS%d#+" % i)
-    for i in range(16, 32):
+    for i in range(1, 6):
+        buspins.append("SDRCSn%d+" % i)
+    for i in range(8, 16):
         pname = "SDRDQM%d*" % i
+        buspins.append(pname)
+    for i in range(8, 16):
+        pname = "SDRD%d*" % i
+        buspins.append(pname)
+        inout.append(pname)
+    return (buspins, inout)
+
+
+def sdram3(suffix, bank):
+    buspins = []
+    inout = []
+    for i in range(12, 13):
+        buspins.append("SDRAD%d+" % i)
+    for i in range(8, 64):
+        pname = "SDRD%d*" % i
         buspins.append(pname)
         inout.append(pname)
     return (buspins, inout)
