@@ -184,3 +184,75 @@ This basically concludes the first stage of adding a peripheral to
 the pinmux / autogenerator tool.  It allows peripherals to be assessed
 for viability prior to actually committing the engineering resources
 to their deployment.
+
+# Adding the code auto-generators.
+
+With the specification now created and well-defined (and now including
+the SDRAM interface), the next completely separate phase is to auto-generate
+the code that will drop an SDRAM instance onto the fabric of the SoC.
+
+This particular peripheral is classified as a "Fast Bus" peripheral.
+"Slow" peripherals will need to be the specific topic of an alternative
+document, however the principles are the same.
+
+The first requirement is that the pins from the peripheral side be connected
+through to IO cells.  This can be verified by running the pinmux code
+generator (to activate "default" behaviour), just to see what happens:
+
+    $ python src/pinmux_generator.py -o i_class 
+
+Files are auto-generated in ./i\_class/bsv\_src and it is recommended
+to examine the pinmux.bsv file in an editor, and search for occurrences
+of the string "sdrd63".  It can clearly be seen that an interface
+named "PeripheralSideSDR" has been auto-generated:
+
+    // interface declaration between SDR and pinmux
+    (*always_ready,always_enabled*)
+    interface PeripheralSideSDR;
+      interface Put#(Bit#(1)) sdrdqm0;
+      interface Put#(Bit#(1)) sdrdqm1;
+      interface Put#(Bit#(1)) sdrdqm2;
+      interface Put#(Bit#(1)) sdrdqm3;
+      interface Put#(Bit#(1)) sdrdqm4;
+      interface Put#(Bit#(1)) sdrdqm5;
+      interface Put#(Bit#(1)) sdrdqm6;
+      interface Put#(Bit#(1)) sdrdqm7;
+      interface Put#(Bit#(1)) sdrd0_out;
+      interface Put#(Bit#(1)) sdrd0_outen;
+      interface Get#(Bit#(1)) sdrd0_in;
+      ....
+      ....
+    endinterface
+
+Note that for the data lines, that where in the sdram1 specification function
+the signals were named "SDRDn+, out, out-enable *and* in interfaces/methods
+have been created, as these will be *directly* connected to the I/O pads.
+
+Further down the file we see the *actual* connection to the I/O pad (cell).
+An example:
+
+    // --------------------
+    // ----- cell 161 -----
+
+    // output muxer for cell idx 161
+    cell161_mux_out=
+        wrsdr_sdrd63_out;
+
+    // outen muxer for cell idx 161
+    cell161_mux_outen=
+        wrsdr_sdrd63_outen; // bi-directional
+
+    // priority-in-muxer for cell idx 161
+
+    rule assign_wrsdr_sdrd63_in_on_cell161;
+        wrsdr_sdrd63_in<=cell161_mux_in;
+    endrule
+
+Here, given that this is a "dedicated" cell (with no muxing), we have
+*direct* assignment of all three signals (in, out, outen).  2-way, 3-way
+and 4-way muxing creates the required priority-muxing for inputs and
+straight-muxing for outputs, however in this instance, a deliberate
+pragmatic decision is being taken not to put 92 pins of 133mhz+ signalling
+through muxing.
+
+In examining the slow\_peripherals.bsv file
