@@ -11,7 +11,7 @@ def pinspec():
         'A': (28, 4),
         'B': (18, 4),
         'C': (24, 1),
-        'D': (92, 1),
+        'D': (93, 1),
     }
     fixedpins = {
         'CTRL_SYS': [
@@ -106,7 +106,7 @@ def pinspec():
     ps.flexbus2("", ('C', 0), 0)
 
     ps.sdram1("", ('D', 0), 0)
-    ps.sdram3("", ('D', 35), 0)
+    ps.sdram3("", ('D', 36), 0)
 
     # Scenarios below can be spec'd out as either "find first interface"
     # by name/number e.g. SPI1, or as "find in bank/mux" which must be
