@@ -48,9 +48,9 @@ def pinspec():
                       }
 
     ps = PinSpec(pinbanks, fixedpins, function_names,
-				{ "muxconfig" :
+				{ "gpioa" :
 					{
-						"A" : "011000"
+						"muxconfig" : "011000"
 					}
 				}
 					)
