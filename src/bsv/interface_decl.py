@@ -624,7 +624,7 @@ class Interfaces(InterfacesBase, PeripheralInterfaces):
                                  'spi': InterfaceNSPI,
                                  'mspi': InterfaceNSPI,
                                  'lcd': InterfaceLCD,
-                                 'sd': InterfaceSD,
+                                 'mmc': InterfaceSD,
                                  'fb': InterfaceFlexBus,
                                  'sdr': InterfaceSDRAM,
                                  'qspi': InterfaceNSPI,
