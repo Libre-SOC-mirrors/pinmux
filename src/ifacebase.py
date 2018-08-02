@@ -38,7 +38,6 @@ class InterfacesBase(UserDict):
 
     def __init__(self, ifacekls, pth=None, ifaceklsdict=None):
         self.pth = pth
-        self.fastbus = []
         self.ifacecount = []
         self.fastbus = []
         if ifaceklsdict is None:
@@ -52,12 +51,18 @@ class InterfacesBase(UserDict):
             ift = os.path.join(pth, ift)
             cfg = os.path.join(pth, cfg)
 
+        # read in configs in JSON format, but strip out unicode
         with open(cfg, 'r') as ifile:
             self.configs = json.loads(ifile.read(), object_hook=_decode_dict)
 
-        print self.configs
+        # process the configs, look for "bus" type... XXX TODO; make this
+        # a bit more sophisticated
+        self.fastbus = []
+        for (ifacename, v) in self.configs.items():
+            if v.get('bus', "") == "fastbus":
+                self.fastbus.append(ifacename)
 
-        exit(0)
+        # reads the interfaces, name and quantity of each
         with open(ift, 'r') as ifile:
             for ln in ifile.readlines():
                 ln = ln.strip()
