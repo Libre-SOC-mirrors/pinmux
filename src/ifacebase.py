@@ -69,6 +69,7 @@ class InterfacesBase(UserDict):
                 ln = ln.split("\t")
                 name = ln[0]  # will have uart
                 count = int(ln[1])  # will have count of uart
+
                 # spec looks like this:
                 """
                 [{'name': 'sda', 'outen': True},
@@ -91,7 +92,21 @@ class InterfacesBase(UserDict):
                 else:
                     iface = ikls(name, spec, ganged, count == 1)
                     self.ifaceadd(name, count, iface)
+                cfgs = self.getconfigs(name, count)
+                iface.configs = cfgs
+                print name, count, cfgs
+        exit(0)
 
+    def getconfigs(self, fname, count):
+        cfgs = []
+        for i in range(count):
+            if count == 1:
+                name = fname
+            else:
+                name = "%s%d" % (fname, i)
+            cfgs.append(self.configs.get(name, {}))
+        return cfgs
+            
     def getifacetype(self, fname):
         # finds the interface type, e.g sd_d0 returns "inout"
         for iface in self.values():
