@@ -55,6 +55,10 @@ def fmt(ifaces, cells, idx, suffix=None):
         multiple pads be switched simutaneously to outputs
         by setting the GPIO direction rather than having them
         set arbitrarily by changing the muxer registers.
+
+        The exception to this rule is when the muxer width is 1
+        (i.e. it is a dedicated line).  Then, a "1" is outputted
+        and the pin is PERMANENTly enabled as an output.
     """
     idx += 1
     if idx < len(cells):
@@ -69,6 +73,8 @@ def fmt(ifaces, cells, idx, suffix=None):
     if x == 'input':
         return 'val0'  # inputs don't get passed through to the out mux
     if suffix == '_outen' and x == 'out':
+        if len(cells) == 2:
+            return "val1"
         return "wr%s%s" % (cells[1], suffix or '')  # USE GPIO FOR SELECTION
     if x == 'out':  # sigh hack, should be using interface_decl
         suffix = ''
