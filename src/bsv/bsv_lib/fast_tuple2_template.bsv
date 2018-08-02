@@ -43,10 +43,6 @@ package fast_memory_map;
 {2}
 
 
-`define SDRAMMemBase SDR0_0_Base
-`define SDRAMMemEnd SDR0_0_End
-
-
 function Tuple2 #(Bool, Bit#(TLog#(Num_Fast_Slaves)))
                 fn_addr_to_fastslave_num  (Bit#(`PADDR) addr);
 
