@@ -95,7 +95,6 @@ class InterfacesBase(UserDict):
                 cfgs = self.getconfigs(name, count)
                 iface.configs = cfgs
                 print name, count, cfgs
-        exit(0)
 
     def getconfigs(self, fname, count):
         cfgs = []
