@@ -4,7 +4,7 @@ from spec.interfaces import Pinouts
 
 
 def specgen(of, pth, pinouts, bankspec, muxwidths, pinbanks, fixedpins,
-            fastbus):
+            configs):
     """ generates a specification of pinouts (tsv files)
         for reading in by pinmux.
 
@@ -29,13 +29,21 @@ def specgen(of, pth, pinouts, bankspec, muxwidths, pinbanks, fixedpins,
     #print pinouts.ganged.items()
     if not os.path.exists(pth):
         os.makedirs(pth)
+    with open(os.path.join(pth, 'configs.txt'), 'w') as f:
+        for (name, d) in configs.items():
+            d = d.items()
+            d.sort()
+            vals = []
+            for (k, v) in d:
+                vals.append("%s=%s" % (k, repr(v)))
+            line = [name.lower(), '\t'.join(vals)]
+            line = '\t'.join(line)
+            f.write("%s\n" % line)
+
     with open(os.path.join(pth, 'interfaces.txt'), 'w') as f:
         for k in pinouts.fnspec.keys():
             s = pinouts.fnspec[k]
             line = [k.lower(), str(len(s))]
-            for b in fastbus:
-                if b.startswith(k.lower()):
-                    line.append(b)
             line = '\t'.join(line)
             f.write("%s\n" % line)
             s0 = s[list(s.keys())[0]]  # hack, take first
