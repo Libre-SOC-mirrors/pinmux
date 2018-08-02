@@ -35,6 +35,7 @@ class sdram(PBase):
         return {'sdrwen': 'ifc_sdram_out.osdr_we_n',
                 'sdrcsn0': 'ifc_sdram_out.osdr_cs_n',
                 'sdrcke': 'ifc_sdram_out.osdr_cke',
+                'sdrclk': 'ifc_sdram_out.osdr_clock',
                 'sdrrasn': 'ifc_sdram_out.osdr_ras_n',
                 'sdrcasn': 'ifc_sdram_out.osdr_cas_n',
                 }.get(pname, '')

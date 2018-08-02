@@ -175,7 +175,7 @@ def sdram1(suffix, bank):
         buspins.append("SDRAD%d+" % i)
     for i in range(2):
         buspins.append("SDRBA%d+" % i)
-    buspins += ['SDRCKE+', 'SDRRASn+', 'SDRCASn+', 'SDRWEn+',
+    buspins += ['SDRCLK+', 'SDRCKE+', 'SDRRASn+', 'SDRCASn+', 'SDRWEn+',
                 'SDRCSn0+']
     return (buspins, inout)
 
