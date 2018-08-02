@@ -47,7 +47,13 @@ def pinspec():
                       'ULPI2': 'ULPI (USB Low Pin-count) 2',
                       }
 
-    ps = PinSpec(pinbanks, fixedpins, function_names)
+    ps = PinSpec(pinbanks, fixedpins, function_names,
+				{ "muxconfig" :
+					{
+						"A" : "011000"
+					}
+				}
+					)
 
     # Bank A, 0-3
     ps.gpio("", ('A', 0), 0, 0, 3)
