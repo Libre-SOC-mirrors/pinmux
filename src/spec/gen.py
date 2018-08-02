@@ -1,4 +1,5 @@
 import os
+import json
 import os.path
 from spec.interfaces import Pinouts
 
@@ -30,15 +31,7 @@ def specgen(of, pth, pinouts, bankspec, muxwidths, pinbanks, fixedpins,
     if not os.path.exists(pth):
         os.makedirs(pth)
     with open(os.path.join(pth, 'configs.txt'), 'w') as f:
-        for (name, d) in configs.items():
-            d = d.items()
-            d.sort()
-            vals = []
-            for (k, v) in d:
-                vals.append("%s=%s" % (k, repr(v)))
-            line = [name.lower(), '\t'.join(vals)]
-            line = '\t'.join(line)
-            f.write("%s\n" % line)
+        f.write("%s\n" % json.dumps(configs))
 
     with open(os.path.join(pth, 'interfaces.txt'), 'w') as f:
         for k in pinouts.fnspec.keys():
