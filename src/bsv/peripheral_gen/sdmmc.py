@@ -10,10 +10,10 @@ class sdmmc(PBase):
         return 13
 
     def mkslow_peripheral(self):
-        return "Ifc_sdcard_dummy sd{0} <-  mksdcard_dummy();"
+        return "Ifc_sdcard_dummy mmc{0} <-  mksdcard_dummy();"
 
     def _mk_connection(self, name=None, count=0):
-        return "sd{0}.slave"
+        return "mmc{0}.slave"
 
     def pinname_out(self, pname):
         if pname in ['cmd', 'clk']:
