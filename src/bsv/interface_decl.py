@@ -481,7 +481,6 @@ class InterfaceBus(InterfaceFmt):
         for pin in pins:
             print "ifbus pins", pin.name_, plen
         bitspec = self.bitspec.format(plen)
-        print self
         return '\n' + res + self.vectorifacedef2(
             pins, plen, self.namelist, bitspec, *args)
 
@@ -510,10 +509,13 @@ class InterfaceMultiBus(object):
         self.nonbuspins = nbuspins
         b = InterfaceBus(buspins, is_inout,
                          namelist, bitspec, filterbus)
-        print is_inout, namelist, filterbus, buspins
+        print "add bus", is_inout, namelist, filterbus, \
+                        map(lambda x:x.name_, buspins), \
+                        map(lambda x:x.name_, nbuspins)
         self.multibus_specs.append(b)
         self.multibus_specs[0].pins_ = nbuspins
         self.multibus_specs[0].nonbuspins = nbuspins
+        #self.nonbuspins = nbuspins
 
     def ifacepfmt(self, *args):
         res = ''
@@ -574,13 +576,16 @@ class InterfaceFlexBus(InterfaceMultiBus, Interface):
         return InterfaceMultiBus.ifacedef2(self, *args)
 
 
-class InterfaceSD(InterfaceBus, Interface):
+class InterfaceSD(InterfaceMultiBus, Interface):
 
-    def __init__(self, *args):
-        Interface.__init__(self, *args)
-        InterfaceBus.__init__(self, self.pins, True, ['out', 'out_en', 'in'],
+    def __init__(self, ifacename, pinspecs, ganged=None, single=False):
+        Interface.__init__(self, ifacename, pinspecs, ganged, single)
+        InterfaceMultiBus.__init__(self, self.pins)
+        self.add_bus(True, ['out', 'out_en', 'in'],
                               "Bit#({0})", "d")
 
+    def ifacedef2(self, *args):
+        return InterfaceMultiBus.ifacedef2(self, *args)
 
 class InterfaceNSPI(InterfaceBus, Interface):
 
