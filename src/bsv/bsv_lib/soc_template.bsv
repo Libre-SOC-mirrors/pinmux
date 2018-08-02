@@ -110,7 +110,7 @@ package socgen;
     (*synthesize*)
     module mkSoc #(Bit#(`VADDR) reset_vector,
                  Clock slow_clock, Reset slow_reset, Clock uart_clock, 
-                 Reset uart_reset, Clock clk0, Clock tck, Reset trst
+                 Reset uart_reset, Clock clk0, Reset rst0, Clock tck, Reset trst
                  `ifdef PWM_AXI4Lite ,Clock ext_pwm_clock `endif )(Ifc_Soc);
         Clock core_clock <-exposeCurrentClock; // slow peripheral clock
         Reset core_reset <-exposeCurrentReset; // slow peripheral reset

@@ -19,13 +19,13 @@ class sdram(PBase):
                 "Ifc_sdram_out sdr{0}_out;".format(count)
 
     def get_clk_spc(self, typ):
-        return "clk0, slow_reset"
+        return "clk0, rst0"
 
     def get_clock_reset(self, name, count):
         return "slow_clock, slow_reset"
 
     def mkfast_peripheral(self):
-        return "Ifc_sdr_slave sdr{0} <- mksdr_axi4_slave(clk0);"
+        return "Ifc_sdr_slave sdr{0} <- mksdr_axi4_slave(clk0, rst0);"
 
     def _mk_connection(self, name=None, count=0):
         return ["sdr{0}.axi4_slave_sdram",
