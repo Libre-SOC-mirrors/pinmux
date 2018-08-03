@@ -87,10 +87,16 @@ def pinmuxgen(pth=None, verify=True):
     idef = os.path.join(bp, 'instance_defines.bsv')
     slow = os.path.join(bp, 'slow_peripherals.bsv')
     slowt = os.path.join(cwd, 'slow_peripherals_template.bsv')
+
     slowmf = os.path.join(bp, 'slow_memory_map.bsv')
     slowmt = os.path.join(cwd, 'slow_tuple2_template.bsv')
+
+    slowid = os.path.join(bp, 'slow_instance_defines.bsv')
+    slowit = os.path.join(cwd, 'slow_instance_defines_template.bsv')
+
     fastmf = os.path.join(bp, 'fast_memory_map.bsv')
     fastmt = os.path.join(cwd, 'fast_tuple2_template.bsv')
+
     soc = os.path.join(bp, 'socgen.bsv')
     soct = os.path.join(cwd, 'soc_template.bsv')
 
@@ -98,11 +104,11 @@ def pinmuxgen(pth=None, verify=True):
     write_bvp(bvp, p, ifaces)
     write_bus(bus, p, ifaces)
     write_instances(idef, p, ifaces)
-    write_slow(slow, slowt, slowmf, slowmt, p, ifaces, iocells)
+    write_slow(slow, slowt, slowmf, slowmt, slowid, slowit, p, ifaces, iocells)
     write_soc(soc, soct, fastmf, fastmt, p, ifaces, iocells)
 
 
-def write_slow(slow, slowt, slowmf, slowmt, p, ifaces, iocells):
+def write_slow(slow, slowt, slowmf, slowmt, slowid, slowit, p, ifaces, iocells):
     """ write out the slow_peripherals.bsv file.
         joins all the peripherals together into one AXI Lite interface
     """
@@ -132,10 +138,15 @@ def write_slow(slow, slowt, slowmf, slowmt, p, ifaces, iocells):
                                     numsloirqs, ifacedef,
                                     inst2, clockcon))
 
+    with open(slowid, "w") as bsv_file:
+        with open(slowit) as f:
+            slowit = f.read()
+        bsv_file.write(slowit.format(regdef))
+
     with open(slowmf, "w") as bsv_file:
         with open(slowmt) as f:
             slowmt = f.read()
-        bsv_file.write(slowmt.format(regdef, slavedecl, fnaddrmap))
+        bsv_file.write(slowmt.format(fnaddrmap, slavedecl))
 
 
 def write_soc(soc, soct, fastmf, fastmt, p, ifaces, iocells):

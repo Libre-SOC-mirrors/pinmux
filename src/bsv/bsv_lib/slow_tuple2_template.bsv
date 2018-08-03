@@ -2,9 +2,7 @@ package slow_memory_map;
 	/*===== Project imports =====*/
 	import defined_types::*;
 	`include "instance_defines.bsv"
-    /* ==== define the AXI Addresses ==== */
-{0}
-
+	`include "slow_instance_defines.bsv"
     /* ==== define the AXI slave numbering ===== */
 {1}
 
@@ -27,7 +25,7 @@ package slow_memory_map;
                 return tuple2(True,fromInteger(valueOf(AxiExp1_slave_num)));
             else
         `endif
-{2}
+{0}
         return tuple2(False,?);
 	endfunction
 
