@@ -76,6 +76,30 @@ class PBase(object):
     def slowimport(self):
         return ''
 
+    def get_mmap_configs(self):
+        res = []
+        for cfg in self.peripheral.configs:
+            res.append(cfg.get('mmap', None))
+        return res[0] # XXX HACK!  assume all configs same for each peripheral!
+
+    def get_mmap_cfg_name(self, idx):
+        cfg = self.get_mmap_configs()
+        if cfg is None:
+            nregs = self.num_axi_regs32()
+            if isinstance(nregs, int) or len(nregs) == 1:
+                return ""
+            return "_%d_" % idx
+        return cfg[idx][0] 
+
+    def num_axi_regs32cfg(self):
+        cfg = self.get_mmap_configs()
+        if cfg is None:
+            return self.num_axi_regs32()
+        regs = []
+        for c in cfg:
+            regs.append(c[2])
+        return regs
+
     def num_axi_regs32(self):
         return 0
 
@@ -107,7 +131,7 @@ class PBase(object):
                 offs)
 
     def axi_reg_def(self, start, name, ifacenum):
-        offs = self.num_axi_regs32()
+        offs = self.num_axi_regs32cfg()
         if offs == 0:
             return ('', 0)
         if not isinstance(offs, list):
@@ -116,11 +140,8 @@ class PBase(object):
         offstotal = 0
         print offs
         for (idx, nregs) in enumerate(offs):
-            if len(offs) == 1:
-                idx = ""
-            else:
-                idx = "_%d_" % idx
-            (txt, off) = self._axi_reg_def(idx, nregs, start, name, ifacenum)
+            cfg = self.get_mmap_cfg_name(idx)
+            (txt, off) = self._axi_reg_def(cfg, nregs, start, name, ifacenum)
             start += off
             offstotal += off
             res.append(txt)
@@ -146,11 +167,8 @@ class PBase(object):
             offs = [offs]
         res = []
         for (i, nregs) in enumerate(offs):
-            if len(offs) == 1:
-                idx_ = ""
-            else:
-                idx_ = "_%d_" % i
-            name_ = self.axi_slave_name(idx_, name, ifacenum, typ)
+            cfg = self.get_mmap_cfg_name(i)
+            name_ = self.axi_slave_name(cfg, name, ifacenum, typ)
             res.append("typedef {0} {1};".format(idx+i, name_))
         return ('\n'.join(res), len(offs))
 
@@ -175,11 +193,8 @@ else"""
             offs = [offs]
         res = []
         for (idx, nregs) in enumerate(offs):
-            if len(offs) == 1:
-                idx = ""
-            else:
-                idx = "_%d_" % idx
-            res.append(self._axi_addr_map(idx, name, ifacenum, typ))
+            cfg = self.get_mmap_cfg_name(idx)
+            res.append(self._axi_addr_map(cfg, name, ifacenum, typ))
         return '\n'.join(res)
 
     def _mk_pincon(self, name, count, ptyp):
