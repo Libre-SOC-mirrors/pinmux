@@ -458,11 +458,8 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
         if not isinstance(connections, list):
             connections = [connections]
         for (idx, con) in enumerate(connections):
-            if len(connections) == 1:
-                idx = ""
-            else:
-                idx = "_%d_" % idx
-            aname = self.axi_slave_name(idx, name, count, typ)
+            cfg = self.get_mmap_cfg_name(idx)
+            aname = self.axi_slave_name(cfg, name, count, typ)
             ret.append(self.__mk_connection(con, aname, count, fabricname))
         return '\n'.join(ret)
 
