@@ -15,7 +15,7 @@ class uart(PBase):
         return 8
 
     def get_clock_reset(self, name, count):
-        return "uart_clock,uart_reset"  
+        return "uart_clock,uart_reset"
 
     def mkslow_peripheral(self, size=0):
         return "Ifc_Uart_bs uart{0} <- \n" + \

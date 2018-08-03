@@ -8,7 +8,7 @@ from spec.ifaceprint import display_fixed
 
 def pinspec():
     pinbanks = {
-        'A': (3,  4),
+        'A': (3, 4),
     }
     fixedpins = {
         'CTRL_SYS': [
@@ -48,12 +48,12 @@ def pinspec():
                       }
 
     ps = PinSpec(pinbanks, fixedpins, function_names,
-				{ "gpioa" :
-					{
-						"muxconfig" : "011000"
-					}
-				}
-					)
+                 {"gpioa":
+                  {
+                      "muxconfig": "011000"
+                  }
+                  }
+                 )
 
     # Bank A, 0-3
     ps.gpio("", ('A', 0), 0, 0, 3)

@@ -510,8 +510,8 @@ class InterfaceMultiBus(object):
         b = InterfaceBus(buspins, is_inout,
                          namelist, bitspec, filterbus)
         print "add bus", is_inout, namelist, filterbus, \
-                        map(lambda x:x.name_, buspins), \
-                        map(lambda x:x.name_, nbuspins)
+            map(lambda x: x.name_, buspins), \
+            map(lambda x: x.name_, nbuspins)
         self.multibus_specs.append(b)
         self.multibus_specs[0].pins_ = nbuspins
         self.multibus_specs[0].nonbuspins = nbuspins
@@ -582,10 +582,11 @@ class InterfaceSD(InterfaceMultiBus, Interface):
         Interface.__init__(self, ifacename, pinspecs, ganged, single)
         InterfaceMultiBus.__init__(self, self.pins)
         self.add_bus(True, ['out', 'out_en', 'in'],
-                              "Bit#({0})", "d")
+                     "Bit#({0})", "d")
 
     def ifacedef2(self, *args):
         return InterfaceMultiBus.ifacedef2(self, *args)
+
 
 class InterfaceNSPI(InterfaceBus, Interface):
 

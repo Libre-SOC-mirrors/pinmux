@@ -111,7 +111,16 @@ def pinmuxgen(pth=None, verify=True):
     write_soc(soc, soct, fastmf, fastmt, fastid, fastit, p, ifaces, iocells)
 
 
-def write_slow(slow, slowt, slowmf, slowmt, slowid, slowit, p, ifaces, iocells):
+def write_slow(
+        slow,
+        slowt,
+        slowmf,
+        slowmt,
+        slowid,
+        slowit,
+        p,
+        ifaces,
+        iocells):
     """ write out the slow_peripherals.bsv file.
         joins all the peripherals together into one AXI Lite interface
     """

@@ -12,11 +12,11 @@ class sdram(PBase):
 
     def extfastifinstance(self, name, count):
         return "// TODO" + self._extifinstance(name, count, "_out", "", True,
-                                   ".if_sdram_out")
+                                               ".if_sdram_out")
 
     def fastifdecl(self, name, count):
         return "// (*always_ready*) interface " + \
-                "Ifc_sdram_out sdr{0}_out;".format(count)
+            "Ifc_sdram_out sdr{0}_out;".format(count)
 
     def get_clk_spc(self, typ):
         return "clk0, rst0"
@@ -30,7 +30,7 @@ class sdram(PBase):
     def _mk_connection(self, name=None, count=0):
         return ["sdr{0}.axi4_slave_sdram",
                 "sdr{0}.axi4_slave_cntrl_reg"]
-                
+
     def pinname_out(self, pname):
         return {'sdrwen': 'ifc_sdram_out.osdr_we_n',
                 'sdrcsn0': 'ifc_sdram_out.osdr_cs_n',
@@ -57,7 +57,7 @@ class sdram(PBase):
 
     def _mk_pincon(self, name, count, typ):
         ret = [PBase._mk_pincon(self, name, count, typ)]
-        assert typ == 'fast' # TODO slow?
+        assert typ == 'fast'  # TODO slow?
         for pname, stype, ptype in [
             ('dqm', 'osdr_dqm', 'out'),
             ('ba', 'osdr_ba', 'out'),

@@ -63,14 +63,14 @@ def pinspec():
     ps = PinSpec(pinbanks, fixedpins, function_names,
                  {'lcd': {'bus': 'fastbus',
                           'mmap': [['Cfg', 0x20000, 10]
-                                  ]},
+                                   ]},
                   'jtag': {'bus': 'fastbus'},
                   'fb': {'bus': 'fastbus'},
                   'sdr': {'bus': 'fastbus',
                           'mmap': [['Mem', 0x50000000, 0x400000],
                                    ['Cfg', 0x21000, 12]
-                                  ]},
-                 })
+                                   ]},
+                  })
 
     # Bank A, 0-27
     ps.gpio("", ('A', 0), 0, 0, 28)

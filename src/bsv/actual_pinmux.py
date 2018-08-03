@@ -204,6 +204,7 @@ def init(p, ifaces):
         #print cell, temp, x
         dedcell(p, x, cell)
 
+
 def muxcell(p, cname, x, cell, i):
     if x == "input":
         p.pinmux += \
@@ -212,6 +213,8 @@ def muxcell(p, cname, x, cell, i):
         p.pinmux += \
             mux_wire.format(cell[0], i, "wr" + cname +
                                         "_in") + "\n"
+
+
 def dedcell(p, x, cell):
     if x == "input":
         p.pinmux += \

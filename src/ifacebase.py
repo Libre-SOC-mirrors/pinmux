@@ -6,6 +6,7 @@ try:
 except ImportError:
     from collections import UserDict
 
+
 def _decode_list(data):
     rv = []
     for item in data:
@@ -17,6 +18,7 @@ def _decode_list(data):
             item = _decode_dict(item)
         rv.append(item)
     return rv
+
 
 def _decode_dict(data):
     rv = {}
@@ -31,6 +33,7 @@ def _decode_dict(data):
             value = _decode_dict(value)
         rv[key] = value
     return rv
+
 
 class InterfacesBase(UserDict):
     """ contains a list of interface definitions
@@ -105,7 +108,7 @@ class InterfacesBase(UserDict):
                 name = "%s%d" % (fname, i)
             cfgs.append(self.configs.get(name, {}))
         return cfgs
-            
+
     def getifacetype(self, fname):
         # finds the interface type, e.g sd_d0 returns "inout"
         for iface in self.values():

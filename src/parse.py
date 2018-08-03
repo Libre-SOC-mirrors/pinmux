@@ -26,7 +26,7 @@ class Parse(object):
         self.muxed_cells_bank = []
         self.dedicated_cells = []
         self.pinnumbers = []
-        self.bankwidths = {} 
+        self.bankwidths = {}
         self.banksize = {}
         self.bankstart = {}
 
@@ -39,7 +39,7 @@ class Parse(object):
                 self.bankwidths[line1[0]] = int(line1[3])
                 self.banksize[line1[0]] = int(line1[2])
                 self.bankstart[line1[0]] = int(line1[1])
-            
+
         # == capture the number of IO cells required == #
         fname = 'pinmap.txt'
         if pth:
@@ -53,9 +53,9 @@ class Parse(object):
                 self.muxed_cells_bank.append(line1[1])
                 self.muxed_cells_width.append(int(line1[2]))
                 # XXX TODO: dedicated pins in separate file
-                #if len(line1) == 2:  # dedicated
+                # if len(line1) == 2:  # dedicated
                 #    self.dedicated_cells.append(line1)
-                #else:
+                # else:
                 for i in range(3, len(line1)):
                     # XXX HORRIBLE HACK!!
                     if line1[i].startswith('pwm'):
@@ -77,7 +77,7 @@ class Parse(object):
         #print("Muxer bit width: " + str(self.cell_bitwidth))
         print("Muxed IOs: " + str(len(self.muxed_cells)))
         print("Dedicated IOs: " + str(len(self.dedicated_cells)))
-        #sys.exit(0)
+        # sys.exit(0)
 
     def do_checks(self):
         """ Multiple checks to see if the user has not screwed up

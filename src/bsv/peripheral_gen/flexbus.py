@@ -11,7 +11,7 @@ class flexbus(PBase):
 
     def extfastifinstance(self, name, count):
         return "// TODO" + self._extifinstance(name, count, "_out", "", True,
-                                   ".flexbus_side")
+                                               ".flexbus_side")
 
     def fastifdecl(self, name, count):
         return "//interface FlexBus_Master_IFC fb{0}_out;".format(count)
@@ -55,7 +55,7 @@ class flexbus(PBase):
 
     def _mk_pincon(self, name, count, typ):
         ret = [PBase._mk_pincon(self, name, count, typ)]
-        assert typ == 'fast' # TODO slow?
+        assert typ == 'fast'  # TODO slow?
         for pname, stype, ptype in [
             ('cs', 'm_FBCSn', 'out'),
             ('bwe', 'm_BWEn', 'out'),

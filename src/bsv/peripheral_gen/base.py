@@ -80,7 +80,8 @@ class PBase(object):
         res = []
         for cfg in self.peripheral.configs:
             res.append(cfg.get('mmap', None))
-        return res[0] # XXX HACK!  assume all configs same for each peripheral!
+        # XXX HACK!  assume all configs same for each peripheral!
+        return res[0]
 
     def get_mmap_cfg_name(self, idx):
         cfg = self.get_mmap_configs()
@@ -89,7 +90,7 @@ class PBase(object):
             if isinstance(nregs, int) or len(nregs) == 1:
                 return ""
             return "_%d_" % idx
-        return cfg[idx][0] 
+        return cfg[idx][0]
 
     def num_axi_regs32cfg(self):
         cfg = self.get_mmap_configs()
@@ -169,7 +170,7 @@ class PBase(object):
         for (i, nregs) in enumerate(offs):
             cfg = self.get_mmap_cfg_name(i)
             name_ = self.axi_slave_name(cfg, name, ifacenum, typ)
-            res.append("typedef {0} {1};".format(idx+i, name_))
+            res.append("typedef {0} {1};".format(idx + i, name_))
         return ('\n'.join(res), len(offs))
 
     def axi_fastaddr_map(self, name, ifacenum):
@@ -228,7 +229,7 @@ else"""
                     else:
                         ps_ = ps
                     cn = self._mk_actual_connection('out', name,
-                                                    count, typ, 
+                                                    count, typ,
                                                     pname, ps_, n_, fname)
                     ret += cn
                 fname = None
@@ -239,7 +240,7 @@ else"""
                         fname = "{0}.{1}".format(n_, fname)
                     fname = self.pinname_tweak(pname, 'outen', fname)
                     cn = self._mk_actual_connection('outen', name,
-                                                    count, typ, 
+                                                    count, typ,
                                                     pname, ps, n, fname)
                     ret += cn
             if typ == 'in' or typ == 'inout':
@@ -298,16 +299,15 @@ else"""
         elif ctype == 'in':
             if ck == PBase.get_clock_reset(self, name, count):
                 ret.append("mkConnection({1},\n\t\t\t{0});".format(
-                            ps, n))
+                    ps, n))
             else:
                 n2 = "{0}{1}".format(name, count)
                 sync = '{0}_{1}_sync'.format(n2, pname)
                 ret.append("mkConnection({1}.put,\n\t\t\t{0});".format(
-                            ps, sync))
+                    ps, sync))
                 ret.append("mkConnection({1},\n\t\t\t{0}.get);".format(
-                            sync, n))
+                    sync, n))
         return ret
-
 
     def _mk_clk_con(self, name, count, ctype):
         ret = []
@@ -325,7 +325,7 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
         for p in self.peripheral.pinspecs:
             typ = p['type']
             pname = p['name']
-            n = name  
+            n = name
             if typ == 'out' or typ == 'inout':
                 fname = self.pinname_out(pname)
                 if not fname:
@@ -370,8 +370,7 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
         n_ = '{0}_{1}'.format(n_, pname)
         if typ == 'in' or typ == 'inout':
             ck, spc = spc, ck
-        return template.format(bitspec,  n_, ck, spc)
-
+        return template.format(bitspec, n_, ck, spc)
 
     def mk_cellconn(self, *args):
         return ''
@@ -398,7 +397,7 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
 
     def __mk_master_connection(self, con, aname, count, fabricname):
         txt = "mkConnection ({0}, {2}.v_from_masters\n" + \
-              "            [fromInteger(valueOf({1}))]);\n" 
+              "            [fromInteger(valueOf({1}))]);\n"
 
         print "PBase __mk_master_connection", self.name, aname
         if not con:
