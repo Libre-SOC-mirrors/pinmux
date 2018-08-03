@@ -127,8 +127,8 @@ class PBase(object):
         bname = self.axibase(name, ifacenum, idx)
         bend = self.axiend(name, ifacenum, idx)
         comment = "%d 32-bit regs" % numregs
-        return ("    `define %(bname)s 'h%(start)08X\n"
-                "    `define %(bend)s  'h%(end)08X // %(comment)s" % locals(),
+        return ("`define %(bname)s 'h%(start)08X\n"
+                "`define %(bend)s  'h%(end)08X // %(comment)s" % locals(),
                 offs)
 
     def axi_reg_def(self, start, name, ifacenum):
