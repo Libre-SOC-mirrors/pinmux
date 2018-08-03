@@ -67,8 +67,8 @@ def pinspec():
                   'jtag': {'bus': 'fastbus'},
                   'fb': {'bus': 'fastbus'},
                   'sdr': {'bus': 'fastbus',
-                          'mmap': [['Mem', 0x50000000, 0x400000],
-                                   ['Cfg', 0x21000, 12]
+                          'mmap': [['Mem', 0x70000000, 0x400000],
+                                   ['Cfg', 0x17000, 12]
                                    ]},
                   })
 

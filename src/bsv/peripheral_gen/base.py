@@ -20,9 +20,56 @@ def li(txt, indent):
     return res
 
 
-class PBase(object):
+class MMapConfig(object):
+
+    def get_mmap_configs(self):
+        res = []
+        for cfg in self.peripheral.configs:
+            res.append(cfg.get('mmap', None))
+        # XXX HACK!  assume all configs same for each peripheral!
+        return res[0]
+
+    def map_to_idx(self, cfg, idx):
+        if isinstance(idx, int):
+            return idx
+        for (i, c) in enumerate(cfg):
+            if c[0] == idx:
+                return i
+        assert "config name %s not found" % s
+
+    def get_mmap_cfg_start(self, idx):
+        cfg = self.get_mmap_configs()
+        if cfg is None:
+            nregs = self.num_axi_regs32()
+            if isinstance(nregs, int) or len(nregs) == 1:
+                return 0
+            return "_%d_" % idx
+        idx = self.map_to_idx(cfg, idx)
+        return cfg[idx][1]
+
+    def get_mmap_cfg_name(self, idx):
+        cfg = self.get_mmap_configs()
+        if cfg is None:
+            nregs = self.num_axi_regs32()
+            if isinstance(nregs, int) or len(nregs) == 1:
+                return ""
+            return "_%d_" % idx
+        return cfg[idx][0]
+
+    def num_axi_regs32cfg(self):
+        cfg = self.get_mmap_configs()
+        if cfg is None:
+            return self.num_axi_regs32()
+        regs = []
+        for c in cfg:
+            regs.append(c[2])
+        return regs
+
+
+class PBase(MMapConfig):
     def __init__(self, name):
         self.name = name
+        MMapConfig.__init__(self)
 
     def extifdecl(self, name, count):
         sname = self.get_iname(count)
@@ -76,31 +123,6 @@ class PBase(object):
     def slowimport(self):
         return ''
 
-    def get_mmap_configs(self):
-        res = []
-        for cfg in self.peripheral.configs:
-            res.append(cfg.get('mmap', None))
-        # XXX HACK!  assume all configs same for each peripheral!
-        return res[0]
-
-    def get_mmap_cfg_name(self, idx):
-        cfg = self.get_mmap_configs()
-        if cfg is None:
-            nregs = self.num_axi_regs32()
-            if isinstance(nregs, int) or len(nregs) == 1:
-                return ""
-            return "_%d_" % idx
-        return cfg[idx][0]
-
-    def num_axi_regs32cfg(self):
-        cfg = self.get_mmap_configs()
-        if cfg is None:
-            return self.num_axi_regs32()
-        regs = []
-        for c in cfg:
-            regs.append(c[2])
-        return regs
-
     def num_axi_regs32(self):
         return 0
 
@@ -123,7 +145,13 @@ class PBase(object):
         offs = numregs * 4 * 16
         if offs == 0:
             return ('', 0)
-        end = start + offs - 1
+        cfgstart = self.get_mmap_cfg_start(idx)
+        if cfgstart:
+            start = cfgstart
+            end = start + offs - 1
+            offs = 0 # don't do contiguous addressing
+        else:
+            end = start + offs - 1
         bname = self.axibase(name, ifacenum, idx)
         bend = self.axiend(name, ifacenum, idx)
         comment = "%d 32-bit regs" % numregs
