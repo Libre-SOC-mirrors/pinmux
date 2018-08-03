@@ -32,15 +32,13 @@ package fast_memory_map;
     /*====== Package imports === */
     `include "instance_defines.bsv"
     `include "core_parameters.bsv"
-
-    /*====== Fast peripherals Memory Map ======= */
-{0}
+    `include "fast_instance_defines.bsv"
 
     /*====== AXI4 slave declarations =======*/
-{1}
+{0}
 
     /*====== AXI4 Master declarations =======*/
-{2}
+{1}
 
 
 function Tuple2 #(Bool, Bit#(TLog#(Num_Fast_Slaves)))
@@ -65,7 +63,7 @@ function Tuple2 #(Bool, Bit#(TLog#(Num_Fast_Slaves)))
             return tuple2(True,fromInteger(valueOf(TCM_slave_num)));
     `endif
         else 
-{3}
+{2}
             return tuple2(False,?);
 endfunction
 
