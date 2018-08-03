@@ -8,7 +8,7 @@ from spec.ifaceprint import display_fixed
 
 def pinspec():
     pinbanks = {
-        'A': 4,
+        'A': (3,  4),
     }
     fixedpins = {
         'CTRL_SYS': [
