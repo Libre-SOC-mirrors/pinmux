@@ -1,0 +1,74 @@
+### Makefile for the cclass project
+
+TOP_MODULE:=mkslow_peripherals
+TOP_FILE:=slow_peripherals.bsv
+TOP_DIR:=./
+WORKING_DIR := $(shell pwd)
+
+BSVINCDIR:= .:%/Prelude:%/Libraries:%/Libraries/BlueNoC:
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-core/src/core
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-core/src/core/fpu
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-core/src/lib
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/core
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/uncore/axi4
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/uncore/axi4lite
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/uncore/debug
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/lib
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/gpio
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/rgbttl
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/i2c
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/mux
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/plic
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/clint
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/sdram
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/pwm
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/qspi
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/spi
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/sdmmc
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/flexbus
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/jtagdtm
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/uart
+
+default: gen_verilog
+
+check-blue:
+	@if test -z "$$BLUESPECDIR"; then echo "BLUESPECDIR variable not set"; exit 1; fi; 
+
+###### Setting the variables for bluespec compile #$############################
+BSVCOMPILEOPTS:= -check-assert -suppress-warnings G0020 -keep-fires -opt-undetermined-vals -remove-false-rules -remove-empty-rules -remove-starved-rules 
+BSVLINKOPTS:=-parallel-sim-link 8 -keep-fires
+VERILOGDIR:=./verilog/
+BSVBUILDDIR:=./bsv_build/
+BSVOUTDIR:=./bin
+################################################################################
+
+########## BSIM COMPILE, LINK AND SIMULATE TARGETS ##########################
+.PHONY: check-restore
+check-restore:
+	@if [ "$(define_macros)" != "$(old_define_macros)" ];	then	make clean ;	fi;
+
+.PHONY: gen_verilog 
+gen_verilog: check-restore check-blue 
+	@echo Compiling mkTbSoc in Verilog for simulations ...
+	@mkdir -p $(BSVBUILDDIR); 
+	@mkdir -p $(VERILOGDIR); 
+	bsc -u -verilog -elab -vdir $(VERILOGDIR) -bdir $(BSVBUILDDIR) \
+	        -info-dir $(BSVBUILDDIR) $(define_macros) \
+	        -D RV64=True -D muldiv=True -D sequential=True \
+	        -D atomic=True -D spfpu=True -D dpfpu=True \
+	        -D bpu=True -D MMU=True -D perf=True \
+	        -D prefetch=True -D CLINT=True \
+	        -D      simulate=True -D SDRAM=True \
+	        -D GPIO_MUX=True \
+	        -D verilog=True $(BSVCOMPILEOPTS) -verilog-filter \
+	        ${BLUESPECDIR}/bin/basicinout -p $(BSVINCDIR) \
+	        -g $(TOP_MODULE) $(TOP_DIR)/$(TOP_FILE) \
+	        2>&1 | tee bsv_compile.log
+	@echo Compilation finished
+
+#############################################################################
+
+.PHONY: clean
+clean:
+	rm -rf $(BSVBUILDDIR) *.log $(BSVOUTDIR) ./bbl*
+	rm -rf verilog obj_dir bsv_src

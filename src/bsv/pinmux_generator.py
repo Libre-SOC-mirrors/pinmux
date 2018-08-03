@@ -74,6 +74,8 @@ def pinmuxgen(pth=None, verify=True):
     # copy over template and library files
     shutil.copyfile(os.path.join(cwd, 'Makefile.template'),
                     os.path.join(bp, 'Makefile'))
+    shutil.copyfile(os.path.join(cwd, 'Makefile.peripherals.template'),
+                    os.path.join(bp, 'Makefile.peripherals'))
     cwd = os.path.join(cwd, 'bsv_lib')
     for fname in []:
         shutil.copyfile(os.path.join(cwd, fname),
