@@ -37,7 +37,8 @@ class gpio(PBase):
     def mkslow_peripheral(self, size=0):
         print "gpioslow", self.peripheral, dir(self.peripheral)
         size = len(self.peripheral.pinspecs)
-        return "MUX#(%d) mux{0} <- mkmux();\n" % size + \
+        dflt = "'b%s" % ("0"*size*2)
+        return "MUX#(%d) mux{0} <- mkmux(%s);\n" % (size, dflt)+ \
                "GPIO#(%d) gpio{0} <- mkgpio();" % size
 
     def mk_connection(self, count, fabricname, typ):
