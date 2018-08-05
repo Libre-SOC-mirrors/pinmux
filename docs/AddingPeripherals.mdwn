@@ -1152,6 +1152,21 @@ src/bsv/Makefile.template and Makefile.peripherals.template:
 Really these should also be auto-generated.  Testing through compiling
 can now take place.
 
+## Compiling the BSV to verilog
+
+Here an additional repository is required, which can be cloned as follows:
+
+    $ git clone gitolite3@libre-riscv.org:shakti-iclass.git
+
+or public:
+
+    $ git clone git://libre-riscv.org/shakti-iclass.git
+
+This pulls in submodules automatically, and begins building the BSV,
+using the following commands:
+
+    $ ./bin/gitmoduleupdate.sh
+    $ make
 
 # Conclusion
 
