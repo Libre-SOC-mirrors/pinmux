@@ -644,7 +644,7 @@ class PeripheralIface(object):
             return ''
         return self.slow.axi_fastaddr_map(self.ifacename, count)
 
-    def axi_addr_map(self, count):
+    def axi_addr_map(self, name, count):
         if not self.slow:
             return ''
         return self.slow.axi_addr_map(self.ifacename, count)
@@ -674,6 +674,7 @@ class PeripheralInterfaces(object):
             ('_mk_pincon', MkPinCon, 4),
             ('_mk_clk_con', MkClkCon, 8),
             ('mk_ext_ifacedef', MkExtIface, 8),
+            ('axi_addr_map', MkAxiAddrMap, 8),
         ):
             fn = CallIfaceFn(self, kls, indent)
             setattr(self, fname, types.MethodType(fn, self))
@@ -805,15 +806,6 @@ class PeripheralInterfaces(object):
                 if self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].axi_fastaddr_map(i))
-        return '\n'.join(li(list(filter(None, ret)), 8))
-
-    def axi_addr_map(self, *args):
-        ret = []
-        for (name, count) in self.ifacecount:
-            for i in range(count):
-                if self.is_on_fastbus(name, i):
-                    continue
-                ret.append(self.data[name].axi_addr_map(i))
         return '\n'.join(li(list(filter(None, ret)), 8))
 
     def mkfast_peripheral(self, *args):
@@ -978,6 +970,14 @@ class IfaceIter(object):
 
     def next(self):
         return self.__next__()
+
+class MkAxiAddrMap(IfaceIter):
+
+    def check(self, name, i):
+        return not self.ifaces.is_on_fastbus(name, i)
+
+    def item(self, name, i):
+        return self.ifaces.data[name].axi_addr_map(name, i)
 
 
 class MkConnection(IfaceIter):
