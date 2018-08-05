@@ -650,9 +650,33 @@ class PeripheralIface(object):
         return self.slow.axi_addr_map(self.ifacename, count)
 
 
+class CallIfaceFn(object):
+    def __init__(self, ifaces, kls, indent):
+        self.ifaces = ifaces
+        self.kls = kls
+        self.indent = indent
+
+    def __call__(self, ifaces, *args):
+        ret = []
+        for (name, count) in self.ifaces.ifacecount:
+            print "CallIfaceFn", self.kls, self.ifaces
+            print "CallIfaceFn args", name, count, args
+            ret += list(self.kls(self.ifaces, name, count, *args))
+        return '\n'.join(li(list(filter(None, ret)), self.indent))
+
+
 class PeripheralInterfaces(object):
     def __init__(self):
         self.fastbusmode = False
+
+        for (fname, kls, indent) in (
+                        ('_mk_connection', MkConnection, 8),
+                        ('_mk_pincon', MkPinCon, 4),
+                        ('_mk_clk_con', MkClkCon, 8),
+                        ('mk_ext_ifacedef', MkExtIface, 8),
+                        ):
+            fn = CallIfaceFn(self, kls, indent)
+            setattr(self, fname, types.MethodType(fn, self))
 
     def slowimport(self, *args):
         ret = []
@@ -818,21 +842,14 @@ class PeripheralInterfaces(object):
                 ret.append(x.format(suffix))
         return '\n'.join(li(list(filter(None, ret)), 8))
 
-    def _mk_connection(self, fabric, typ, indent, master, *args):
-        ret = []
-        for (name, count) in self.ifacecount:
-            ret += list(MkConnection(self, name, count,
-                            fabric, typ, master, *args))
-        return '\n'.join(li(list(filter(None, ret)), indent))
-
     def mk_master_connection(self, *args):
-        return self._mk_connection("fabric", "fast", 8, True, *args)
+        return self._mk_connection("fabric", "fast", True, *args)
 
     def mk_fast_connection(self, *args):
-        return self._mk_connection("fabric", "fast", 12, False, *args)
+        return self._mk_connection("fabric", "fast", False, *args)
 
     def mk_connection(self, *args):
-        return self._mk_connection("slow_fabric", "", 8, False, *args)
+        return self._mk_connection("slow_fabric", "", False, *args)
 
     def mk_cellconn(self):
         ret = []
@@ -854,12 +871,6 @@ class PeripheralInterfaces(object):
 
     def mk_fast_pincon(self):
         return self._mk_pincon("fast")
-
-    def _mk_pincon(self, typ):
-        ret = []
-        for (name, count) in self.ifacecount:
-            ret += list(MkPinCon(self, name, count, typ))
-        return '\n'.join(li(list(ret), 4))
 
     def mk_dma_irq(self):
         ret = []
@@ -908,12 +919,6 @@ class PeripheralInterfaces(object):
     def num_dmachannels(self):
         return "`define NUM_DMACHANNELS {0}".format(self.dma_count)
 
-    def mk_ext_ifacedef(self):
-        ret = []
-        for (name, count) in self.ifacecount:
-            ret += list(MkExtIface(self, name, count))
-        return '\n'.join(li(list(filter(None, ret)), 8))
-
     def mk_plic(self):
         ret = []
         irq_offs = 8  # XXX: DMA scovers 0-7?
@@ -937,12 +942,6 @@ class PeripheralInterfaces(object):
 
     def mk_slowclk_con(self):
         return self._mk_clk_con("slow")
-
-    def _mk_clk_con(self, ctype):
-        ret = []
-        for (name, count) in self.ifacecount:
-            ret += list(MkClkCon(self, name, count, ctype))
-        return '\n'.join(li(list(filter(None, ret)), 8))
 
     def is_on_fastbus(self, name, i):
         #print "fastbus mode", self.fastbusmode, name, i
@@ -968,7 +967,8 @@ class IfaceIter(object):
             if self.i >= self.maxcount:
                 raise StopIteration
             if self.check(self.name, self.i):
-                #print self.item, self.args
+                #print "iter", self.item
+                #print "item args", self.args
                 res = self.item(self.name, self.i, *self.args)
                 if res:
                     self.i += 1
