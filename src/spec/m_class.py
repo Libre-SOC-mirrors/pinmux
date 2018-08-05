@@ -78,8 +78,7 @@ def pinspec():
     function_names = {'EINT': 'External Interrupt',
                       'FB': 'MC68k FlexBus',
                       'IIS': 'I2S Audio',
-                      'JTAG0': 'JTAG (same as JTAG1, JTAG_SEL=LOW)',
-                      'JTAG1': 'JTAG (same as JTAG0, JTAG_SEL=HIGH)',
+                      'JTAG': 'JTAG (multiplexed in 2 places)',
                       'LCD': '24-pin RGB/TTL LCD',
                       'RG': 'RGMII Ethernet',
                       'EMMC': 'eMMC 1/2/4/8 pin',
@@ -87,9 +86,9 @@ def pinspec():
                       'MMC0': 'SD/MMC 0',
                       'MMC1': 'SD/MMC 1',
                       'MMC2': 'SD/MMC 2',
-                      'SPI0': 'SPI (Serial Peripheral Interface) 0',
-                      'SPI1': 'SPI (Serial Peripheral Interface) 1',
-                      'QSPI': 'Quad SPI (Serial Peripheral Interface) 1',
+                      'MSPI0': 'SPI (Serial Peripheral Interface) 0',
+                      'MSPI1': 'SPI (Serial Peripheral Interface) 1',
+                      'MQSPI': 'Quad SPI (Serial Peripheral Interface) 1',
                       'TWI0': 'I2C 1',
                       'TWI1': 'I2C 2',
                       'TWI2': 'I2C 3',
@@ -103,27 +102,33 @@ def pinspec():
                       'ULPI2': 'ULPI (USB Low Pin-count) 3',
                       }
 
-    ps = PinSpec(pinbanks, fixedpins, function_names)
+    ps = PinSpec(pinbanks, fixedpins, function_names,
+                 {'lcd': {'bus': 'fastbus',
+                  'mmap': [['Cfg', 0x20000, 10]
+                           ]},
+                  'jtag': {'bus': 'fastbus'},
+                  'fb': {'bus': 'fastbus'},
+                 })
 
     # Bank A, 0-15
     ps.gpio("", ('A', 0), 0, 0, 16)
-    ps.spi("0", ('A', 0), 3)
+    ps.mspi("0", ('A', 0), 3)
     ps.uartfull("1", ('A', 0), 2)
     ps.i2c("0", ('A', 4), 2)
     ps.emmc("", ('A', 0), 1)
     #ps.uart("0", ('A', 14), 1)
-    ps.spi("1", ('A', 6), 2)
+    ps.mspi("1", ('A', 6), 2)
     ps.eint("", ('A', 10), 1, start=0, limit=6)
     ps.eint("", ('A', 4), 3, start=0, limit=6)
     ps.sdmmc("0", ('A', 10), 2)
-    ps.jtag("0", ('A', 10), 3)
+    ps.jtag("", ('A', 10), 3)
     ps.uart("0", ('A', 14), 3)
 
     # Bank B, 16-47
     ps.gpio("", ('B', 0), 0, 0, 28)
     ps.rgbttl("0", ('B', 0), 1)
-    ps.spi("0", ('B', 12), 2)
-    ps.quadspi("", ('B', 4), 2, limit=4)
+    ps.mspi("0", ('B', 12), 2)
+    ps.mquadspi("", ('B', 4), 2, limit=4)
     ps.uart("1", ('B', 16), 2)
     ps.i2c("2", ('B', 18), 2)
     ps.pwm("", ('B', 9), 2, start=0, limit=1)
@@ -139,11 +144,11 @@ def pinspec():
     ps.gpio("", ("C", 0), 0, 0, 24)
     ps.ulpi("0", ('C', 0), 1)
     ps.ulpi("1", ('C', 12), 1)
-    ps.spi("1", ('C', 8), 2)
-    #ps.spi("1", ('C', 28), 2)
+    ps.mspi("1", ('C', 8), 2)
+    #ps.mspi("1", ('C', 28), 2)
     ps.uartfull("0", ('C', 20), 3)
     ps.eint("", ('C', 0), 3, start=10, limit=8)
-    ps.jtag("1", ('C', 8), 3)
+    ps.jtag("", ('C', 8), 3)
     ps.eint("", ('C', 12), 3, start=22, limit=8)
     ps.uart("0", ('C', 22), 2)
     ps.i2s("", ('C', 13), 2)
@@ -184,7 +189,7 @@ def pinspec():
     ps.flexbus2("", ('E', 0), 1)
     ps.sdmmc("1", ('E', 0), 2)
     ps.sdmmc("2", ('E', 8), 2)
-    ps.quadspi("", ('E', 18), 2)
+    ps.mquadspi("", ('E', 18), 2)
     ps.uartfull("1", ('E', 14), 2)
     ps.i2c("1", ('E', 6), 2)
     ps.eint("", ('E', 0), 3, start=10, limit=8)
@@ -209,7 +214,7 @@ def pinspec():
     ps.rgmii("", ('G', 0), 1)
     ps.ulpi("2", ('G', 20), 1)
     ps.rgbttl("1", ('G', 0), 2)
-    ps.quadspi("", ('G', 26), 3)
+    ps.mquadspi("", ('G', 26), 3)
     ps.flexbus2("", ('G', 0), 3)
     ps.sdmmc("1", ('G', 24), 3, limit=2)
     ps.sdmmc("1", ('G', 28), 2, start=2)
@@ -220,7 +225,7 @@ def pinspec():
     # of spare GPIO.
 
     eoma68 = ['B1:LCD/22', 'ULPI0/8', 'ULPI1', 'EMMC', 'MMC0', 'UART1',
-              'TWI2', 'SPI1', 'E2:MMC1', ]
+              'TWI2', 'MSPI1', 'E2:MMC1', ]
     eoma68_eint = ['EINT_16', 'EINT_17', 'EINT_18', 'EINT_19']
     eoma68_pwm = ['D1:PWM_2']
     descriptions = {
@@ -230,7 +235,7 @@ def pinspec():
         'TWI2': 'EOMA68-compliance: must be entirely free of devices.\n'
         'Address 0x51 used (externally) for EOMA68 EEPROM Id',
         'E2:MMC1': 'EOMA68-compliance',
-        'SPI1': 'EOMA68-compliance',
+        'MSPI1': 'EOMA68-compliance',
         'UART1': 'EOMA68-compliance',
         'B1:LCD/22': 'EOMA68-compliance, 18-bit RGB/TTL LCD',
         'ULPI0/8': 'user-facing: internal (on Card), USB-OTG ULPI PHY',
@@ -250,8 +255,8 @@ def pinspec():
 
     industrial = ['D1:FB/17', 'E1:FB/8', 'B1:LCD/22', 'ULPI0/8', 'ULPI1/8',
                   'EMMC', 'B2:MMC0',
-                  'JTAG0', 'A3:UART0', 'E2:QUART1', 'C3:QUART0',
-                  'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'SPI1', 'QSPI', 'F2:MMC2']
+                  'JTAG', 'A3:UART0', 'E2:QUART1', 'C3:QUART0',
+                  'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'MSPI1', 'MQSPI', 'F2:MMC2']
     industrial_pwm = ['F2:PWM_0', 'F2:PWM_1', 'D1:PWM_2']
     industrial_eint = ['EINT_24', 'EINT_25', 'EINT_26', 'EINT_27',
                        'EINT_20', 'EINT_21', 'EINT_22', 'EINT_23']
@@ -269,9 +274,9 @@ def pinspec():
 
     industrial = ['D1:FB/17', 'E1:FB/8', 'B2:SPI0', 'ULPI0/8', 'ULPI1/8',
                   'EMMC', 'B2:MMC0',
-                  'JTAG0',
+                  'JTAG',
                   'A3:UART0', 'E2:QUART1', 'C3:QUART0', 'B2:UART2', 'B2:UART1',
-                  'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'SPI1', 'QSPI', 'F2:MMC2']
+                  'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'MSPI1', 'MQSPI', 'F2:MMC2']
     industrial_pwm = ['F2:PWM_0', 'F2:PWM_1', 'D1:PWM_2']
     industrial_eint = ['EINT_24', 'EINT_25', 'EINT_26', 'EINT_27',
                        'EINT_20', 'EINT_21', 'EINT_22', 'EINT_23']
@@ -295,7 +300,7 @@ def pinspec():
               'C3:QUART0',  # GPS
               'D2:UART1',
               'D2:UART2',
-              'D3:TWI0', 'D2:TWI2', 'SPI1', 'QSPI']
+              'D3:TWI0', 'D2:TWI2', 'MSPI1', 'MQSPI']
     tablet_pwm = ['F2:PWM_0',  # LCD_BACKLIGHT
                   'F2:PWM_1', 'D1:PWM_2']
     tablet_eint = ['EINT_24',  # BT_HOST_WAKE
@@ -326,10 +331,10 @@ def pinspec():
         'TWI1': 'Connect to AC97 Audio IC',
         'E2:QUART1': 'Connect to BT on AP6234/AP6335',
         'E2:MMC1': 'Connect to WIFI on AP6234/AP6335',
-        'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
+        'MQSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
                 'Only actually needs MISO/MOSI, bootstrap loader v. small\n'
                 'Bootstrap loader checks eMMC, USB-OTG, SD/MMC, SPI, etc.',
-        'SPI1': 'Spare? SPI, connect to higher-speed sensor?',
+        'MSPI1': 'Spare? SPI, connect to higher-speed sensor?',
         'D2:UART1': 'Spare? UART (or 2 extra GPIO / EINT)',
         'D2:UART2': 'Spare? UART (or 2 extra GPIO)',
         'D3:TWI0': 'Connect to PMIC',
@@ -341,7 +346,7 @@ def pinspec():
                 'Some phones may have clam-shell or lid switch.\n'
                 'Some Modems have spare GPIO (over AT commandset).\n'
                 'AXP209 PMIC has 4x GPIO, accessible over I2C.\n'
-                'SPI1, UART1-4, PWM1-2 may also be spare (10 extra GPIO).\n'
+                'MSPI1, UART1-4, PWM1-2 may also be spare (10 extra GPIO).\n'
                 'If more needed, companion MCU may be used (48+ pin variant)\n'
                 'which also includes ADC, DAC, more PWM etc.',
         'F2:PWM_0': 'LCD Backlight',
@@ -373,7 +378,7 @@ def pinspec():
               'TWI1',   # I2C Audio
               'E2:QUART1',  # WIFI/BT
               'E2:MMC2',   # WIFI
-              'D2:TWI2', 'QSPI']
+              'D2:TWI2', 'MQSPI']
     laptop_pwm = ['F2:PWM_0',  # LCD_BACKLIGHT
                   ]
     laptop_eint = ['EINT_20',  # BT_HOST_WAKE
@@ -402,7 +407,7 @@ def pinspec():
         'TWI1': 'Connect to AC97 Audio IC',
         'E2:QUART1': 'Connect to BT on AP6234/AP6335',
         'E2:MMC2': 'Connect to WIFI on AP6234/AP6335',
-        'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
+        'MQSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
         'Only actually needs MISO/MOSI, bootstrap loader v. small\n'
         'Bootstrap loader checks eMMC, USB-OTG, SD/MMC, SPI, etc.\n'
         'MCU implements keyboard-matrix for keyboard (also trackpad?)',
@@ -431,7 +436,7 @@ def pinspec():
            'C2:SPI1',  # HSPI SPI
            'E2:MMC2',   # WIFI
            'D3:TWI0',  # sensors CTP,
-           'D2:TWI2', 'QSPI']
+           'D2:TWI2', 'MQSPI']
     iot_pwm = ['F2:PWM_0',  # LCD_BACKLIGHT
                ]
     iot_eint = ['EINT_5',  # 'HSPA_MST_RDY',
@@ -467,7 +472,7 @@ def pinspec():
         'E2:QUART1': 'Connect to BT UART',
         'E2:MMC2': 'Connect to WIFI',
         'C2:SPI1': 'HSPA SPI',
-        'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
+        'MQSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
                 'Only actually needs MISO/MOSI, bootstrap loader v. small\n'
                 'Bootstrap loader checks eMMC, USB-OTG, SD/MMC, SPI, etc.\n'
                 'MCU implements keyboard-matrix for keyboard (also trackpad?)',
