@@ -667,8 +667,6 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
-                iname = self.data[name].iname().format(i)
-                print "extfast", iname, self.is_on_fastbus(name, i)
                 if self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].extfastifinstance(name, i))
@@ -678,7 +676,6 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
-                iname = self.data[name].iname().format(i)
                 ret.append(self.data[name].extifinstance2(name, i))
         return '\n'.join(li(list(filter(None, ret)), 8))
 
@@ -686,7 +683,6 @@ class PeripheralInterfaces(object):
         ret = []
         for (name, count) in self.ifacecount:
             for i in range(count):
-                iname = self.data[name].iname().format(i)
                 if not self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].extifinstance(name, i))
