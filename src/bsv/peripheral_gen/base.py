@@ -676,6 +676,7 @@ class PeripheralInterfaces(object):
             ('mk_ext_ifacedef', MkExtIface, 8),
             ('axi_addr_map', MkAxiAddrMap, 8),
             ('axi_fastaddr_map', MkAxiFastAddrMap, 8),
+            ('slowifdeclmux', MkSlowIfDeclMux, 8),
         ):
             fn = CallIfaceFn(self, kls, indent)
             setattr(self, fname, types.MethodType(fn, self))
@@ -719,13 +720,6 @@ class PeripheralInterfaces(object):
                 if not self.is_on_fastbus(name, i):
                     continue
                 ret.append(self.data[name].extifdecl(name, i))
-        return '\n'.join(li(list(filter(None, ret)), 8))
-
-    def slowifdeclmux(self, *args):
-        ret = []
-        for (name, count) in self.ifacecount:
-            for i in range(count):
-                ret.append(self.data[name].slowifdeclmux(name, i))
         return '\n'.join(li(list(filter(None, ret)), 8))
 
     def fastifdecl(self, *args):
@@ -962,6 +956,14 @@ class IfaceIter(object):
 
     def next(self):
         return self.__next__()
+
+class MkSlowIfDeclMux(IfaceIter):
+
+    def check(self, name, i):
+        return True
+
+    def item(self, name, i):
+        return self.ifaces.data[name].slowifdeclmux(name, i)
 
 
 class MkAxiFastAddrMap(IfaceIter):
