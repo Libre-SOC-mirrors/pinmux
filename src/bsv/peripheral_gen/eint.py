@@ -17,7 +17,7 @@ class eint(PBase):
     def axi_slave_idx(self, idx, name, ifacenum, typ):
         return ('', 0)
 
-    def axi_addr_map(self, name, ifacenum):
+    def axi_addr_map(self, name, ifacenum, typ=None):
         return ''
 
     def ifname_tweak(self, pname, typ, txt):

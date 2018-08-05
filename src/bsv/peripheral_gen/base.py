@@ -969,7 +969,7 @@ class MkSlowIfDeclMux(IfaceIter):
 class MkAxiFastAddrMap(IfaceIter):
 
     def check(self, name, i):
-        return not self.ifaces.is_on_fastbus(name, i)
+        return self.ifaces.is_on_fastbus(name, i)
 
     def item(self, name, i):
         return self.ifaces.data[name].axi_fastaddr_map(name, i)
