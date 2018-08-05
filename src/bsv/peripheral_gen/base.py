@@ -955,11 +955,7 @@ class PeripheralInterfaces(object):
     def _mk_clk_con(self, ctype):
         ret = []
         for (name, count) in self.ifacecount:
-            for i in range(count):
-                if self.is_on_fastbus(name, i):
-                    continue
-                txt = self.data[name]._mk_clk_con(name, i, ctype)
-                ret.append(txt)
+            ret += list(MkClkCon(self, name, count, ctype))
         return '\n'.join(li(list(filter(None, ret)), 8))
 
     def is_on_fastbus(self, name, i):
@@ -982,7 +978,7 @@ class IfaceIter(object):
 
     def __next__(self):
         while True:
-            if self.i > self.maxcount:
+            if self.i >= self.maxcount:
                 raise StopIteration
             if self.check(self.name, self.i):
                 res = self.item(self.name, self.i, *self.args)
@@ -1006,6 +1002,18 @@ class MkPinCon(IfaceIter):
 
     def item(self, name, i, typ):
         return self.ifaces.data[name]._mk_pincon(name, i, typ)
+
+class MkClkCon(IfaceIter):
+
+    def __init__(self, ifaces, name, count, *args):
+        self.ifaces = ifaces
+        IfaceIter.__init__(self, name, count, *args)
+
+    def check(self, name, i):
+        return not self.ifaces.is_on_fastbus(name, i)
+
+    def item(self, name, i, ctype):
+        return self.ifaces.data[name]._mk_clk_con(name, i, ctype)
 
 
 class PFactory(object):
