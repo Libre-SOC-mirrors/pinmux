@@ -4,13 +4,13 @@ from spec.base import PinSpec
 
 
 def pinspec():
-    pinbanks = {'A': 16,
-                'B': 28,
-                'C': 24,
-                'D': 24,
-                'E': 24,
-                'F': 10,
-                'G': 32,
+    pinbanks = {'A': (16, 4),
+                'B': (28, 4),
+                'C': (24, 4),
+                'D': (24, 4),
+                'E': (24, 4),
+                'F': (10, 4),
+                'G': (32, 4),
                 }
     fixedpins = {
         'DDR3': [
@@ -82,11 +82,11 @@ def pinspec():
                       'JTAG1': 'JTAG (same as JTAG0, JTAG_SEL=HIGH)',
                       'LCD': '24-pin RGB/TTL LCD',
                       'RG': 'RGMII Ethernet',
-                      'MMC': 'eMMC 1/2/4/8 pin',
+                      'EMMC': 'eMMC 1/2/4/8 pin',
                       'PWM': 'PWM (pulse-width modulation)',
-                      'SD0': 'SD/MMC 0',
-                      'SD1': 'SD/MMC 1',
-                      'SD2': 'SD/MMC 2',
+                      'MMC0': 'SD/MMC 0',
+                      'MMC1': 'SD/MMC 1',
+                      'MMC2': 'SD/MMC 2',
                       'SPI0': 'SPI (Serial Peripheral Interface) 0',
                       'SPI1': 'SPI (Serial Peripheral Interface) 1',
                       'QSPI': 'Quad SPI (Serial Peripheral Interface) 1',
@@ -171,7 +171,7 @@ def pinspec():
     ps.i2c("2", ('D', 19), 2)
     ps.uartfull("0", ('D', 0), 2)
     ps.uart("1", ('D', 21), 2)
-    ps.uart("2", ('D', 13), 2)
+    #ps.uart("2", ('D', 13), 2)
     ps.eint("", ('D', 19), 3, start=18, limit=4)
     ps.eint("", ('D', 23), 3, start=9, limit=1)
     ps.eint("", ('D', 13), 3, start=5, limit=4)
@@ -219,17 +219,17 @@ def pinspec():
     # VBUS_EN, OTG_ID etc. are all not included below, there is plenty
     # of spare GPIO.
 
-    eoma68 = ['B1:LCD/22', 'ULPI0/8', 'ULPI1', 'MMC', 'SD0', 'UART1',
-              'TWI2', 'SPI1', 'E2:SD1', ]
+    eoma68 = ['B1:LCD/22', 'ULPI0/8', 'ULPI1', 'EMMC', 'MMC0', 'UART1',
+              'TWI2', 'SPI1', 'E2:MMC1', ]
     eoma68_eint = ['EINT_16', 'EINT_17', 'EINT_18', 'EINT_19']
     eoma68_pwm = ['D1:PWM_2']
     descriptions = {
-        'MMC': 'internal (on Card)',
-        'SD0': 'user-facing: internal (on Card), multiplexed with JTAG0\n'
+        'EMMC': 'internal (on Card)',
+        'MMC0': 'user-facing: internal (on Card), multiplexed with JTAG0\n'
         'and UART0, for debug purposes',
         'TWI2': 'EOMA68-compliance: must be entirely free of devices.\n'
         'Address 0x51 used (externally) for EOMA68 EEPROM Id',
-        'E2:SD1': 'EOMA68-compliance',
+        'E2:MMC1': 'EOMA68-compliance',
         'SPI1': 'EOMA68-compliance',
         'UART1': 'EOMA68-compliance',
         'B1:LCD/22': 'EOMA68-compliance, 18-bit RGB/TTL LCD',
@@ -245,13 +245,13 @@ def pinspec():
     # Focus is on getting as many UARTs, SPIs and TWIs as possible.
     # OTG_ID (if to be used) would require dropping some functions in order
     # to free up GPIO.  LCD could be reduced to 15-bit (freeing 3).
-    # MMC could be reduced to 4-bit-wide, used as SD/MMC (freeing 4).
+    # EMMC could be reduced to 4-bit-wide, used as SD/MMC (freeing 4).
     # QSPI could be used in 1-bit (MOSI/MISO) mode (freeing up 2 more).
 
     industrial = ['D1:FB/17', 'E1:FB/8', 'B1:LCD/22', 'ULPI0/8', 'ULPI1/8',
-                  'MMC', 'B2:SD0',
+                  'EMMC', 'B2:MMC0',
                   'JTAG0', 'A3:UART0', 'E2:QUART1', 'C3:QUART0',
-                  'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'SPI1', 'QSPI', 'F2:SD2']
+                  'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'SPI1', 'QSPI', 'F2:MMC2']
     industrial_pwm = ['F2:PWM_0', 'F2:PWM_1', 'D1:PWM_2']
     industrial_eint = ['EINT_24', 'EINT_25', 'EINT_26', 'EINT_27',
                        'EINT_20', 'EINT_21', 'EINT_22', 'EINT_23']
@@ -268,10 +268,10 @@ def pinspec():
     # also possibility of freeing up FlexBus CS# with a little reorg.
 
     industrial = ['D1:FB/17', 'E1:FB/8', 'B2:SPI0', 'ULPI0/8', 'ULPI1/8',
-                  'MMC', 'B2:SD0',
+                  'EMMC', 'B2:MMC0',
                   'JTAG0',
                   'A3:UART0', 'E2:QUART1', 'C3:QUART0', 'B2:UART2', 'B2:UART1',
-                  'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'SPI1', 'QSPI', 'F2:SD2']
+                  'F2:TWI0', 'D2:TWI1', 'D2:TWI2', 'SPI1', 'QSPI', 'F2:MMC2']
     industrial_pwm = ['F2:PWM_0', 'F2:PWM_1', 'D1:PWM_2']
     industrial_eint = ['EINT_24', 'EINT_25', 'EINT_26', 'EINT_27',
                        'EINT_20', 'EINT_21', 'EINT_22', 'EINT_23']
@@ -287,11 +287,11 @@ def pinspec():
     # Smartphone / Tablet - basically the same thing
 
     tablet = ['B1:LCD/22', 'ULPI0/8', 'ULPI1/8',
-              'MMC', 'SD0',
+              'EMMC', 'MMC0',
               'F1:IIS',  # I2C Audio
               'TWI1',   # I2C Audio
               'E2:QUART1',  # WIFI/BT
-              'E2:SD1',   # WIFI
+              'E2:MMC1',   # WIFI
               'C3:QUART0',  # GPS
               'D2:UART1',
               'D2:UART2',
@@ -314,18 +314,18 @@ def pinspec():
     descriptions = {
         'B1:LCD/22':
         'RGB/TTL LCD, 800x480 or use SN75LVDS83b for up to 1440x900',
-        'MMC': 'eMMC: main internal storage',
+        'EMMC': 'eMMC: main internal storage',
         'ULPI0/8': 'USB-OTG, connect to ULPI OTG PHY (for charging)\n'
                    'as well as USB Host or USB Device',
         'ULPI1/8': 'USB2 Host, connect to ULPI PHY w/and 4-port USB2 Hub\n'
         'for example GL850G or FE1.1. '
         'Connects to 2/3/4G/LTE Modem, 2x USB-Camera (VC0345)',
-        'SD0': 'internal, multiplexed with JTAG0\n'
+        'MMC0': 'internal, multiplexed with JTAG0\n'
                'and UART0, for debug purposes',
         'F1:IIS': 'I2C Audio, connect to AC97 Audio IC',
         'TWI1': 'Connect to AC97 Audio IC',
         'E2:QUART1': 'Connect to BT on AP6234/AP6335',
-        'E2:SD1': 'Connect to WIFI on AP6234/AP6335',
+        'E2:MMC1': 'Connect to WIFI on AP6234/AP6335',
         'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
                 'Only actually needs MISO/MOSI, bootstrap loader v. small\n'
                 'Bootstrap loader checks eMMC, USB-OTG, SD/MMC, SPI, etc.',
@@ -368,11 +368,11 @@ def pinspec():
     # Laptop
 
     laptop = ['D1:FB/17', 'E1:FB/8', 'B1:LCD/22', 'ULPI0/8', 'ULPI1/8',
-              'MMC', 'SD0',
+              'EMMC', 'MMC0',
               'F1:IIS',  # I2C Audio
               'TWI1',   # I2C Audio
               'E2:QUART1',  # WIFI/BT
-              'E2:SD2',   # WIFI
+              'E2:MMC2',   # WIFI
               'D2:TWI2', 'QSPI']
     laptop_pwm = ['F2:PWM_0',  # LCD_BACKLIGHT
                   ]
@@ -386,22 +386,22 @@ def pinspec():
         '10/100 Ethernet PHY.',
         'E1:FB/8': 'FlexBus bus bits 8-15, needed to make a 16-bit bus width',
         'B1:LCD/22': 'RGB/TTL LCD, use SN75LVDS83b for '
-                     'LVDS or SSD2828 for MIPI,\n'
+                     'LVDS or SMMC2828 for MIPI,\n'
         'or a Chrontel CH7039, CH7038, CH7034 or CH7018 for dual\n'
         'display output (eDP/LVDS and HDMI/VGA) '
         'conversion.',
-        'MMC': 'eMMC: main internal storage',
+        'EMMC': 'eMMC: main internal storage',
         'ULPI0/8': 'USB-OTG, connect to ULPI OTG PHY (for charging)\n'
         'as well as USB Host or USB Device',
         'ULPI1/8': 'USB2 Host, connect to ULPI PHY w/and 4-port USB2 Hub\n'
         'for example GL850G or FE1.1. '
         'Connects to USB-Camera (VC0345 and 3x external USB Ports)',
-        'SD0': 'internal, multiplexed with JTAG0\n'
+        'MMC0': 'internal, multiplexed with JTAG0\n'
         'and UART0, for debug purposes',
         'F1:IIS': 'I2C Audio, connect to AC97 Audio IC',
         'TWI1': 'Connect to AC97 Audio IC',
         'E2:QUART1': 'Connect to BT on AP6234/AP6335',
-        'E2:SD2': 'Connect to WIFI on AP6234/AP6335',
+        'E2:MMC2': 'Connect to WIFI on AP6234/AP6335',
         'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
         'Only actually needs MISO/MOSI, bootstrap loader v. small\n'
         'Bootstrap loader checks eMMC, USB-OTG, SD/MMC, SPI, etc.\n'
@@ -423,13 +423,13 @@ def pinspec():
     # IoT
 
     iot = ['B1:LCD', 'ULPI1/8', 'ULPI0/8',
-           'MMC', 'SD0',
+           'EMMC', 'MMC0',
            'F1:IIS',  # I2C Audio
            #'TWI1',   # I2C Audio
            'C3:QUART0',  # HSPA UART
            'E2:QUART1',  # BT UART
            'C2:SPI1',  # HSPI SPI
-           'E2:SD2',   # WIFI
+           'E2:MMC2',   # WIFI
            'D3:TWI0',  # sensors CTP,
            'D2:TWI2', 'QSPI']
     iot_pwm = ['F2:PWM_0',  # LCD_BACKLIGHT
@@ -452,20 +452,20 @@ def pinspec():
                 ]
     descriptions = {
         'B1:LCD':
-        'RGB/TTL LCD, use SN75LVDS83b for LVDS or SSD2828 for MIPI,\n'
+        'RGB/TTL LCD, use SN75LVDS83b for LVDS or SMMC2828 for MIPI,\n'
         'or a Chrontel CH7039, CH7038, CH7034 or CH7018 for dual\n'
         'display output (eDP/LVDS and HDMI/VGA) '
         'conversion.',
-        'MMC': 'eMMC: main internal storage',
+        'EMMC': 'eMMC: main internal storage',
         'F1:IIS': 'I2C Audio, connect to AC97 Audio IC',
         'ULPI1/8': 'USB-OTG, connect to ULPI OTG PHY (for charging)\n'
                    'as well as USB Host or USB Device',
         'ULPI0/8': 'USB2 Host, connect to ULPI PHY',
-        'SD0': 'internal, multiplexed with JTAG0\n'
+        'MMC0': 'internal, multiplexed with JTAG0\n'
                'and UART0, for debug purposes',
         'C3:QUART0': 'Connect to HSPA UART',
         'E2:QUART1': 'Connect to BT UART',
-        'E2:SD2': 'Connect to WIFI',
+        'E2:MMC2': 'Connect to WIFI',
         'C2:SPI1': 'HSPA SPI',
         'QSPI': 'Boot Storage (connection to companion / debug / boot MCU)\n'
                 'Only actually needs MISO/MOSI, bootstrap loader v. small\n'
