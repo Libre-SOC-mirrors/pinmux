@@ -37,8 +37,8 @@
     sdmmc is never going to do anything other than switch this entire
     bank all at once.  so in this particular example, sdmmc returns:
 
-        (['CMD+', 'CLK+', 'D0*', 'D1*', 'D2*', 'D3*'] # pin names
-         ['D0*', 'D1*', 'D2*', 'D3*'])                # ganged bus names
+    (['CMD+', 'CLK+', 'D0*', 'D1*', 'D2*', 'D3*'] # pin names
+     ['D0*', 'D1*', 'D2*', 'D3*'])                # ganged bus names
 """
 
 

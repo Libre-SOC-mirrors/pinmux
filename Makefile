@@ -22,3 +22,9 @@ clean:
 
 pep8:
 	autopep8 -a -a -a --experimental -r -i src
+
+epydoc:
+	cd src && epydoc -o ../html -v --show-imports \
+            --inheritance listed --graph all \
+            pinmux_generator.py spec/ bsv/
+

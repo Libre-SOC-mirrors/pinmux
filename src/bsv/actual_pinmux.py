@@ -137,11 +137,12 @@ def init(p, ifaces):
         that column.
 
         text is outputted in the format:
-            x_out =
-                muxer_sel==0 ? a :
-                muxer_sel==1 ? b :
-                muxer_sel==2 ? 0 :
-                d
+
+        x_out =
+            muxer_sel==0 ? a :
+            muxer_sel==1 ? b :
+            muxer_sel==2 ? 0 :
+            d
 
         last line doesn't need selector-logic, obviously.
 
