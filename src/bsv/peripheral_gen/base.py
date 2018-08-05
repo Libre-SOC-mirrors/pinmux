@@ -953,7 +953,8 @@ class PeripheralInterfaces(object):
 
 class IfaceIter(object):
 
-    def __init__(self, name, count, *args):
+    def __init__(self, ifaces, name, count, *args):
+        self.ifaces = ifaces
         self.i = 0
         self.name = name
         self.maxcount = count
@@ -981,10 +982,6 @@ class IfaceIter(object):
 
 class MkConnection(IfaceIter):
 
-    def __init__(self, ifaces, name, count, *args):
-        self.ifaces = ifaces
-        IfaceIter.__init__(self, name, count, *args)
-
     def check(self, name, i):
         return not self.ifaces.is_on_fastbus(name, i)
 
@@ -997,10 +994,6 @@ class MkConnection(IfaceIter):
 
 class MkExtIface(IfaceIter):
 
-    def __init__(self, ifaces, name, count, *args):
-        self.ifaces = ifaces
-        IfaceIter.__init__(self, name, count, *args)
-
     def check(self, name, i):
         return not self.ifaces.is_on_fastbus(name, i)
 
@@ -1010,10 +1003,6 @@ class MkExtIface(IfaceIter):
 
 class MkPinCon(IfaceIter):
 
-    def __init__(self, ifaces, name, count, *args):
-        self.ifaces = ifaces
-        IfaceIter.__init__(self, name, count, *args)
-
     def check(self, name, i):
         return not self.ifaces.is_on_fastbus(name, i)
 
@@ -1022,10 +1011,6 @@ class MkPinCon(IfaceIter):
 
 
 class MkClkCon(IfaceIter):
-
-    def __init__(self, ifaces, name, count, *args):
-        self.ifaces = ifaces
-        IfaceIter.__init__(self, name, count, *args)
 
     def check(self, name, i):
         return not self.ifaces.is_on_fastbus(name, i)
