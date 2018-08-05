@@ -39,11 +39,11 @@ def pinspec():
                       'JTAG': 'JTAG (JTAG_SEL=HI/LO)',
                       'LCD': '24-pin RGB/TTL LCD',
                       'RG': 'RGMII Ethernet',
-                      'MMC': 'eMMC 1/2/4/8 pin',
+                      'EMMC': 'eMMC 1/2/4/8 pin',
                       'PWM': 'PWM (pulse-width modulation)',
-                      'SD0': 'SD/MMC 0',
-                      'SD1': 'SD/MMC 1',
-                      'SD2': 'SD/MMC 2',
+                      'MMC0': 'SD/MMC 0',
+                      'MMC1': 'SD/MMC 1',
+                      'MMC2': 'SD/MMC 2',
                       'MSPI0': 'SPI (Serial Peripheral Interface) Master 0',
                       'MSPI1': 'SPI (Serial Peripheral Interface) Master 1',
                       'MQSPI': 'Quad SPI Master 0',
@@ -107,6 +107,7 @@ def pinspec():
     }
     ps.gpio("", ('B', 0), 0, 0, 18)
     ps.flexbus1("", ('B', 0), 1, spec=flexspec)
+    ps.emmc("", ('B', 0), 3)
 
     ps.flexbus2("", ('C', 0), 0)
 
@@ -120,16 +121,16 @@ def pinspec():
     # using "BM:Name".  Pins are removed in-order as listed from
     # lists (interfaces, EINTs, PWMs) from available pins.
 
-    i_class = ['ULPI0/8', 'ULPI1', 'MMC', 'SD0', 'UART0',
-               'TWI0', 'MSPI0', 'B3:SD1', ]
+    i_class = ['ULPI0/8', 'ULPI1', 'EMMC', 'MMC0', 'UART0',
+               'TWI0', 'MSPI0', 'B3:MMC1', ]
     i_class_eint = ['EINT_0', 'EINT_1', 'EINT_2', 'EINT_3', 'EINT_4']
     i_class_pwm = ['B2:PWM_0']
     descriptions = {
-        'MMC': 'internal (on Card)',
+        'EMMC': 'internal (on Card)',
         'SD0': 'user-facing: internal (on Card), multiplexed with JTAG\n'
         'and UART2, for debug purposes',
         'TWI2': 'I2C.\n',
-        'E2:SD1': '',
+        'E2:MMC1': '',
         'MSPI1': '',
         'UART0': '',
         'B1:LCD/22': '18-bit RGB/TTL LCD',

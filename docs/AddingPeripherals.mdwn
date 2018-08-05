@@ -1,10 +1,15 @@
 # How to add a new peripheral
 
 This document describes the process of adding a new peripheral to
-the pinmux and auto-generator, through a worked example, adding
-SDRAM.
+the pinmux and auto-generator, through worked examples, adding
+SDRAM and eMMC.  First to be covered is SDMMC
 
-# Creating the specifications
+# Adding a Fast Peripheral
+
+This section covers how to add a peripheral that is intended to go
+onto the "Fast" peripheral bus.
+
+## Creating the specifications
 
 The tool is split into two halves that are separated by tab-separated
 files.  The first step is therefore to add a function that defines
@@ -140,7 +145,7 @@ subsets of their names.  i.e two interfaces, one named "SD" which is
 shorthand for SDMMC and another named "SDRAM" may *not* be added:
 the first has to be the full "SDMMC" or renamed to "MMC".
 
-# Adding the peripheral to a chip's pinmux specification
+## Adding the peripheral to a chip's pinmux specification
 
 Next, we add the peripheral to an actual chip's specification.  In this
 case it is to be added to i\_class, so we open src/spec/i\_class.py.  The
@@ -226,7 +231,7 @@ the pinmux / autogenerator tool.  It allows peripherals to be assessed
 for viability prior to actually committing the engineering resources
 to their deployment.
 
-# Adding the code auto-generators.
+## Adding the code auto-generators.
 
 With the specification now created and well-defined (and now including
 the SDRAM interface), the next completely separate phase is to auto-generate
@@ -296,7 +301,7 @@ straight-muxing for outputs, however in this instance, a deliberate
 pragmatic decision is being taken not to put 92 pins of 133mhz+ signalling
 through muxing.
 
-## Making the peripheral a "MultiBus" peripheral
+### Making the peripheral a "MultiBus" peripheral
 
 The sheer number of signals coming out of PeripheralSideSDR is so unwieldy
 that something has to be done.  We therefore create a "MultiBus" interface
@@ -372,7 +377,7 @@ as 64-bit, ad is identified as 13-bit, ba as 2 and dqm as 8.
 
       endinterface
 
-## Adding the peripheral
+### Adding the peripheral
 
 In examining the slow\_peripherals.bsv file, there should at this stage
 be no sign of an SDRAM peripheral having been added, at all.  This is
@@ -429,7 +434,7 @@ is directly connected to the relevant IO pad cells, so that the *actual*
 peripheral may be declared in the "fast" fabric and connected up to the
 relevant and required "fast" bus.
 
-## Connecting in the fabric
+### Connecting in the fabric
 
 Now we can begin the process of systematically inserting the correct
 "voodoo magic" incantations that, as far as this auto-generator tool is
@@ -688,7 +693,7 @@ connections to what was formerly named sdram, we may remove the mkConnections
 that drop sdram.axi4\_slave\_sdram and its associated cntrl reg from
 the soc\_template.bsv file.
 
-## Connecting up the pins
+### Connecting up the pins
 
 We are still not done!  It is however worth pointing out that if this peripheral
 were not wired into the pinmux, we would in fact be finished.  However there
@@ -753,7 +758,7 @@ match up with the "InterfaceMultiBus" class from the specification side,
 where pin entries with numerically matching names were "grouped" into single
 multi-bit declarations.
 
-## Adjusting the BSV Interface to a get/put style
+### Adjusting the BSV Interface to a get/put style
 
 For various reasons, related to BSV not permitting wires to be connected
 back-to-back inside the pinmux code, a get/put style of interface had to
@@ -835,7 +840,7 @@ set of interfaces exposed for inter-connection by the auto-generator is
 related exclusively to the actual pins.  Resolution of these two issues
 is currently outside of the scope of this document.
 
-## Clock synchronisation
+### Clock synchronisation
 
 Astute readers, if their heads have not exploded by this point, will
 have noticed earlier that the SDRAM instance was declared with an entirely
@@ -892,6 +897,28 @@ Interestingly, if *actual* clock synchronisation were ever to be needed,
 it could easily be taken care of with relatively little extra work.  However,
 it is worth emphasising that the pinmux is *entirely* unclocked zero-reset
 combinatorial logic.
+
+# Adding a "Slow" Peripheral
+
+This example will be cheating by cut/paste copying an existing very
+similar interface, SD/MMC.  The SD/MMC interface is presently a "dummy"
+that will be extended later.  However given that the peripherals are
+so very very similar, common base classes will be used, in a style that
+has also been used in SPI/QSPI and also UART.
+
+## Adding the pin specifications
+
+Looking at src/spec/pinfunctions.py we find that an emmc function actually
+already exists.  So unlike sdram, there are no modifications to be made.
+We can check that it works by creating an example, say in src/spec/i\_class.py
+by adding an emmc interface to Bank B:
+
+    ps.gpio("", ('B', 0), 0, 0, 18)
+    ps.flexbus1("", ('B', 0), 1, spec=flexspec)
+    ps.emmc("", ('B', 0), 3)                       <---
+
+    ps.flexbus2("", ('C', 0), 0)
+
 
 # Conclusion
 
