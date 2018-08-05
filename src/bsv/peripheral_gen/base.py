@@ -921,11 +921,7 @@ class PeripheralInterfaces(object):
     def mk_ext_ifacedef(self):
         ret = []
         for (name, count) in self.ifacecount:
-            for i in range(count):
-                if self.is_on_fastbus(name, i):
-                    continue
-                txt = self.data[name].mk_ext_ifacedef(name, i)
-                ret.append(txt)
+            ret += list(MkExtIface(self, name, count))
         return '\n'.join(li(list(filter(None, ret)), 8))
 
     def mk_plic(self):
@@ -965,6 +961,7 @@ class PeripheralInterfaces(object):
             return iname not in self.fastbus
         return iname in self.fastbus
 
+
 class IfaceIter(object):
 
     def __init__(self, name, count, *args):
@@ -991,6 +988,19 @@ class IfaceIter(object):
         return self.__next__()
 
 
+class MkExtIface(IfaceIter):
+
+    def __init__(self, ifaces, name, count, *args):
+        self.ifaces = ifaces
+        IfaceIter.__init__(self, name, count, *args)
+
+    def check(self, name, i):
+        return not self.ifaces.is_on_fastbus(name, i)
+
+    def item(self, name, i):
+        return self.ifaces.data[name].mk_ext_ifacedef(name, i)
+
+
 class MkPinCon(IfaceIter):
 
     def __init__(self, ifaces, name, count, *args):
@@ -1002,6 +1012,7 @@ class MkPinCon(IfaceIter):
 
     def item(self, name, i, typ):
         return self.ifaces.data[name]._mk_pincon(name, i, typ)
+
 
 class MkClkCon(IfaceIter):
 
