@@ -171,7 +171,7 @@ def pinspec():
     ps.i2c("2", ('D', 19), 2)
     ps.uartfull("0", ('D', 0), 2)
     ps.uart("1", ('D', 21), 2)
-    #ps.uart("2", ('D', 13), 2)
+    ps.uart("2", ('D', 12), 2)
     ps.eint("", ('D', 19), 3, start=18, limit=4)
     ps.eint("", ('D', 23), 3, start=9, limit=1)
     ps.eint("", ('D', 13), 3, start=5, limit=4)
