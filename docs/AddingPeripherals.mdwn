@@ -1168,6 +1168,16 @@ using the following commands:
     $ ./bin/gitmoduleupdate.sh
     $ make
 
+As the compilation of the soc can take some time, it is possible to use
+the Makefile.peripherals to compile *only* the slow\_peripherals.bsv
+file (which we did not do with the sdram case because sdram is a fast
+peripheral).  This would be achieved with the following commands:
+
+    $ make spec_to_pinmux
+    $ make pinmux_to_bsv
+    $ cd build/i_class/bsv_src
+    $ make -f Makefile.peripherals gen_verilog
+
 # Conclusion
 
 This is not a small project, by any means.  However the payoff in saved
