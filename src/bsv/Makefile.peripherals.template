@@ -25,6 +25,7 @@ BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/pwm
 BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/qspi
 BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/spi
 BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/sdmmc
+BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/emmc
 BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/flexbus
 BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/jtagdtm
 BSVINCDIR:= $(BSVINCDIR):../../../shakti-peripherals/src/peripherals/uart

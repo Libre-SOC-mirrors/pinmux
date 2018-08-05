@@ -1123,6 +1123,36 @@ The last remaining task will therefore be to create an interim emmc
 
 ## Creating the dummy emmc peripheral
 
+Adding the actual peripheral is done in a different repository,
+shakti-peripherals, which can be cloned with:
+
+    $ git clone gitolite3@libre-riscv.org:shakti-peripherals.git
+
+or public:
+
+    $ git clone git://libre-riscv.org/shakti-peripherals.git
+
+Here, what we will do is take a straight copy of
+src/peripherals/sdmmc/sdcard\_dummy.bsv and call it
+src/peripherals/emmc/emmc\_dummy.bsv.  Then replace all occurrences
+of "sdcard" with "emmc" and also update the SDBUSWIDTH from 4 to 8.
+Whilst this appears wasteful it is by far the simplest and quickest
+way to get working code, that should definitely, definitely be
+re-factored later.
+
+The next stage is to return to the pinmux repository and add the
+import of the new emmc subdirectory to the BSVINCDIR in both
+src/bsv/Makefile.template and Makefile.peripherals.template:
+
+    BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/spi
+    BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/sdmmc
+    BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/emmc
+    BSVINCDIR:= $(BSVINCDIR):../../../src/peripherals/src/peripherals/flexbus
+
+Really these should also be auto-generated.  Testing through compiling
+can now take place.
+
+
 # Conclusion
 
 This is not a small project, by any means.  However the payoff in saved
