@@ -406,7 +406,7 @@ at the bottom of src/bsv/peripheral\_gen/base.py, in the "PFactory"
 
     for k, v in {'uart': uart,
                  'rs232': rs232,
-                 'sdr': sdram,
+                 'sdr': sdram,    <--
                  'twi': twi,
                  'quart': quart,
 
@@ -988,7 +988,7 @@ fulfilled.  Note that we did *not* declare in PinSpec that this
 peripheral is to be added onto the fastbus, as by default peripherals
 are added to a single AXI4-Lite interface.
 
-## Adding the code auto-generators.
+## Adding the pinmux code auto-generator
 
 The next phase begins with adding class support to auto-generate the pinmux
 code.  Starting with the following command:
@@ -1059,6 +1059,69 @@ Success!  The class InterfaceSD appears to be sufficiently generic that
 it could understand that it had been passed 8-pins worth of data with
 exactly the same names, rather than 4.  This is encouraging in the sense
 that re-using the SD/MMC BSV generation code should also be as easy.
+
+## Adding the slow peripheral code-generator
+
+So this time we will try cut/pasting src/bsv/peripheral\_gen/sdmmc.py
+to create a base class, MMCBase.  The only two common functions are
+pinname\_out and \_mk\_pincon.
+
+class MMCBase(PBase):
+
+    def pinname_out(self, pname):
+        if pname in ['cmd', 'clk']:
+            return pname
+        return ''
+
+    def _mk_pincon(self, name, count, typ):
+        ...
+        ...
+
+Then, the sdmmc class is modified to inherit it, this time cutting *out*
+all but those two functions:
+
+    from bsv.peripheral\_gen.mmcbase import MMCBase  <--
+
+    class sdmmc(MMCBase):    <--
+
+And at the same time we create an emmc.py file where all occurrences of
+sdmmc are replaced with emmc:
+
+    class emmc(MMCBase):
+
+        def slowimport(self):
+            return "import emmc_dummy              :: *;"
+
+        ...
+        ...
+
+        def _mk_connection(self, name=None, count=0):
+            return "emmc{0}.slave"
+
+Finally, to use it, just as with sdram, we add the new peripheral
+at the bottom of src/bsv/peripheral\_gen/base.py, in the "PFactory"
+(Peripheral Factory) class:
+
+    from gpio import gpio
+    from rgbttl import rgbttl
+    from flexbus import flexbus
+    from emmc import emmc        <--
+
+    for k, v in {'uart': uart,
+                 'rs232': rs232,
+                 'emmc': emmc,   <--
+
+For the actual auto-generation phase, this really should be all that's
+needed.  Re-running the code-generator we can examine the auto-generated
+slow\_peripherals.bsv file and can confirm that yes, an "import emmc\_dummy"
+has been added, that an mmc0 instance has been created, that it is added
+to the slave fabric, and that its cmd, clk and in/out/out\_en are all
+connected up.
+
+The last remaining task will therefore be to create an interim emmc
+"dummy" BSV file.
+
+## Creating the dummy emmc peripheral
 
 # Conclusion
 

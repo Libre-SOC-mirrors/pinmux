@@ -985,6 +985,7 @@ class PFactory(object):
         from uart import uart
         from quart import quart
         from sdmmc import sdmmc
+        from emmc import emmc
         from pwm import pwm
         from eint import eint
         from rs232 import rs232
@@ -1010,6 +1011,7 @@ class PFactory(object):
                      'pwm': pwm,
                      'eint': eint,
                      'mmc': sdmmc,
+                     'emmc': emmc,
                      'jtag': jtag,
                      'lcd': rgbttl,
                      'fb': flexbus,
