@@ -446,7 +446,7 @@ else"""
         return '\n'.join(ret)
 
     def mk_connection(self, name, count, fabricname, typ, name_override=None):
-        if name_override: # needed for GPIO
+        if name_override:  # needed for GPIO
             name = name_override
         print "PBase mk_conn", name, count
         ret = []
@@ -670,11 +670,11 @@ class PeripheralInterfaces(object):
         self.fastbusmode = False
 
         for (fname, kls, indent) in (
-                        ('_mk_connection', MkConnection, 8),
-                        ('_mk_pincon', MkPinCon, 4),
-                        ('_mk_clk_con', MkClkCon, 8),
-                        ('mk_ext_ifacedef', MkExtIface, 8),
-                        ):
+            ('_mk_connection', MkConnection, 8),
+            ('_mk_pincon', MkPinCon, 4),
+            ('_mk_clk_con', MkClkCon, 8),
+            ('mk_ext_ifacedef', MkExtIface, 8),
+        ):
             fn = CallIfaceFn(self, kls, indent)
             setattr(self, fname, types.MethodType(fn, self))
 
@@ -978,6 +978,7 @@ class IfaceIter(object):
     def next(self):
         return self.__next__()
 
+
 class MkConnection(IfaceIter):
 
     def __init__(self, ifaces, name, count, *args):
@@ -990,8 +991,9 @@ class MkConnection(IfaceIter):
     def item(self, name, i, fabric, typ, master):
         if master:
             return self.ifaces.data[name].mk_master_connection(name,
-                                i, fabric, typ)
+                                                               i, fabric, typ)
         return self.ifaces.data[name].mk_connection(name, i, fabric, typ)
+
 
 class MkExtIface(IfaceIter):
 
