@@ -851,7 +851,7 @@ class PeripheralInterfaces(object):
             for i in range(count):
                 if self.is_on_fastbus(name, i):
                     continue
-                res = self.data[name].mk_cellconn(cellcount, name, i)
+                res = self.data[name].mk_cellconn(name, i, cellcount)
                 if not res:
                     continue
                 (txt, cellcount) = res
@@ -868,12 +868,8 @@ class PeripheralInterfaces(object):
     def _mk_pincon(self, typ):
         ret = []
         for (name, count) in self.ifacecount:
-            for i in range(count):
-                if self.is_on_fastbus(name, i):
-                    continue
-                txt = self.data[name]._mk_pincon(name, i, typ)
-                ret.append(txt)
-        return '\n'.join(li(list(filter(None, ret)), 4))
+            ret += list(MkPinCon(self, name, count, typ))
+        return '\n'.join(li(list(ret), 4))
 
     def mk_dma_irq(self):
         ret = []
@@ -972,6 +968,44 @@ class PeripheralInterfaces(object):
         if self.fastbusmode:
             return iname not in self.fastbus
         return iname in self.fastbus
+
+class IfaceIter(object):
+
+    def __init__(self, name, count, *args):
+        self.i = 0
+        self.name = name
+        self.maxcount = count
+        self.args = args
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            if self.i > self.maxcount:
+                raise StopIteration
+            if self.check(self.name, self.i):
+                res = self.item(self.name, self.i, *self.args)
+                if res:
+                    self.i += 1
+                    return res
+            self.i += 1
+
+    def next(self):
+        return self.__next__()
+
+
+class MkPinCon(IfaceIter):
+
+    def __init__(self, ifaces, name, count, *args):
+        self.ifaces = ifaces
+        IfaceIter.__init__(self, name, count, *args)
+
+    def check(self, name, i):
+        return not self.ifaces.is_on_fastbus(name, i)
+
+    def item(self, name, i, typ):
+        return self.ifaces.data[name]._mk_pincon(name, i, typ)
 
 
 class PFactory(object):

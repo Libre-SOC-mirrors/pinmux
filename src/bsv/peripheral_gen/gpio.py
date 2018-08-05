@@ -63,7 +63,7 @@ class gpio(PBase):
             return name[3:]
         return name[4:]
 
-    def mk_cellconn(self, cellnum, name, count):
+    def mk_cellconn(self, name, count, cellnum):
         ret = []
         bank = self.mksuffix(name, count)
         txt = "pinmux.mux_lines.cell{0}_mux(mux{1}.mux_config.mux[{2}]);"
