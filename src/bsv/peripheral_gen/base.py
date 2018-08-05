@@ -149,7 +149,7 @@ class PBase(MMapConfig):
         if cfgstart:
             start = cfgstart
             end = start + offs - 1
-            offs = 0 # don't do contiguous addressing
+            offs = 0  # don't do contiguous addressing
         else:
             end = start + offs - 1
         bname = self.axibase(name, ifacenum, idx)

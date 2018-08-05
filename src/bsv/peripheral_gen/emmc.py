@@ -14,4 +14,3 @@ class emmc(MMCBase):
 
     def _mk_connection(self, name=None, count=0):
         return "emmc{0}.slave"
-
