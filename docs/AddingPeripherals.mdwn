@@ -1178,6 +1178,17 @@ peripheral).  This would be achieved with the following commands:
     $ cd build/i_class/bsv_src
     $ make -f Makefile.peripherals gen_verilog
 
+## Summary
+
+This particular example has been something of a "cheat".  The similarity
+between SD/MMC and eMMC is so high - the only differences being the name
+of the interface and the number of data pins - that it was simple and
+straightforward to re-use significant amounts of code, cut/paste style,
+carrying out some re-factoring where needed.
+
+It does however have the advantage of being quite a short tutorial, that
+illustrates key aspects of adding slow bus peripherals.
+
 # Conclusion
 
 This is not a small project, by any means.  However the payoff in saved
