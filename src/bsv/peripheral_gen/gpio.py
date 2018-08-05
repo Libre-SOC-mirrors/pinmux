@@ -43,12 +43,13 @@ class gpio(PBase):
         return "MUX#(%d) mux{0} <- mkmux('b%s);\n" % (size, dflt) + \
                "GPIO#(%d) gpio{0} <- mkgpio();" % size
 
-    def mk_connection(self, count, fabricname, typ):
+    def mk_connection(self, name, count, fabricname, typ):
         print "GPIO mk_conn", self.name, count
         res = []
         dname = self.mksuffix(self.name, count)
         for i, n in enumerate(['gpio' + dname, 'mux' + dname]):
-            res.append(PBase.mk_connection(self, count, fabricname, typ, n))
+            res.append(PBase.mk_connection(self, name, count, fabricname, typ,
+                                           name_override=n))
         return '\n'.join(res)
 
     def _mk_connection(self, name=None, count=0):

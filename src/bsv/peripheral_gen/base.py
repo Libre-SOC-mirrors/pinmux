@@ -431,11 +431,9 @@ else"""
         con = con.format(count, aname)
         return txt.format(con, aname, fabricname)
 
-    def mk_master_connection(self, count, fabricname, typ, name=None):
+    def mk_master_connection(self, name, count, fabricname, typ):
         if not self.has_axi_master():
             return ''
-        if name is None:
-            name = self.name
         print "PBase mk_master_conn", self.name, count
         aname = self.axi_master_name(name, count, typ)
         ret = []
@@ -447,10 +445,10 @@ else"""
                                                    fabricname))
         return '\n'.join(ret)
 
-    def mk_connection(self, count, fabricname, typ, name=None):
-        if name is None:
-            name = self.name
-        print "PBase mk_conn", self.name, count
+    def mk_connection(self, name, count, fabricname, typ, name_override=None):
+        if name_override: # needed for GPIO
+            name = name_override
+        print "PBase mk_conn", name, count
         ret = []
         connections = self._mk_connection(name, count)
         if not isinstance(connections, list):
@@ -823,16 +821,8 @@ class PeripheralInterfaces(object):
     def _mk_connection(self, fabric, typ, indent, master, *args):
         ret = []
         for (name, count) in self.ifacecount:
-            for i in range(count):
-                if self.is_on_fastbus(name, i):
-                    continue
-                if master:
-                    txt = self.data[name].mk_master_connection(i, fabric, typ)
-                else:
-                    txt = self.data[name].mk_connection(i, fabric, typ)
-                if name == 'gpioa':
-                    print "txt", txt
-                ret.append(txt)
+            ret += list(MkConnection(self, name, count,
+                            fabric, typ, master, *args))
         return '\n'.join(li(list(filter(None, ret)), indent))
 
     def mk_master_connection(self, *args):
@@ -978,6 +968,7 @@ class IfaceIter(object):
             if self.i >= self.maxcount:
                 raise StopIteration
             if self.check(self.name, self.i):
+                #print self.item, self.args
                 res = self.item(self.name, self.i, *self.args)
                 if res:
                     self.i += 1
@@ -987,6 +978,20 @@ class IfaceIter(object):
     def next(self):
         return self.__next__()
 
+class MkConnection(IfaceIter):
+
+    def __init__(self, ifaces, name, count, *args):
+        self.ifaces = ifaces
+        IfaceIter.__init__(self, name, count, *args)
+
+    def check(self, name, i):
+        return not self.ifaces.is_on_fastbus(name, i)
+
+    def item(self, name, i, fabric, typ, master):
+        if master:
+            return self.ifaces.data[name].mk_master_connection(name,
+                                i, fabric, typ)
+        return self.ifaces.data[name].mk_connection(name, i, fabric, typ)
 
 class MkExtIface(IfaceIter):
 
