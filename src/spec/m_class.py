@@ -104,11 +104,11 @@ def pinspec():
 
     ps = PinSpec(pinbanks, fixedpins, function_names,
                  {'lcd': {'bus': 'fastbus',
-                  'mmap': [['Cfg', 0x20000, 10]
-                           ]},
+                          'mmap': [['Cfg', 0x20000, 10]
+                                   ]},
                   'jtag': {'bus': 'fastbus'},
                   'fb': {'bus': 'fastbus'},
-                 })
+                  })
 
     # Bank A, 0-15
     ps.gpio("", ('A', 0), 0, 0, 16)
@@ -326,7 +326,7 @@ def pinspec():
         'for example GL850G or FE1.1. '
         'Connects to 2/3/4G/LTE Modem, 2x USB-Camera (VC0345)',
         'MMC0': 'internal, multiplexed with JTAG0\n'
-               'and UART0, for debug purposes',
+        'and UART0, for debug purposes',
         'F1:IIS': 'I2C Audio, connect to AC97 Audio IC',
         'TWI1': 'Connect to AC97 Audio IC',
         'E2:QUART1': 'Connect to BT on AP6234/AP6335',
@@ -467,7 +467,7 @@ def pinspec():
                    'as well as USB Host or USB Device',
         'ULPI0/8': 'USB2 Host, connect to ULPI PHY',
         'MMC0': 'internal, multiplexed with JTAG0\n'
-               'and UART0, for debug purposes',
+        'and UART0, for debug purposes',
         'C3:QUART0': 'Connect to HSPA UART',
         'E2:QUART1': 'Connect to BT UART',
         'E2:MMC2': 'Connect to WIFI',
