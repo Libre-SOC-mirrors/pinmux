@@ -347,9 +347,8 @@ else"""
         else:
             spc = ck
             ck = self.get_clk_spc(ctype)
-        template = """\
-Ifc_sync#({0}) {1}_sync <-mksyncconnection(
-            {2}, {3});"""
+        template = "Ifc_sync#({0}) {1}_sync <-mksyncconnection(\n" + \
+                   "              {2}, {3});"
         for p in self.peripheral.pinspecs:
             typ = p['type']
             pname = p['name']
@@ -390,9 +389,8 @@ Ifc_sync#({0}) {1}_sync <-mksyncconnection(
         else:
             spc = ck
             ck = self.get_clk_spc(ctype)
-        template = """\
-Ifc_sync#({0}) {1}_sync <-mksyncconnection(
-            {2}, {3});"""
+        template = "Ifc_sync#({0}) {1}_sync <-mksyncconnection(\n" + \
+                   "            {2}, {3});"""
 
         n_ = "{0}{1}".format(name, count)
         n_ = '{0}_{1}'.format(n_, pname)
