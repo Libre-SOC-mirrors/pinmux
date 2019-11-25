@@ -1,39 +1,77 @@
-# PinMux Tool
+* Existing pinmux.bsv for testing purpose:
+```
+cd src/test_bsv
+make
+```
 
-This tools currently generates a BSV code which implements the pin-muxing logic between peripheral ports. 
+* Pinmux generator help:
+```
+python src/pinmux_generator.py -h
+```
 
-Currently the code supports the following peripherals:
-1. UART (simple RX/TX type)
-2. SPI (single spi)
+* To create a microtest directory and bsv files:
+```
+python src/pinmux_generator.py -v -o microtest -s microtest
+python src/pinmux_generator.py -v -o microtest
+```
 
-#### TODO:
-1. Add more peripheral definitions (only IO information required).
-2. Fix a template to specify the user-defined muxing.
-3. Provide support for dedicated pins.
-4. Provide scheme to prevent short-circuit when inputs are mapped to multiple IOs.
+* To create a minitest directory and bsv files:
+```
+python src/pinmux_generator.py -v -o minitest -s minitest
+python src/pinmux_generator.py -v -o minitest
+```
+
+* Existing specifications in 'src/spec/' : m_class, i_class, c_class, microtest, minitest
+
+* Testing pinmux using cocotb:
+```
+cd src/test_bsv/tests
+```
+---
+
+### Steps to generate **custom pinmux.bsv** :
+1 . Let's say that the pinmap which we wish to implement is :
+![sample_pinmap](./figure/sample_pinmap.jpg) 
+
+The default order for UART and SPI with pinmux repository is :
+```
+	* UART : tx -> rx
+```
+```
+	* MSPI: ck -> nss -> io0 -> io1
+```
+After generating minitest, this order can be observed in uart.txt, mspi.txt, etc. 
+
+2 . We will rearrange the order of pins of our pinmap to confine to default  order : 
+After reordering, it will look like: 
+![correct_order](./figure/ordered.png)
+
+3. How to specify this table to generate pinmux.bsv? 
+In pinmux repository, we write the specifications in 'src/spec' directory, like default minitest.py.
+For this case, we will simply modify original minitest.py to suit our table. 
+	* We have only one bank here with 16 rows. So : 'A' : (16,4) in pinbanks. 
+	* In function names, keep only the one which are present in table and update the id as per table. 
+	* Specifying entry in the table: 
+	1) ps.gpio("" ,  ('A', 12) , 0 , 7 , 2 ) 
+	There are 5 arguments passed. 2nd argument specifies bank and pin number.  3rd entry specifies the mux select line (which column?). 4th entry specifies the GPIO id. 5th entry specifies the collection of entries. Here, this will reflect to (GPIOA A7) at pin number 12, and  (GPIOA A8) at pin number 13.
+	
+	2) ps.mspi("2", ('A', 7), 1)
+	 There are 4 arguments passed. 1st argument specifies the id of MSPI. 2nd argument specifies the bank and pin number. 3rd argument specifies the mux selection line. Here this will reflect as: 
+	 pin number 		mux1
+	 7				A MSPI2 CK
+	 8				A MSPI2 NSS
+	 9				A MSPI2 IO0
+	 10				A MSPI2 IO1
+	 
+	 3) ps.uart(" 3 ", ( 'A', 2 ) , 1 )
+	 Here, argument meaning is same as (2)
+	 
+	 4) ps.pwm("" , ('A', 10) ,  2 ,  5 , 1 )
+	 Here, argument meaning is same as (1)
+
+	 
+The complete python file for this table is : src/spec/minitest.py .
+Original minitest: src/spec/minitest_old.py
 
 
-## REQUIREMENTS:
-	1. Python2 to generate BSV code.
-	2. BSV compiler to generate verilog code from BSV code.
 
-## Quick Start
-
-Set parameters such as number of UARTs, SPIs, IO Cells, etc. in the file src/params.py . 
-
-    $ make gen_pinmux
-
-The above command will generate the bsv code (bsv_src/pinmux.bsv). This bsv code implements the pin-muxing logic as specified by the user (currently the pin-muxing logic is not implemented completely)
-
-    $ make gen_verilog
-The above command can be used to generate the verilog from the bsv file. It requires the presence of a BSV compiler. (see:[Bluespec](https://www.bluespec.com))    
-
-
-    $make
-The above command will execute both: gen_pinmux and gen_verilog .
-
-## Steps to Add peripheral interfaces to PinMux
-
-1.	Create interface declaration for the peripheral to be added. Remember these are interfaces defined for the pinmux and hence will be opposite to those defined at the peripheral. For eg. the output TX from the UART will be input (method Action) for the pinmux. These changes will have to be done in src/interface_decl.py
-2. Define the wires that will be required to transfer data from the peripheral interface to the IO cell and vice-versa. Create a mkDWire for each input/output between the the peripheral and the pinmux. Also create an implicit wire of GenericIOType	for each cell that can be connected to a each bit from the peripheral. These changes will have to be done in src/wire_def.py
-3. Create the definitions for each of the methods defined in Step-1. Use the wires from Step-2 to transfer data to/from each method. These changes will have to be done in src/interface_decl.py

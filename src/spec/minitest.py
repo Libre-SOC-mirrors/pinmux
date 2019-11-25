@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# aardonyx file
 from spec.base import PinSpec
 
 from spec.ifaceprint import display, display_fns, check_functions
@@ -8,8 +8,7 @@ from spec.ifaceprint import display_fixed
 
 def pinspec():
     pinbanks = {
-        'A': (28, 4),
-        'B': (4, 1),
+        'A': (16, 4),
     }
     fixedpins = {
         'CTRL_SYS': [
@@ -31,58 +30,45 @@ def pinspec():
             'VDD_GPIOB',
             'GND_GPIOB',
         ]}
-    function_names = {'EINT': 'External Interrupt',
-                      'FB': 'MC68k FlexBus',
-                      'IIS': 'I2S Audio',
-                      'JTAG': 'JTAG (JTAG_SEL=HI/LO)',
-                      'LCD': '24-pin RGB/TTL LCD',
-                      'RG': 'RGMII Ethernet',
-                      'MMC': 'eMMC 1/2/4/8 pin',
+    function_names = {
                       'PWM': 'PWM (pulse-width modulation)',
-                      'SD0': 'SD/MMC 0',
-                      'SD1': 'SD/MMC 1',
-                      'SD2': 'SD/MMC 2',
-                      'MSPI0': 'SPI (Serial Peripheral Interface) Master 0',
-                      'MSPI1': 'SPI (Serial Peripheral Interface) Master 1',
-                      'MQSPI': 'Quad SPI Master 0',
-                      'TWI0': 'I2C 0',
-                      'TWI1': 'I2C 1',
-                      'TWI2': 'I2C 2',
-                      'QUART0': 'UART (TX/RX/CTS/RTS) 0',
-                      'QUART1': 'UART (TX/RX/CTS/RTS) 1',
-                      'UART0': 'UART (TX/RX) 0',
+                      'MSPI2': 'SPI (Serial Peripheral Interface) Master 1',
                       'UART1': 'UART (TX/RX) 1',
-                      'UART2': 'UART (TX/RX) 2',
-                      'ULPI0': 'ULPI (USB Low Pin-count) 0',
-                      'ULPI1': 'ULPI (USB Low Pin-count) 1',
-                      'ULPI2': 'ULPI (USB Low Pin-count) 2',
+                      'UART3': 'UART (TX/RX) 2',
                       }
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
 
-    # Bank A, 0-27
-    ps.gpio("", ('A', 0), 0, 0, 28)
-    ps.rgbttl("", ('A', 0), 1, limit=22)
-    ps.mspi("0", ('A', 10), 2)
-    ps.mquadspi("0", ('A', 4), 2)
-    ps.uart("0", ('A', 16), 2)
-    ps.i2c("1", ('A', 18), 2)
-    ps.pwm("", ('A', 21), 2, 0, 3)
-    ps.sdmmc("0", ('A', 22), 3)
-    ps.eint("", ('A', 0), 3, 0, 4)
-    ps.eint("", ('A', 20), 2, 4, 1)
-    ps.eint("", ('A', 23), 1, 5, 1)
-    ps.sdmmc("1", ('A', 4), 3)
-    ps.jtag("", ('A', 10), 3)
-    ps.uartfull("0", ('A', 14), 3)
-    ps.uartfull("1", ('A', 18), 3)
-    ps.jtag("", ('A', 24), 2)
-    ps.mspi("1", ('A', 24), 1)
-    ps.i2c("0", ('A', 0), 2)
-    ps.uart("1", ('A', 2), 2)
-    ps.uart("2", ('A', 14), 2)
+    ps.gpio("", ('A', 1), 0, 0, 1)
+    ps.gpio("", ('A', 0), 0, 1, 1)
+    ps.gpio("", ('A', 3), 0, 2, 1)
+    ps.gpio("", ('A', 2), 0, 3, 1)
+    ps.gpio("", ('A', 4), 0, 5, 2)
+    ps.gpio("", ('A', 6), 0, 9, 1)
 
-    ps.mquadspi("1", ('B', 0), 0)
+    ps.gpio("", ('A', 7), 0, 13, 1)
+    ps.gpio("", ('A', 8), 0, 10, 1)
+    ps.gpio("", ('A', 9), 0, 12, 1)
+    ps.gpio("", ('A', 10), 0, 11, 1)
+
+    ps.gpio("", ('A', 11), 0, 4, 1)
+    ps.gpio("", ('A', 12), 0, 7, 2)
+    ps.gpio("", ('A', 14), 0, 14, 2)
+
+
+
+
+
+    ps.pwm("", ('A', 2), 2, 0, 1)
+    ps.pwm("", ('A', 4), 2, 1, 3)
+    ps.pwm("", ('A', 8), 2, 4, 1)
+    ps.pwm("", ('A', 10), 2, 5, 1)
+    #ps.pwm("", ('A', 13), 2, 5, 1)
+    ps.mspi("2", ('A', 7), 1)
+    ps.uart("1", ('A', 0), 1)
+    ps.uart("3", ('A', 2), 1)
+
+    #ps.mquadspi("1", ('B', 0), 0)
 
     # Scenarios below can be spec'd out as either "find first interface"
     # by name/number e.g. SPI1, or as "find in bank/mux" which must be
@@ -93,7 +79,7 @@ def pinspec():
 
     minitest = ['ULPI0/8', 'ULPI1', 'MMC', 'SD0', 'UART0',
                 'TWI0', 'MSPI0', 'B3:SD1', ]
-    minitest_eint = ['EINT_0', 'EINT_1', 'EINT_2', 'EINT_3', 'EINT_4']
+    minitest_eint = []
     minitest_pwm = ['B2:PWM_0']
     descriptions = {
         'MMC': 'internal (on Card)',
