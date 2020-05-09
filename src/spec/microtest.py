@@ -56,16 +56,16 @@ def pinspec():
                  )
 
     # Bank A, 0-3
-    ps.gpio("0", ('A', 0), 0, 0, 3)
-    ps.uart("1", ('A', 0), 1)
-    #ps.uart("0", ('A', 0), 1)
-    #ps.uart("1", ('A', 2), 1)
+    ps.gpio("", ('A', 0), 0, 0, 3)
+    #ps.uart("", ('A', 0), 1)
+    ps.uart("0", ('A', 0), 1)
+    ps.uart("1", ('A', 2), 1)
     ps.i2c("0", ('A', 1), 2)
-    ps.i2c("1", ('A', 0), 3, limit=1)
+    ps.i2c("0", ('A', 3), 3, limit=1)
     #ps.i2c("0", ('A', 1), 2)
     #ps.i2c("1", ('A', 2), 4)
 
-    microtest = ['UART', 'TWI', ]
+    microtest = ['UART0', 'TWI0', ]
     microtest_eint = []
     microtest_pwm = []
     descriptions = {
