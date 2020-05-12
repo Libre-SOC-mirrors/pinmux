@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# aardonyx file
+# see https://bugs.libre-soc.org/show_bug.cgi?id=303
+
 from spec.base import PinSpec
 
 from spec.ifaceprint import display, display_fns, check_functions
@@ -35,6 +36,7 @@ def pinspec():
                       'MSPI2': 'SPI (Serial Peripheral Interface) Master 1',
                       'UART1': 'UART (TX/RX) 1',
                       'UART3': 'UART (TX/RX) 2',
+                      'LPC0': 'Low Pincount Interface 0',
                       }
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
@@ -67,6 +69,7 @@ def pinspec():
     ps.mspi("2", ('A', 7), 1)
     ps.uart("1", ('A', 0), 1)
     ps.uart("3", ('A', 2), 1)
+    ps.lpc("0", ('A', 11), 3)
 
     #ps.mquadspi("1", ('B', 0), 0)
 
@@ -77,7 +80,7 @@ def pinspec():
     # using "BM:Name".  Pins are removed in-order as listed from
     # lists (interfaces, EINTs, PWMs) from available pins.
 
-    ls180 = ['ULPI0/8', 'ULPI1', 'MMC', 'SD0', 'UART0',
+    ls180 = ['ULPI0/8', 'ULPI1', 'MMC', 'SD0', 'UART0', 'LPC0',
                 'TWI0', 'MSPI0', 'B3:SD1', ]
     ls180_eint = []
     ls180_pwm = ['B2:PWM_0']
@@ -89,6 +92,7 @@ def pinspec():
         'E2:SD1': '',
         'MSPI1': '',
         'UART0': '',
+        'LPC0': '',
         'B1:LCD/22': '18-bit RGB/TTL LCD',
         'ULPI0/8': 'user-facing: internal (on Card), USB-OTG ULPI PHY',
         'ULPI1': 'dual USB2 Host ULPI PHY'

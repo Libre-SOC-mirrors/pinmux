@@ -48,14 +48,15 @@ def i2s(suffix, bank):
 
 
 # XXX TODO: correct these.  this is a stub for now
-def lpc(suffix, bank, pincount=8):
-    emmcpins = ['CMD+', 'CLK+']
+# https://bugs.libre-soc.org/show_bug.cgi?id=303
+def lpc(suffix, bank, pincount=4):
+    lpcpins = ['CMD+', 'CLK+']
     inout = []
     for i in range(pincount):
         pname = "D%d*" % i
-        emmcpins.append(pname)
+        lpcpins.append(pname)
         inout.append(pname)
-    return (emmcpins, inout)
+    return (lpcpins, inout)
 
 
 def emmc(suffix, bank, pincount=8):
