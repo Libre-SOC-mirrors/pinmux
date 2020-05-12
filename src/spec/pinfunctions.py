@@ -47,6 +47,17 @@ def i2s(suffix, bank):
             [])
 
 
+# XXX TODO: correct these.  this is a stub for now
+def lpc(suffix, bank, pincount=8):
+    emmcpins = ['CMD+', 'CLK+']
+    inout = []
+    for i in range(pincount):
+        pname = "D%d*" % i
+        emmcpins.append(pname)
+        inout.append(pname)
+    return (emmcpins, inout)
+
+
 def emmc(suffix, bank, pincount=8):
     emmcpins = ['CMD+', 'CLK+']
     inout = []
@@ -252,6 +263,7 @@ def gpio(suffix, bank):
 # list functions by name here
 
 pinspec = (('IIS', i2s),
+           ('LPC', lpc),
            ('EMMC', emmc),
            ('MMC', sdmmc),
            ('MSPI', mspi),
