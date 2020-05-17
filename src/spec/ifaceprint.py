@@ -109,6 +109,8 @@ def check_functions(of, title, bankspec, fns, pins, required, eint, pwm,
 
     of.write("# Pinmap for %s\n\n" % title)
 
+    print "fn_idx", fnidx
+    print "fnspec", pins.fnspec.keys()
     for name in required:
         of.write("## %s\n\n" % name)
         if descriptions and name in descriptions:
@@ -168,6 +170,7 @@ def check_functions(of, title, bankspec, fns, pins, required, eint, pwm,
             removedcount += 1
             of.write("* %s %d %s%d/%d\n" % (fname, pin_, bank, pin, mux))
 
+        print fns
         if removedcount != count:
             print ("not all found", name, removedcount, count, title, found,
                    fns[fname])

@@ -10,6 +10,8 @@ from spec.ifaceprint import display_fixed
 def pinspec():
     pinbanks = {
         'A': (16, 4),
+        'B': (16, 4),
+        'C': (16, 4),
     }
     fixedpins = {
         'CTRL_SYS': [
@@ -36,40 +38,25 @@ def pinspec():
                       'MSPI2': 'SPI (Serial Peripheral Interface) Master 1',
                       'UART1': 'UART (TX/RX) 1',
                       'UART3': 'UART (TX/RX) 2',
-                      'LPC0': 'Low Pincount Interface 0',
+                      'MMC1': 'SD/MMC 1',
+                      'MMC2': 'SD/MMC 2',
+                      'LPC1': 'Low Pincount Interface 1',
+                      'LPC2': 'Low Pincount Interface 2',
                       }
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
 
-    ps.gpio("", ('A', 1), 0, 0, 1)
-    ps.gpio("", ('A', 0), 0, 1, 1)
-    ps.gpio("", ('A', 3), 0, 2, 1)
-    ps.gpio("", ('A', 2), 0, 3, 1)
-    ps.gpio("", ('A', 4), 0, 5, 2)
-    ps.gpio("", ('A', 6), 0, 9, 1)
+    ps.gpio("", ('A', 0), 0, 0, 16)
 
-    ps.gpio("", ('A', 7), 0, 13, 1)
-    ps.gpio("", ('A', 8), 0, 10, 1)
-    ps.gpio("", ('A', 9), 0, 12, 1)
-    ps.gpio("", ('A', 10), 0, 11, 1)
-
-    ps.gpio("", ('A', 11), 0, 4, 1)
-    ps.gpio("", ('A', 12), 0, 7, 2)
-    ps.gpio("", ('A', 14), 0, 14, 2)
-
-
-
-
-
-    ps.pwm("", ('A', 2), 2, 0, 1)
-    ps.pwm("", ('A', 4), 2, 1, 3)
-    ps.pwm("", ('A', 8), 2, 4, 1)
-    ps.pwm("", ('A', 10), 2, 5, 1)
-    #ps.pwm("", ('A', 13), 2, 5, 1)
-    ps.mspi("2", ('A', 7), 1)
-    ps.uart("1", ('A', 0), 1)
-    ps.uart("3", ('A', 2), 1)
-    ps.lpc("0", ('A', 11), 3)
+    ps.pwm("", ('B', 0), 0, 0, 2)
+    ps.eint("", ('B', 2), 0, 0, 6)
+    ps.mspi("2", ('B', 8), 0)
+    ps.uart("1", ('B', 12), 0)
+    ps.uart("3", ('B', 14), 0)
+    ps.i2c("1", ('C', 0), 0)
+    ps.i2c("2", ('C', 2), 0)
+    ps.lpc("1", ('C', 4), 0)
+    ps.lpc("2", ('C', 10), 1)
 
     #ps.mquadspi("1", ('B', 0), 0)
 
@@ -80,10 +67,11 @@ def pinspec():
     # using "BM:Name".  Pins are removed in-order as listed from
     # lists (interfaces, EINTs, PWMs) from available pins.
 
-    ls180 = ['ULPI0/8', 'ULPI1', 'MMC', 'SD0', 'UART0', 'LPC0',
+    ls180 = ['ULPI0/8', 'ULPI1', 'MMC1', 'MMC2', 'SD0', 'UART0', 'LPC1',
+                'LPC2',
                 'TWI0', 'MSPI0', 'B3:SD1', ]
     ls180_eint = []
-    ls180_pwm = ['B2:PWM_0']
+    ls180_pwm = []#['B0:PWM_0']
     descriptions = {
         'MMC': 'internal (on Card)',
         'SD0': 'user-facing: internal (on Card), multiplexed with JTAG\n'
@@ -92,7 +80,9 @@ def pinspec():
         'E2:SD1': '',
         'MSPI1': '',
         'UART0': '',
-        'LPC0': '',
+        'LPC1': '',
+        'LPC2': '',
+        'MMC0': '',
         'B1:LCD/22': '18-bit RGB/TTL LCD',
         'ULPI0/8': 'user-facing: internal (on Card), USB-OTG ULPI PHY',
         'ULPI1': 'dual USB2 Host ULPI PHY'
