@@ -37,8 +37,8 @@ def pinspec():
     fixedpins = {}
     function_names = {
                       'PWM': 'PWM (pulse-width modulation)',
-                      'MSPI0': 'SPI (Serial Peripheral Interface) Master 1',
-                      'MSPI1': 'SPI (Serial Peripheral Interface) Master 2',
+                      'MSPI0': 'SPI Master 1 (general)',
+                      'MSPI1': 'SPI Master 2 (SDCard)',
                       'UART0': 'UART (TX/RX) 1',
                       'CLK': 'System Clock',
                       'RST': 'Reset',
