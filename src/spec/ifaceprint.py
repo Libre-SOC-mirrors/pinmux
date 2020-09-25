@@ -111,6 +111,7 @@ def check_functions(of, title, bankspec, fns, pins, required, eint, pwm,
 
     print "fn_idx", fnidx
     print "fnspec", pins.fnspec.keys()
+    print "required", required
     for name in required:
         of.write("## %s\n\n" % name)
         if descriptions and name in descriptions:
@@ -158,7 +159,9 @@ def check_functions(of, title, bankspec, fns, pins, required, eint, pwm,
 
         pinidx = sorted(pinfound.keys())
 
+        fname = None
         removedcount = 0
+        print ("pinidx", pinidx)
         for pin_ in pinidx:
             fname, pin_, bank, pin, mux = pinfound[pin_]
             if fname in found:
@@ -172,7 +175,10 @@ def check_functions(of, title, bankspec, fns, pins, required, eint, pwm,
 
         print fns
         if removedcount != count:
-            print ("not all found", name, removedcount, count, title, found,
+            if fname is None:
+                print "no match between required and available pins"
+            else:
+                print ("not all found", name, removedcount, count, title, found,
                    fns[fname])
             print ("pins found", pinfound)
 

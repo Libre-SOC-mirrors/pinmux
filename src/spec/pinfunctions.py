@@ -79,10 +79,13 @@ def nspi(suffix, bank, iosize, masteronly=True):
     else:
         qpins = ['CK*', 'NSS*']
     inout = []
-    for i in range(iosize):
-        pname = "IO%d*" % i
-        qpins.append(pname)
-        inout.append(pname)
+    if iosize == 2:
+        qpins += ['MOSI+', 'MISO-']
+    else:
+        for i in range(iosize):
+            pname = "IO%d*" % i
+            qpins.append(pname)
+            inout.append(pname)
     return (qpins, inout)
 
 
@@ -173,35 +176,35 @@ def flexbus2(suffix, bank):
     return (buspins, buspins)
 
 
-def sdram1(suffix, bank):
+def sdram1(suffix, bank, n_adr=10):
     buspins = []
     inout = []
-    for i in range(8):
-        pname = "SDRDQM%d+" % i
+    for i in range(1):
+        pname = "DQM%d+" % i
         buspins.append(pname)
     for i in range(8):
-        pname = "SDRD%d*" % i
+        pname = "D%d*" % i
         buspins.append(pname)
         inout.append(pname)
-    for i in range(12):
-        buspins.append("SDRAD%d+" % i)
+    for i in range(n_adr):
+        buspins.append("AD%d+" % i)
     for i in range(2):
-        buspins.append("SDRBA%d+" % i)
-    buspins += ['SDRCLK+', 'SDRCKE+', 'SDRRASn+', 'SDRCASn+', 'SDRWEn+',
-                'SDRCSn0+']
+        buspins.append("BA%d+" % i)
+    buspins += ['CLK+', 'CKE+', 'RASn+', 'CASn+', 'WEn+',
+                'CSn0+']
     return (buspins, inout)
 
 
 def sdram2(suffix, bank):
     buspins = []
     inout = []
-    for i in range(1, 6):
-        buspins.append("SDRCSn%d+" % i)
-    for i in range(8, 16):
-        pname = "SDRDQM%d*" % i
+    for i in range(10, 13):
+        buspins.append("SDRAD%d+" % i)
+    for i in range(1, 2):
+        pname = "DQM%d*" % i
         buspins.append(pname)
     for i in range(8, 16):
-        pname = "SDRD%d*" % i
+        pname = "D%d*" % i
         buspins.append(pname)
         inout.append(pname)
     return (buspins, inout)
@@ -210,9 +213,13 @@ def sdram2(suffix, bank):
 def sdram3(suffix, bank):
     buspins = []
     inout = []
-    for i in range(12, 13):
+    for i in range(1, 6):
+        buspins.append("CSn%d+" % i)
+    for i in range(13, 14):
         buspins.append("SDRAD%d+" % i)
-    for i in range(8, 64):
+    for i in range(1, 4):
+        pname = "DQM%d*" % i
+    for i in range(8, 32):
         pname = "SDRD%d*" % i
         buspins.append(pname)
         inout.append(pname)
@@ -260,6 +267,17 @@ def pwm(suffix, bank):
 def gpio(suffix, bank):
     return (("GPIO%s" % bank, RangePin(prefix=bank, suffix="*")), [])
 
+def vss(suffix, bank):
+    return (RangePin("-"), [])
+
+def vdd(suffix, bank):
+    return (RangePin("-"), [])
+
+def clk(suffix, bank):
+    return (RangePin("-"), [])
+
+def rst(suffix, bank):
+    return (RangePin("-"), [])
 
 # list functions by name here
 
@@ -283,6 +301,10 @@ pinspec = (('IIS', i2s),
            ('SDR', sdram1),
            ('SDR', sdram2),
            ('SDR', sdram3),
+           ('VSS', vss),
+           ('VDD', vdd),
+           ('CLK', clk),
+           ('RST', rst),
            ('EINT', eint),
            ('PWM', pwm),
            ('GPIO', gpio),
