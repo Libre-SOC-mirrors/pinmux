@@ -284,7 +284,7 @@ def rst(suffix, bank):
 pinspec = (('IIS', i2s),
            ('LPC', lpc),
            ('EMMC', emmc),
-           ('MMC', sdmmc),
+           ('SD', sdmmc),
            ('MSPI', mspi),
            ('MQSPI', mquadspi),
            ('SPI', spi),

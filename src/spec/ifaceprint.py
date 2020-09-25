@@ -66,7 +66,7 @@ def display_fns(of, bankspec, pins, function_names):
     fn_names = function_names.keys()
     fns = {}
     for (pin, pdata) in pins.items():
-        for mux in range(1, 4):  # skip GPIO for now
+        for mux in range(0, 4):  # skip GPIO for now
             if mux not in pdata:
                 continue
             name, bank = pdata[mux]
@@ -80,6 +80,7 @@ def display_fns(of, bankspec, pins, function_names):
     current_fn = None
     for fname in fnidx:
         fnbase = find_fn(fname, fn_names)
+        #fblower = fnbase.lower()
         assert fnbase in function_names, "fn %s not in descriptions %s" % \
             (fname, str(function_names.keys()))
         #print "name", fname, fnbase
@@ -110,6 +111,7 @@ def check_functions(of, title, bankspec, fns, pins, required, eint, pwm,
     of.write("# Pinmap for %s\n\n" % title)
 
     print "fn_idx", fnidx
+    print "fns", fns
     print "fnspec", pins.fnspec.keys()
     print "required", required
     for name in required:
