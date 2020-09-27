@@ -273,11 +273,8 @@ def vss(suffix, bank):
 def vdd(suffix, bank):
     return (RangePin("-"), [])
 
-def clk(suffix, bank):
-    return (RangePin("-"), [])
-
-def rst(suffix, bank):
-    return (RangePin("-"), [])
+def sys(suffix, bank):
+    return (['CLK-', 'RST-', 'PLLCLK-', 'PLLOUT+', 'CSEL0-', 'CSEL1-', 'CSEL2-'], [])
 
 # list functions by name here
 
@@ -303,8 +300,7 @@ pinspec = (('IIS', i2s),
            ('SDR', sdram3),
            ('VSS', vss),
            ('VDD', vdd),
-           ('CLK', clk),
-           ('RST', rst),
+           ('SYS', sys),
            ('EINT', eint),
            ('PWM', pwm),
            ('GPIO', gpio),

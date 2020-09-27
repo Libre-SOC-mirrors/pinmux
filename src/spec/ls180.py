@@ -40,8 +40,7 @@ def pinspec():
                       'MSPI0': 'SPI Master 1 (general)',
                       'MSPI1': 'SPI Master 2 (SDCard)',
                       'UART0': 'UART (TX/RX) 1',
-                      'CLK': 'System Clock',
-                      'RST': 'Reset',
+                      'SYS': 'System Control',
                       'GPIO': 'GPIO',
                       'EINT': 'External Interrupt',
                       'PWM': 'PWM',
@@ -71,21 +70,22 @@ def pinspec():
     ps.vdd("", ('E', 31), 0, 3, 1)
 
     ps.vss("", ('S', 0), 0, 4, 1)
-    ps.clk("", ('S', 1), 0, 0, 1)
-    ps.rst("", ('S', 2), 0, 0, 1)
-    ps.mspi("0", ('S', 4), 0)
-    ps.uart("0", ('S', 8), 0)
-    ps.gpio("", ('S', 14), 0, 0, 8)
-    ps.vdd("", ('S', 31), 0, 4, 1)
+    ps.sys("", ('S', 1), 0, 0, 7)
+    ps.vdd("", ('S', 8), 0, 4, 1)
+    ps.mspi("0", ('S', 15), 0)
+    ps.uart("0", ('S', 20), 0)
+    ps.vss("", ('S', 22), 0, 5, 1)
+    ps.gpio("", ('S', 23), 0, 0, 8)
+    ps.vdd("", ('S', 31), 0, 5, 1)
 
-    ps.vss("", ('W', 0), 0, 5, 1)
+    ps.vss("", ('W', 0), 0, 6, 1)
     ps.pwm("", ('W', 1), 0, 0, 2)
     ps.eint("", ('W', 3), 0, 0, 3)
     ps.mspi("1", ('W', 6), 0)
-    ps.vdd("", ('W', 10), 0, 5, 1)
+    ps.vdd("", ('W', 10), 0, 6, 1)
     ps.sdmmc("0", ('W', 11), 0)
-    ps.vss("", ('W', 17), 0, 6, 1)
-    ps.vdd("", ('W', 31), 0, 6, 1)
+    ps.vss("", ('W', 17), 0, 7, 1)
+    ps.vdd("", ('W', 31), 0, 7, 1)
     #ps.mspi("0", ('W', 8), 0)
     #ps.mspi("1", ('W', 8), 0)
 
@@ -99,7 +99,7 @@ def pinspec():
     # lists (interfaces, EINTs, PWMs) from available pins.
 
     ls180 = ['SD0', 'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
-             'VDD', 'VSS', 'CLK', 'RST',
+             'VDD', 'VSS', 'SYS',
                 'TWI0', 'MSPI0', 'MSPI1', 'SDR']
     ls180_eint = []
     ls180_pwm = []#['B0:PWM_0']
@@ -111,8 +111,7 @@ def pinspec():
         'MSPI1': '',
         'UART0': '',
         'LPC1': '',
-        'CLK': '',
-        'RST': '',
+        'SYS': '',
         'LPC2': '',
         'SDR': '',
         'B1:LCD/22': '18-bit RGB/TTL LCD',
