@@ -199,7 +199,7 @@ def sdram2(suffix, bank):
     buspins = []
     inout = []
     for i in range(10, 13):
-        buspins.append("SDRAD%d+" % i)
+        buspins.append("AD%d+" % i)
     for i in range(1, 2):
         pname = "DQM%d*" % i
         buspins.append(pname)
@@ -216,11 +216,11 @@ def sdram3(suffix, bank):
     for i in range(1, 6):
         buspins.append("CSn%d+" % i)
     for i in range(13, 14):
-        buspins.append("SDRAD%d+" % i)
+        buspins.append("AD%d+" % i)
     for i in range(1, 4):
         pname = "DQM%d*" % i
     for i in range(8, 32):
-        pname = "SDRD%d*" % i
+        pname = "D%d*" % i
         buspins.append(pname)
         inout.append(pname)
     return (buspins, inout)
@@ -274,7 +274,8 @@ def vdd(suffix, bank):
     return (RangePin("-"), [])
 
 def sys(suffix, bank):
-    return (['CLK-', 'RST-', 'PLLCLK-', 'PLLOUT+', 'CSEL0-', 'CSEL1-', 'CSEL2-'], [])
+    return (['CLK-', 'RST-', 'PLLCLK-', 'PLLOUT+',
+             'CSEL0-', 'CSEL1-', 'CSEL2-'], [])
 
 # list functions by name here
 
