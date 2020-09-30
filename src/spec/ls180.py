@@ -45,6 +45,7 @@ def pinspec():
                       'EINT': 'External Interrupt',
                       'PWM': 'PWM',
                       'JTAG': 'JTAG',
+                      'TWI': 'I2C Master 1',
                       'SD0': 'SD/MMC 1',
                       'SDR': 'SDRAM',
                       'VDD': 'Power',
@@ -72,6 +73,7 @@ def pinspec():
     ps.vss("", ('S', 0), 0, 4, 1)
     ps.sys("", ('S', 1), 0, 0, 7)
     ps.vdd("", ('S', 8), 0, 4, 1)
+    ps.i2c("", ('S', 9), 0, 0, 2)
     ps.mspi("0", ('S', 15), 0)
     ps.uart("0", ('S', 20), 0)
     ps.vss("", ('S', 22), 0, 5, 1)
@@ -100,13 +102,13 @@ def pinspec():
 
     ls180 = ['SD0', 'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
-                'TWI0', 'MSPI0', 'MSPI1', 'SDR']
+                'TWI', 'MSPI0', 'MSPI1', 'SDR']
     ls180_eint = []
     ls180_pwm = []#['B0:PWM_0']
     descriptions = {
         'SD0': 'user-facing: internal (on Card), multiplexed with JTAG\n'
         'and UART2, for debug purposes',
-        'TWI2': 'I2C.\n',
+        'TWI': 'I2C.\n',
         'E2:SD1': '',
         'MSPI1': '',
         'UART0': '',
