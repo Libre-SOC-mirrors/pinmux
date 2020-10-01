@@ -39,6 +39,10 @@
 
     (['CMD+', 'CLK+', 'D0*', 'D1*', 'D2*', 'D3*'] # pin names
      ['D0*', 'D1*', 'D2*', 'D3*'])                # ganged bus names
+
+    addition:
+
+    3rd item in list gives the name of the clock.
 """
 
 
@@ -56,7 +60,7 @@ def lpc(suffix, bank, pincount=4):
         pname = "D%d*" % i
         lpcpins.append(pname)
         inout.append(pname)
-    return (lpcpins, inout)
+    return (lpcpins, inout, 'CLK')
 
 
 def emmc(suffix, bank, pincount=8):
@@ -66,7 +70,7 @@ def emmc(suffix, bank, pincount=8):
         pname = "D%d*" % i
         emmcpins.append(pname)
         inout.append(pname)
-    return (emmcpins, inout)
+    return (emmcpins, inout, 'CLK')
 
 
 def sdmmc(suffix, bank):
@@ -86,7 +90,7 @@ def nspi(suffix, bank, iosize, masteronly=True):
             pname = "IO%d*" % i
             qpins.append(pname)
             inout.append(pname)
-    return (qpins, inout)
+    return (qpins, inout, 'CK')
 
 
 def mspi(suffix, bank):
@@ -106,34 +110,33 @@ def quadspi(suffix, bank):
 
 
 def i2c(suffix, bank):
-    return (['SDA*', 'SCL*'], [])
+    return (['SDA*', 'SCL*'], [], 'SCL')
 
 
 def jtag(suffix, bank):
-    return (['TMS-', 'TDI-', 'TDO+', 'TCK+'], [])
+    return (['TMS-', 'TDI-', 'TDO+', 'TCK+'], [], 'TCK')
 
 
 def uart(suffix, bank):
-    return (['TX+', 'RX-'], [])
+    return (['TX+', 'RX-'], [], None)
 
 
 def ulpi(suffix, bank):
     ulpipins = ['CK+', 'DIR+', 'STP+', 'NXT+']
     for i in range(8):
         ulpipins.append('D%d*' % i)
-    return (ulpipins, [])
+    return (ulpipins, [], 'CK')
 
 
 def uartfull(suffix, bank):
-    return (['TX+', 'RX-', 'CTS-', 'RTS+'],
-            [])
+    return (['TX+', 'RX-', 'CTS-', 'RTS+'], [], None)
 
 
 def rgbttl(suffix, bank):
     ttlpins = ['CK+', 'DE+', 'HS+', 'VS+']
     for i in range(24):
         ttlpins.append("OUT%d+" % i)
-    return (ttlpins, [])
+    return (ttlpins, [], 'CK')
 
 
 def rgmii(suffix, bank):
@@ -146,7 +149,7 @@ def rgmii(suffix, bank):
                 'EMDC+', 'EMDIO*',
                 'ETXEN+', 'ETXCK+', 'ECRS-',
                 'ECOL+', 'ETXERR+']
-    return (buspins, [])
+    return (buspins, [], ['ERXCK', 'ETXCK'])
 
 
 def flexbus1(suffix, bank):
@@ -166,14 +169,14 @@ def flexbus1(suffix, bank):
         buspins.append("BWE%d+" % i)
     for i in range(2, 6):
         buspins.append("CS%d+" % i)
-    return (buspins, inout)
+    return (buspins, inout, None)
 
 
 def flexbus2(suffix, bank):
     buspins = []
     for i in range(8, 32):
         buspins.append("AD%d*" % i)
-    return (buspins, buspins)
+    return (buspins, buspins, None)
 
 
 def sdram1(suffix, bank, n_adr=10):
@@ -192,7 +195,7 @@ def sdram1(suffix, bank, n_adr=10):
         buspins.append("BA%d+" % i)
     buspins += ['CLK+', 'CKE+', 'RASn+', 'CASn+', 'WEn+',
                 'CSn0+']
-    return (buspins, inout)
+    return (buspins, inout, 'CLK')
 
 
 def sdram2(suffix, bank):
@@ -207,7 +210,7 @@ def sdram2(suffix, bank):
         pname = "D%d*" % i
         buspins.append(pname)
         inout.append(pname)
-    return (buspins, inout)
+    return (buspins, inout, None)
 
 
 def sdram3(suffix, bank):
@@ -223,25 +226,25 @@ def sdram3(suffix, bank):
         pname = "D%d*" % i
         buspins.append(pname)
         inout.append(pname)
-    return (buspins, inout)
+    return (buspins, inout, None)
 
 
 def mcu8080(suffix, bank):
     buspins = []
     inout = []
     for i in range(8):
-        pname = "MCUD%d*" % i
+        pname = "D%d*" % i
         buspins.append(pname)
         inout.append(pname)
     for i in range(8):
-        buspins.append("MCUAD%d+" % (i + 8))
+        buspins.append("AD%d+" % (i + 8))
     for i in range(6):
-        buspins.append("MCUCS%d+" % i)
+        buspins.append("CS%d+" % i)
     for i in range(2):
-        buspins.append("MCUNRB%d+" % i)
-    buspins += ['MCUCD+', 'MCURD+', 'MCUWR+', 'MCUCLE+', 'MCUALE+',
-                'MCURST+']
-    return (buspins, inout)
+        buspins.append("NRB%d+" % i)
+    buspins += ['CD+', 'RD+', 'WR+', 'CLE+', 'ALE+',
+                'RST+']
+    return (buspins, inout, None)
 
 
 class RangePin(object):
@@ -257,25 +260,25 @@ class RangePin(object):
 
 
 def eint(suffix, bank):
-    return (RangePin("-"), [])
+    return (RangePin("-"), [], None)
 
 
 def pwm(suffix, bank):
-    return (RangePin("+"), [])
+    return (RangePin("+"), [], None)
 
 
 def gpio(suffix, bank):
-    return (("GPIO%s" % bank, RangePin(prefix=bank, suffix="*")), [])
+    return (("GPIO%s" % bank, RangePin(prefix=bank, suffix="*")), [], None)
 
 def vss(suffix, bank):
-    return (RangePin("-"), [])
+    return (RangePin("-"), [], None)
 
 def vdd(suffix, bank):
-    return (RangePin("-"), [])
+    return (RangePin("-"), [], None)
 
 def sys(suffix, bank):
     return (['CLK-', 'RST-', 'PLLCLK-', 'PLLOUT+',
-             'CSEL0-', 'CSEL1-', 'CSEL2-'], [])
+             'CSEL0-', 'CSEL1-', 'CSEL2-'], [], 'CLK')
 
 # list functions by name here
 

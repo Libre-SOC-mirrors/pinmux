@@ -95,6 +95,8 @@ def pinspec():
 
     #ps.mquadspi("1", ('S', 0), 0)
 
+    print "ps clocks", ps.clocks
+
     # Scenarios below can be spec'd out as either "find first interface"
     # by name/number e.g. SPI1, or as "find in bank/mux" which must be
     # spec'd as "BM:Name" where B is bank (A-F), M is Mux (0-3)

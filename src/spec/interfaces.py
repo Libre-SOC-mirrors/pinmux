@@ -66,7 +66,11 @@ class PinGen(object):
     def __call__(self, suffix, offs, mux,
                  start=None, limit=None, spec=None, origsuffix=None):
         bank = offs[0]
-        pingroup, gangedgroup = self.pinfn(suffix, bank)
+        pf = self.pinfn(suffix, bank)
+        print "pf", suffix, bank, pf
+        pingroup, gangedgroup, clock = pf
+        if clock:
+            self.pinouts.clocks[self.fname] = clock
         if isinstance(pingroup, tuple):
             prefix, pingroup = pingroup
         else:
@@ -89,12 +93,14 @@ class Pinouts(object):
         self.pins = {}
         self.fnspec = {}
         self.ganged = {}
+        self.clocks = {}
         for fname, pinfn in pinspec:
             if isinstance(pinfn, tuple):
                 name, pinfn = pinfn
             else:
                 name = pinfn.__name__
-            setattr(self, name, PinGen(self, fname, pinfn, self.bankspec))
+            pin = PinGen(self, fname, pinfn, self.bankspec)
+            setattr(self, name, pin)
 
     def setganged(self, fname, grp):
         grp = map(lambda x: x[:-1], grp)
