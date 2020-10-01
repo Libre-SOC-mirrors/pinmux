@@ -86,12 +86,13 @@ if __name__ == '__main__':
             os.makedirs(d)
         with open(fname, "w") as of:
             ps = module.pinspec()
-            pinout, bankspec, pinspec, fixedpins = ps.write(of)
+            pinout, bankspec, pin_spec, fixedpins = ps.write(of)
             if testing:
                 dummytest(ps, output_dir, output_type)
             else:
                 specgen(of, output_dir, pinout,
-                        bankspec, ps.muxwidths, pinspec, fixedpins, ps.fastbus)
+                        bankspec, ps.muxwidths, pin_spec, fixedpins, ps.fastbus)
+                module.pinparse(pinspec)
     else:
         if output_type == 'bsv':
             from bsv.pinmux_generator import pinmuxgen as gentypes
