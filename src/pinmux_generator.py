@@ -88,14 +88,15 @@ if __name__ == '__main__':
         with open(fname, "w") as of:
             with open(pyname, "w") as pyf:
                 ps = module.pinspec()
-                pm = module.pinparse(ps, pinspec)
-                pinout, bankspec, pin_spec, fixedpins = ps.write(pyf, of, pm)
+                pinout, bankspec, pin_spec, fixedpins = ps.write(of)
                 if testing:
                     dummytest(ps, output_dir, output_type)
                 else:
                     specgen(of, output_dir, pinout,
                             bankspec, ps.muxwidths, pin_spec, fixedpins,
                             ps.fastbus)
+                pm = module.pinparse(ps, pinspec)
+                ps.pywrite(pyf, pm)
     else:
         if output_type == 'bsv':
             from bsv.pinmux_generator import pinmuxgen as gentypes
