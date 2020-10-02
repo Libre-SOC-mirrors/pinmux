@@ -5,6 +5,7 @@ from spec.base import PinSpec
 from parse import Parse
 import json
 
+from pprint import pprint
 from spec.ifaceprint import display, display_fns, check_functions
 from spec.ifaceprint import display_fixed
 from collections import OrderedDict
@@ -132,7 +133,7 @@ def pinspec():
 
 
 # map pins to litex name conventions, primarily for use in coriolis2
-def pinparse(pinspec):
+def pinparse(psp, pinspec):
     p = Parse(pinspec, verify=False)
 
     print p.muxed_cells
@@ -145,8 +146,12 @@ def pinparse(pinspec):
     pads = {'N': pn, 'S': ps, 'E': pe, 'W': pw}
 
     iopads = []
+    domains = {}
+    clocks = {}
 
     for (padnum, name, _), bank in zip(p.muxed_cells, p.muxed_cells_bank):
+        orig_name = name
+        domain = None # TODO, get this from the PinSpec.  sigh
         padnum = int(padnum)
         start = p.bankstart[bank]
         banknum = padnum - start
@@ -166,6 +171,7 @@ def pinparse(pinspec):
             name = ''
         # SYS
         elif name.startswith('sys'):
+            domain = 'SYS'
             if name == 'sys_clk':
                 name = 'p_sys_clk_0'
             elif name == 'sys_rst':
@@ -189,6 +195,7 @@ def pinparse(pinspec):
             print "sys pad", name
         # SPI Card
         elif name.startswith('mspi0') or name.startswith('mspi1'):
+            domain = 'MSPI'
             suffix = name[6:]
             if suffix == 'ck':
                 suffix = 'clk'
@@ -202,6 +209,7 @@ def pinparse(pinspec):
             iopads.append(['p_' + name, name, name])
         # SD/MMC
         elif name.startswith('sd0'):
+            domain = 'SD'
             if name.startswith('sd0_d'):
                 i = name[5:]
                 name = 'sdcard_data' + i
@@ -219,6 +227,7 @@ def pinparse(pinspec):
                 iopads.append(['p_' + name, name, name])
         # SDRAM
         elif name.startswith('sdr'):
+            domain = 'SDR'
             if name == 'sdr_clk':
                 name = 'sdram_clock'
                 iopads.append(['p_' + name, name, name])
@@ -254,10 +263,12 @@ def pinparse(pinspec):
                 iopads.append(['p_' + name, name, name])
         # UART
         elif name.startswith('uart'):
+            domain = 'UART'
             name = 'uart_' + name[6:]
             iopads.append(['p_' + name, name, name])
         # GPIO
         elif name.startswith('gpio'):
+            domain = 'GPIO'
             i = name[7:]
             name = 'gpio_' + i
             name2 = 'gpio_%%s(%s)' % i
@@ -266,6 +277,7 @@ def pinparse(pinspec):
             iopads.append(pad)
         # I2C
         elif name.startswith('twi'):
+            domain = 'TWI'
             name = 'i2c' + name[3:]
             if name.startswith('i2c_sda'):
                 name2 = 'i2c_sda_%s'
@@ -290,17 +302,33 @@ def pinparse(pinspec):
             pad = ['p_' + name, name, name]
             iopads.append(pad)
             print ("GPIO pad", name, pad)
+
+        # JTAG domain
+        if name and name.startswith('jtag'):
+            domain = 'JTAG'
+
         if name and not name.startswith('p_'):
             name = 'p_' + name
         if name is not None:
             padbank[banknum] = name
+            # create domains
+            if domain is not None:
+                if domain not in domains:
+                    domains[domain] = []
+                domains[domain].append(name)
+                dl = domain.lower()
+                if domain in psp.clocks and orig_name.startswith(dl):
+                    clk = psp.clocks[domain]
+                    if clk.lower() in orig_name: # TODO, might over-match
+                        clocks[domain] = name
 
-    #pw[25] = 'p_sys_rst_1'
+    # HACK!
     pe[13] = 'p_vddeck_0'
     pe[23] = 'p_vsseck_0'
     pw[10] = 'p_vddick_0'
     pw[17] = 'p_vssick_0'
 
+    # not connected
     nc_idx = 0
     for pl in [pe, pw, pn, ps]:
         for i in range(len(pl)):
@@ -309,17 +337,31 @@ def pinparse(pinspec):
                 nc_idx += 1
 
     print p.bankstart
-    print pn
-    print ps
-    print pe
-    print pw
+    pprint(psp.clocks)
+
+    print
+    print "N pads", pn
+    print "S pads", ps
+    print "E pads", pe
+    print "W pads", pw
+
+    # do not want these
+    del clocks['SYS']
+    del domains['SYS']
+
+    print "chip domains (excluding sys-default)"
+    pprint(domains)
+    print "chip clocks (excluding sys-default)"
+    pprint(clocks)
 
     chip = {
              'pads.south'      : ps,
               'pads.east'       : pe,
               'pads.north'      : pn,
               'pads.west'       : pw,
-              'pads.instances' : iopads
+              'pads.instances' : iopads,
+              'chip.domains' : domains,
+              'chip.clocks' : clocks,
            }
 
     chip = json.dumps(chip)

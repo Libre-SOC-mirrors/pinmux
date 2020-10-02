@@ -92,7 +92,7 @@ if __name__ == '__main__':
             else:
                 specgen(of, output_dir, pinout,
                         bankspec, ps.muxwidths, pin_spec, fixedpins, ps.fastbus)
-                module.pinparse(pinspec)
+                module.pinparse(ps, pinspec)
     else:
         if output_type == 'bsv':
             from bsv.pinmux_generator import pinmuxgen as gentypes
