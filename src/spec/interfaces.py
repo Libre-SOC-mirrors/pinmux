@@ -77,7 +77,14 @@ class PinGen(object):
             prefix = self.fname
         if start and limit:  # limit turns into an offset from start
             limit = start + limit
+        sk = (self.fname, suffix)
+        print "pingroup pre", sk, pingroup
         pingroup = pingroup[start:limit]  # see comment in spec.pinfunctions
+        print "pingroup post", sk, pingroup
+        if self.pinouts.byspec.has_key(sk):
+            self.pinouts.byspec[sk] += pingroup
+        else:
+            self.pinouts.byspec[sk] = deepcopy(pingroup)
         pins = Pins(prefix, pingroup, self.bankspec,
                     suffix, offs, bank, mux,
                     spec, origsuffix=suffix, gangedgrp=gangedgroup)
@@ -94,6 +101,7 @@ class Pinouts(object):
         self.fnspec = {}
         self.ganged = {}
         self.clocks = {}
+        self.byspec = {}
         for fname, pinfn in pinspec:
             if isinstance(pinfn, tuple):
                 name, pinfn = pinfn

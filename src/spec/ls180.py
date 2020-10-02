@@ -135,6 +135,7 @@ def pinspec():
 # map pins to litex name conventions, primarily for use in coriolis2
 def pinparse(psp, pinspec):
     p = Parse(pinspec, verify=False)
+    pinmap = {}
 
     print p.muxed_cells
     print p.muxed_cells_bank
@@ -321,10 +322,14 @@ def pinparse(psp, pinspec):
                     clk = psp.clocks[domain]
                     if clk.lower() in orig_name: # TODO, might over-match
                         clocks[domain] = name
+            # record remap
+            pinmap[orig_name] = name
 
     # HACK!
     pe[13] = 'p_vddeck_0'
+    #pe[0] = 'p_vddeck_1'
     pe[23] = 'p_vsseck_0'
+    #pe[31] = 'p_vsseck_1'
     pw[10] = 'p_vddick_0'
     pw[17] = 'p_vssick_0'
 
@@ -368,3 +373,4 @@ def pinparse(psp, pinspec):
     with open("ls180/litex_pinpads.json", "w") as f:
         f.write(chip)
 
+    return pinmap
