@@ -350,6 +350,8 @@ def pinparse(psp, pinspec):
     pprint(domains)
     print "chip clocks (excluding sys-default)"
     pprint(clocks)
+    print "pin spec"
+    pprint(psp.byspec)
 
     chip = {
              'pads.south'      : ps,
@@ -357,6 +359,7 @@ def pinparse(psp, pinspec):
               'pads.north'      : pn,
               'pads.west'       : pw,
               'pads.instances' : iopads,
+              'pins.specs' : psp.byspec,
               'chip.domains' : domains,
               'chip.clocks' : clocks,
               'chip.n_intpower': n_intpower,

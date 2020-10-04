@@ -92,7 +92,7 @@ def python_pindict(of, pinmap, pins, function_names, dname, remap):
     of.write("%s = {\n" % dname)
 
     for k, pingroup in pins.byspec.items():
-        (a, n) = k
+        (a, n) = k.split(":")
         if n.isdigit():
             a = "%s%s" % (a, n)
         fblower = a.lower()

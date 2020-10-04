@@ -77,7 +77,7 @@ class PinGen(object):
             prefix = self.fname
         if start and limit:  # limit turns into an offset from start
             limit = start + limit
-        sk = (self.fname, suffix)
+        sk = "%s:%s" % (self.fname, str(suffix))
         print "pingroup pre", sk, pingroup
         pingroup = pingroup[start:limit]  # see comment in spec.pinfunctions
         print "pingroup post", sk, pingroup
