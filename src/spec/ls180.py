@@ -369,6 +369,7 @@ def pinparse(psp, pinspec):
               'pads.west'       : pw,
               'pads.instances' : iopads,
               'pins.specs' : psp.byspec,
+              'pins.map' : pinmap,
               'chip.domains' : domains,
               'chip.clocks' : clocks,
               'chip.n_intpower': n_intpower,
