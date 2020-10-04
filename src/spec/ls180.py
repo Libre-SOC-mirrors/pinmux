@@ -204,7 +204,7 @@ def pinparse(psp, pinspec):
             elif suffix == 'nss':
                 suffix = 'cs_n'
             if name.startswith('mspi1'):
-                prefix = 'spi_master_'
+                prefix = 'spimaster_'
             else:
                 prefix = 'spisdcard_'
             name = prefix + suffix
