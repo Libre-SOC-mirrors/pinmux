@@ -59,38 +59,38 @@ def pinspec():
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
 
-    ps.vss("", ('N', 0), 0, 0, 1)
-    ps.vdd("", ('N', 1), 0, 0, 1)
+    ps.vss("I", ('N', 0), 0, 0, 1)
+    ps.vdd("E", ('N', 1), 0, 0, 1)
     ps.sdram1("", ('N', 2), 0, 0, 30)
-    ps.vss("", ('N', 30), 0, 1, 1)
-    ps.vdd("", ('N', 31), 0, 1, 1)
+    ps.vss("E", ('N', 30), 0, 1, 1)
+    ps.vdd("I", ('N', 31), 0, 1, 1)
 
-    ps.vss("", ('E', 0), 0, 2, 1)
+    ps.vss("E", ('E', 0), 0, 2, 1)
     ps.sdram2("", ('E', 1), 0, 0, 12)
-    ps.vdd("", ('E', 13), 0, 2, 1)
+    ps.vdd("E", ('E', 13), 0, 2, 1)
     ps.gpio("", ('E', 14), 0, 8, 8)
-    ps.vss("", ('E', 23), 0, 3, 1)
+    ps.vss("I", ('E', 23), 0, 3, 1)
     ps.jtag("", ('E', 24), 0, 0, 4)
-    ps.vdd("", ('E', 31), 0, 3, 1)
+    ps.vdd("I", ('E', 31), 0, 3, 1)
 
-    ps.vss("", ('S', 0), 0, 4, 1)
+    ps.vss("I", ('S', 0), 0, 4, 1)
     ps.sys("", ('S', 1), 0, 0, 7)
-    ps.vdd("", ('S', 8), 0, 4, 1)
+    ps.vdd("I", ('S', 8), 0, 4, 1)
     ps.i2c("", ('S', 9), 0, 0, 2)
     ps.mspi("0", ('S', 15), 0)
     ps.uart("0", ('S', 20), 0)
-    ps.vss("", ('S', 22), 0, 5, 1)
+    ps.vss("I", ('S', 22), 0, 5, 1)
     ps.gpio("", ('S', 23), 0, 0, 8)
-    ps.vdd("", ('S', 31), 0, 5, 1)
+    ps.vdd("I", ('S', 31), 0, 5, 1)
 
-    ps.vss("", ('W', 0), 0, 6, 1)
+    ps.vss("I", ('W', 0), 0, 6, 1)
     ps.pwm("", ('W', 1), 0, 0, 2)
     ps.eint("", ('W', 3), 0, 0, 3)
     ps.mspi("1", ('W', 6), 0)
-    ps.vdd("", ('W', 10), 0, 6, 1)
+    ps.vdd("E", ('W', 10), 0, 6, 1)
     ps.sdmmc("0", ('W', 11), 0)
-    ps.vss("", ('W', 17), 0, 7, 1)
-    ps.vdd("", ('W', 31), 0, 7, 1)
+    ps.vss("E", ('W', 17), 0, 7, 1)
+    ps.vdd("I", ('W', 31), 0, 7, 1)
     #ps.mspi("0", ('W', 8), 0)
     #ps.mspi("1", ('W', 8), 0)
 
@@ -150,6 +150,8 @@ def pinparse(psp, pinspec):
     domains = {}
     clocks = {}
 
+    n_intpower = 0
+    n_extpower = 0
     for (padnum, name, _), bank in zip(p.muxed_cells, p.muxed_cells_bank):
         orig_name = name
         domain = None # TODO, get this from the PinSpec.  sigh
@@ -160,16 +162,14 @@ def pinparse(psp, pinspec):
         padbank = pads[bank]
         # VSS
         if name.startswith('vss'):
-            #name = 'p_vssick_' + name[-1]
-            #name = 'p_vsseck_0'
-            #name = 'vss'
-            name = ''
+            name = 'p_%sck_' % name[:-2] + name[-1]
         # VDD
         elif name.startswith('vdd'):
-            #name = 'p_vddick_' + name[-1]
-            #name = 'p_vddeck_0'
-            #name = 'vdd'
-            name = ''
+            if 'i' in name:
+               n_intpower += 1
+            else:
+               n_extpower += 1
+            name = 'p_%sck_' % name[:-2] + name[-1]
         # SYS
         elif name.startswith('sys'):
             domain = 'SYS'
@@ -325,14 +325,6 @@ def pinparse(psp, pinspec):
             # record remap
             pinmap[orig_name] = name
 
-    # HACK!
-    pe[13] = 'p_vddeck_0'
-    #pe[0] = 'p_vddeck_1'
-    pe[23] = 'p_vsseck_0'
-    #pe[31] = 'p_vsseck_1'
-    pw[10] = 'p_vddick_0'
-    pw[17] = 'p_vssick_0'
-
     # not connected
     nc_idx = 0
     for pl in [pe, pw, pn, ps]:
@@ -367,6 +359,8 @@ def pinparse(psp, pinspec):
               'pads.instances' : iopads,
               'chip.domains' : domains,
               'chip.clocks' : clocks,
+              'chip.n_intpower': n_intpower,
+              'chip.n_extpower': n_extpower,
            }
 
     chip = json.dumps(chip)
