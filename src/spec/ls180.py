@@ -48,7 +48,7 @@ def pinspec():
                       'EINT': 'External Interrupt',
                       'PWM': 'PWM',
                       'JTAG': 'JTAG',
-                      'TWI': 'I2C Master 1',
+                      'MTWI': 'I2C Master 1',
                       'SD0': 'SD/MMC 1',
                       'SDR': 'SDRAM',
                       'VDD': 'Power',
@@ -76,7 +76,7 @@ def pinspec():
     ps.vss("I", ('S', 0), 0, 2, 1)
     ps.sys("", ('S', 1), 0, 0, 7)
     ps.vdd("I", ('S', 8), 0, 2, 1)
-    ps.i2c("", ('S', 9), 0, 0, 2)
+    ps.mi2c("", ('S', 9), 0, 0, 2)
     ps.mspi("0", ('S', 15), 0)
     ps.uart("0", ('S', 20), 0)
     ps.vss("I", ('S', 22), 0, 3, 1)
@@ -107,13 +107,13 @@ def pinspec():
 
     ls180 = ['SD0', 'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
-                'TWI', 'MSPI0', 'MSPI1', 'SDR']
+                'MTWI', 'MSPI0', 'MSPI1', 'SDR']
     ls180_eint = []
     ls180_pwm = []#['B0:PWM_0']
     descriptions = {
         'SD0': 'user-facing: internal (on Card), multiplexed with JTAG\n'
         'and UART2, for debug purposes',
-        'TWI': 'I2C.\n',
+        'MTWI': 'I2C.\n',
         'E2:SD1': '',
         'MSPI1': '',
         'UART0': '',
@@ -133,6 +133,7 @@ def pinspec():
 
 
 # map pins to litex name conventions, primarily for use in coriolis2
+# yes this is a mess.  it'll do the job though.  improvements later
 def pinparse(psp, pinspec):
     p = Parse(pinspec, verify=False)
     pinmap = {}
@@ -221,7 +222,7 @@ def pinparse(psp, pinspec):
             elif name.startswith('sd0_cmd'):
                 name = 'sdcard_cmd'
                 name2 = 'sdcard_cmd_%s'
-                pad = ['p_' + name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
+                pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
                 iopads.append(pad)
             else:
                 name = 'sdcard_' + name[4:]
@@ -251,7 +252,7 @@ def pinparse(psp, pinspec):
                 i = name[5:]
                 name = 'sdram_dq_' + i
                 name2 = 'sdram_dq_%%s(%s)' % i
-                pad = ['p_' + name, name, name2 % 'o', name2 % 'i', 'sdram_dq_oe']
+                pad = ['p_'+name, name, name2 % 'o', name2 % 'i', 'sdram_dq_oe']
                 iopads.append(pad)
             elif name == 'sdr_csn0':
                 name = 'sdram_cs_n'
@@ -276,17 +277,25 @@ def pinparse(psp, pinspec):
             pad = ['p_' + name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
             print ("GPIO pad", name, pad)
             iopads.append(pad)
-        # I2C
-        elif name.startswith('twi'):
-            domain = 'TWI'
-            name = 'i2c' + name[3:]
+        # I2C master-only
+        elif name.startswith('mtwi'):
+            domain = 'MTWI'
+            name = 'i2c' + name[4:]
             if name.startswith('i2c_sda'):
                 name2 = 'i2c_sda_%s'
-                pad = ['p_' + name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
+                pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
                 print ("I2C pad", name, pad)
                 iopads.append(pad)
             else:
                 iopads.append(['p_' + name, name, name])
+        # I2C bi-directional
+        elif name.startswith('twi'):
+            domain = 'TWI'
+            name = 'i2c' + name[3:]
+            name2 = name + '_%s'
+            pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
+            print ("I2C pad", name, pad)
+            iopads.append(pad)
         # EINT
         elif name.startswith('eint'):
             i = name[-1]

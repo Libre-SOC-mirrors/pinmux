@@ -110,7 +110,15 @@ def quadspi(suffix, bank):
 
 
 def i2c(suffix, bank):
+    """bi-directional (reversible, master-slave) I2C
+    """
     return (['SDA*', 'SCL*'], [], 'SCL')
+
+
+def mi2c(suffix, bank):
+    """master-only I2C (clock is output only)
+    """
+    return (['SDA*', 'SCL+'], [], 'SCL')
 
 
 def jtag(suffix, bank):
@@ -291,6 +299,7 @@ pinspec = (('IIS', i2s),
            ('SPI', spi),
            ('QSPI', quadspi),
            ('TWI', i2c),
+           ('MTWI', mi2c),
            ('JTAG', jtag),
            ('UART', uart),
            ('QUART', uartfull),
