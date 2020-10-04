@@ -54,7 +54,7 @@ def i2s(suffix, bank):
 # XXX TODO: correct these.  this is a stub for now
 # https://bugs.libre-soc.org/show_bug.cgi?id=303
 def lpc(suffix, bank, pincount=4):
-    lpcpins = ['CMD+', 'CLK+']
+    lpcpins = ['CMD*', 'CLK+']
     inout = []
     for i in range(pincount):
         pname = "D%d*" % i
@@ -64,7 +64,7 @@ def lpc(suffix, bank, pincount=4):
 
 
 def emmc(suffix, bank, pincount=8):
-    emmcpins = ['CMD+', 'CLK+']
+    emmcpins = ['CMD*', 'CLK+']
     inout = []
     for i in range(pincount):
         pname = "D%d*" % i
