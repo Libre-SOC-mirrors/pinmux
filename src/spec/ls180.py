@@ -306,7 +306,9 @@ def pinparse(psp, pinspec):
         # PWM
         elif name.startswith('pwm'):
             name = name[:-4]
-            pad = ['p_' + name, name, name]
+            i = name[3:]
+            name2 = 'pwm(%s)' % i
+            pad = ['p_' + name, name2, name2]
             iopads.append(pad)
         else:
             pad = ['p_' + name, name, name]
