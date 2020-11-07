@@ -153,14 +153,15 @@ def pinparse(psp, pinspec):
 
     n_intpower = 0
     n_extpower = 0
-    for (padnum, name, _), bank in zip(p.muxed_cells, p.muxed_cells_bank):
+    for (padnum, name, x), bank in zip(p.muxed_cells, p.muxed_cells_bank):
         orig_name = name
         domain = None # TODO, get this from the PinSpec.  sigh
         padnum = int(padnum)
         start = p.bankstart[bank]
         banknum = padnum - start
-        print banknum, name, bank
+        print "bank", bank, banknum, "padname", name, padnum, x
         padbank = pads[bank]
+        pad = None
         # VSS
         if name.startswith('vss'):
             name = 'p_%sck_' % name[:-2] + name[-1]
@@ -178,7 +179,7 @@ def pinparse(psp, pinspec):
                 name = 'p_sys_clk_0'
             elif name == 'sys_rst':
                 #name = 'p_sys_rst_1'
-                iopads.append([name, name, name])
+                pad = [name, name, name]
                 padbank[banknum] = name
                 print "sys_rst add", bank, banknum, name
                 name = None
@@ -186,12 +187,12 @@ def pinparse(psp, pinspec):
                 name = None # ignore
             elif name == 'sys_pllout':
                 name = 'sys_pll_48_o'
-                iopads.append(['p_' + name, name, name])
+                pad = ['p_' + name, name, name]
             elif name.startswith('sys_csel'):
                 i = name[-1]
                 name2 = 'sys_clksel_i(%s)' % i
                 name = 'p_sys_clksel_' + i
-                iopads.append([name, name2, name2])
+                pad = [name, name2, name2]
             #if name:
             #    iopads.append([pname, name, name])
             print "sys pad", name
@@ -208,7 +209,7 @@ def pinparse(psp, pinspec):
             else:
                 prefix = 'spisdcard_'
             name = prefix + suffix
-            iopads.append(['p_' + name, name, name])
+            pad = ['p_' + name, name, name]
         # SD/MMC
         elif name.startswith('sd0'):
             domain = 'SD'
@@ -218,56 +219,53 @@ def pinparse(psp, pinspec):
                 name2 = 'sdcard_data_%%s(%s)' % i
                 pad = ['p_' + name, name, name2 % 'o', name2 % 'i',
                             'sdcard_data_oe']
-                iopads.append(pad)
             elif name.startswith('sd0_cmd'):
                 name = 'sdcard_cmd'
                 name2 = 'sdcard_cmd_%s'
                 pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
-                iopads.append(pad)
             else:
                 name = 'sdcard_' + name[4:]
-                iopads.append(['p_' + name, name, name])
+                pad = ['p_' + name, name, name]
         # SDRAM
         elif name.startswith('sdr'):
             domain = 'SDR'
             if name == 'sdr_clk':
                 name = 'sdram_clock'
-                iopads.append(['p_' + name, name, name])
+                pad = ['p_' + name, name, name]
             elif name.startswith('sdr_ad'):
                 i = name[6:]
                 name = 'sdram_a_' + i
                 name2 = 'sdram_a(%s)' % i
-                iopads.append(['p_' + name, name2, name2])
+                pad = ['p_' + name, name2, name2]
             elif name.startswith('sdr_ba'):
                 i = name[-1]
                 name = 'sdram_ba_' + i
                 name2 = 'sdram_ba(%s)' % i
-                iopads.append(['p_' + name, name2, name2])
+                pad = ['p_' + name, name2, name2]
             elif name.startswith('sdr_dqm'):
                 i = name[-1]
                 name = 'sdram_dm_' + i
                 name2 = 'sdram_dm(%s)' % i
-                iopads.append(['p_' + name, name2, name2])
+                pad = ['p_' + name, name2, name2]
             elif name.startswith('sdr_d'):
                 i = name[5:]
                 name = 'sdram_dq_' + i
                 name2 = 'sdram_dq_%%s(%s)' % i
                 pad = ['p_'+name, name, name2 % 'o', name2 % 'i', 'sdram_dq_oe']
-                iopads.append(pad)
             elif name == 'sdr_csn0':
                 name = 'sdram_cs_n'
-                iopads.append(['p_' + name, name, name])
+                pad = ['p_' + name, name, name]
             elif name[-1] == 'n':
                 name = 'sdram_' + name[4:-1] + '_n'
-                iopads.append(['p_' + name, name, name])
+                pad = ['p_' + name, name, name]
             else:
                 name = 'sdram_' + name[4:]
-                iopads.append(['p_' + name, name, name])
+                pad = ['p_' + name, name, name]
         # UART
         elif name.startswith('uart'):
             domain = 'UART'
             name = 'uart_' + name[6:]
-            iopads.append(['p_' + name, name, name])
+            pad = ['p_' + name, name, name]
         # GPIO
         elif name.startswith('gpio'):
             domain = 'GPIO'
@@ -276,7 +274,6 @@ def pinparse(psp, pinspec):
             name2 = 'gpio_%%s(%s)' % i
             pad = ['p_' + name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
             print ("GPIO pad", name, pad)
-            iopads.append(pad)
         # I2C master-only
         elif name.startswith('mtwi'):
             domain = 'MTWI'
@@ -285,9 +282,8 @@ def pinparse(psp, pinspec):
                 name2 = 'i2c_sda_%s'
                 pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
                 print ("I2C pad", name, pad)
-                iopads.append(pad)
             else:
-                iopads.append(['p_' + name, name, name])
+                pad = ['p_' + name, name, name]
         # I2C bi-directional
         elif name.startswith('twi'):
             domain = 'TWI'
@@ -295,24 +291,20 @@ def pinparse(psp, pinspec):
             name2 = name + '_%s'
             pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
             print ("I2C pad", name, pad)
-            iopads.append(pad)
         # EINT
         elif name.startswith('eint'):
             i = name[-1]
             name = 'eint_%s' % i
             name2 = 'eint(%s)' % i
             pad = ['p_' + name, name2, name2]
-            iopads.append(pad)
         # PWM
         elif name.startswith('pwm'):
             name = name[:-4]
             i = name[3:]
             name2 = 'pwm(%s)' % i
             pad = ['p_' + name, name2, name2]
-            iopads.append(pad)
         else:
             pad = ['p_' + name, name, name]
-            iopads.append(pad)
             print ("GPIO pad", name, pad)
 
         # JTAG domain
@@ -335,6 +327,32 @@ def pinparse(psp, pinspec):
                         clocks[domain] = name
             # record remap
             pinmap[orig_name] = name
+
+        # add pad to iopads
+        if domain and pad is not None:
+            # append direction from spec/domain.  damn awkward processing
+            # to find it.
+            fn, name = orig_name.split("_")
+            if domain == 'PWM':
+                name = fn[3:]
+            print dir(psp)
+            print dir(p)
+            print psp.byspec
+            spec = None
+            for k in psp.byspec.keys():
+                if k.startswith(domain):
+                    spec = psp.byspec[k]
+            print "spec found", domain, spec
+            assert spec is not None
+            found = None
+            for pname in spec:
+                if pname.lower().startswith(name):
+                    found = pname
+            print "found spec", found
+            assert found is not None
+            # whewwww.  add the direction onto the pad spec list
+            pad.append(found[-1])
+            iopads.append(pad)
 
     # not connected
     nc_idx = 0
