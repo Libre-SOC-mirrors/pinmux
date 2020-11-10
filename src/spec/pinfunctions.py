@@ -286,7 +286,7 @@ def vdd(suffix, bank):
 
 def sys(suffix, bank):
     return (['CLK-', 'RST-', 'PLLCLK-', 'PLLOUT+',
-             'CSEL0-', 'CSEL1-', 'CSEL2-'], [], 'CLK')
+             'CSEL0-', 'CSEL1-', 'PLLOCK+'], [], 'CLK')
 
 # list functions by name here
 
