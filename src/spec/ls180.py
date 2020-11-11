@@ -164,14 +164,22 @@ def pinparse(psp, pinspec):
         pad = None
         # VSS
         if name.startswith('vss'):
-            name = 'p_%sck_' % name[:-2] + name[-1]
+            name = 'p_%s_' % name[:-2] + name[-1]
+            if 'i' in name:
+                name2 = 'vss'
+            else:
+                name2 = 'iovss'
+            pad = [name, name2]
         # VDD
         elif name.startswith('vdd'):
             if 'i' in name:
-               n_intpower += 1
+                n_intpower += 1
+                name2 = 'vdd'
             else:
-               n_extpower += 1
-            name = 'p_%sck_' % name[:-2] + name[-1]
+                n_extpower += 1
+                name2 = 'iovdd'
+            name = 'p_%s_' % name[:-2] + name[-1]
+            pad = [name, name2]
         # SYS
         elif name.startswith('sys'):
             domain = 'SYS'
@@ -357,6 +365,8 @@ def pinparse(psp, pinspec):
             assert found is not None
             # whewwww.  add the direction onto the pad spec list
             pad.append(found[-1])
+            iopads.append(pad)
+        elif pad is not None:
             iopads.append(pad)
 
     # not connected
