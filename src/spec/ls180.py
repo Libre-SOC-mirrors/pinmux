@@ -352,8 +352,6 @@ def pinparse(psp, pinspec):
             fn, name = orig_name.split("_")
             if domain == 'PWM':
                 name = fn[3:]
-            print dir(psp)
-            print dir(p)
             print psp.byspec
             spec = None
             for k in psp.byspec.keys():
