@@ -293,12 +293,14 @@ def pinparse(psp, pinspec):
             print ("I2C pad", name, pad)
         # EINT
         elif name.startswith('eint'):
+            domain = 'EINT'
             i = name[-1]
             name = 'eint_%s' % i
             name2 = 'eint(%s)' % i
             pad = ['p_' + name, name2, name2]
         # PWM
         elif name.startswith('pwm'):
+            domain = 'PWM'
             name = name[:-4]
             i = name[3:]
             name2 = 'pwm(%s)' % i
