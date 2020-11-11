@@ -187,7 +187,7 @@ def pinparse(psp, pinspec):
         elif name.startswith('sys'):
             domain = 'SYS'
             if name == 'sys_clk':
-                name = 'p_sys_clk_0'
+                pad = [name, name, name]
             elif name == 'sys_rst':
                 #name = 'p_sys_rst_1'
                 pad = [name, name, name]
