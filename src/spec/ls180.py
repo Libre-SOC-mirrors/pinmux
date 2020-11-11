@@ -166,19 +166,22 @@ def pinparse(psp, pinspec):
         if name.startswith('vss'):
             name = 'p_%s_' % name[:-2] + name[-1]
             if 'i' in name:
+                name = 'power_' + name[-1]
                 name2 = 'vss'
             else:
+                name = 'iopower_' + name[-1]
                 name2 = 'iovss'
             pad = [name, name2]
         # VDD
         elif name.startswith('vdd'):
             if 'i' in name:
                 n_intpower += 1
+                name = 'ground_' + name[-1]
                 name2 = 'vdd'
             else:
                 n_extpower += 1
+                name = 'ioground_' + name[-1]
                 name2 = 'iovdd'
-            name = 'p_%s_' % name[:-2] + name[-1]
             pad = [name, name2]
         # SYS
         elif name.startswith('sys'):
@@ -325,7 +328,8 @@ def pinparse(psp, pinspec):
             domain = 'JTAG'
 
         if name and not name.startswith('p_'):
-            name = 'p_' + name
+            if 'power' not in name and 'ground' not in name:
+                name = 'p_' + name
         if name is not None:
             padbank[banknum] = name
             # create domains
