@@ -185,6 +185,9 @@ def pinparse(psp, pinspec):
                 name = None
             elif name == 'sys_pllclk':
                 name = None # ignore
+            elif name == 'sys_pllock':
+                name = 'sys_plllock'
+                pad = ['p_' + name, name, name]
             elif name == 'sys_pllout':
                 name = 'sys_pll_48_o'
                 pad = ['p_' + name, name, name]
