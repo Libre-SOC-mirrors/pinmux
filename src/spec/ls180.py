@@ -364,7 +364,11 @@ def pinparse(psp, pinspec):
     for pl in [pe, pw, pn, ps]:
         for i in range(len(pl)):
             if pl[i] == '':
-                pl[i] = 'nc_%d' % nc_idx
+                name = 'nc_%d' % nc_idx
+                name2 = 'nc(%d)' % nc_idx
+                pl[i] = name
+                pinmap[name] = name
+                iopads.append([name, name2, name2, "-"])
                 nc_idx += 1
 
     print p.bankstart
