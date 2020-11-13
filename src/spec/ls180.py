@@ -200,7 +200,7 @@ def pinparse(psp, pinspec):
                 name = 'sys_pllock'
                 pad = ['p_' + name, name, name]
             elif name == 'sys_pllout':
-                name = 'sys_pll_48_o'
+                name = 'sys_pll_18_o'
                 pad = ['p_' + name, name, name]
             elif name.startswith('sys_csel'):
                 i = name[-1]
