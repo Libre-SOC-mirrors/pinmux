@@ -166,21 +166,21 @@ def pinparse(psp, pinspec):
         if name.startswith('vss'):
             name = 'p_%s_' % name[:-2] + name[-1]
             if 'i' in name:
-                name = 'power_' + name[-1]
+                name = 'ground_' + name[-1]
                 name2 = 'vss'
             else:
-                name = 'iopower_' + name[-1]
+                name = 'ioground_' + name[-1]
                 name2 = 'iovss'
             pad = [name, name2]
         # VDD
         elif name.startswith('vdd'):
             if 'i' in name:
                 n_intpower += 1
-                name = 'ground_' + name[-1]
+                name = 'power_' + name[-1]
                 name2 = 'vdd'
             else:
                 n_extpower += 1
-                name = 'ioground_' + name[-1]
+                name = 'iopower_' + name[-1]
                 name2 = 'iovdd'
             pad = [name, name2]
         # SYS
