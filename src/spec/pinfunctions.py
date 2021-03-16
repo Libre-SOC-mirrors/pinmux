@@ -212,7 +212,7 @@ def sdram2(suffix, bank):
     for i in range(10, 13):
         buspins.append("AD%d+" % i)
     for i in range(1, 2):
-        pname = "DQM%d*" % i
+        pname = "DQM%d+" % i
         buspins.append(pname)
     for i in range(8, 16):
         pname = "D%d*" % i
@@ -229,7 +229,7 @@ def sdram3(suffix, bank):
     for i in range(13, 14):
         buspins.append("AD%d+" % i)
     for i in range(1, 4):
-        pname = "DQM%d*" % i
+        pname = "DQM%d+" % i
     for i in range(8, 32):
         pname = "D%d*" % i
         buspins.append(pname)
