@@ -87,12 +87,10 @@ def pinspec():
     ps.vdd("E", ('W', 1), 0, 2, 1)
     ps.pwm("", ('W', 2), 0, 0, 2)
     ps.eint("", ('W', 4), 0, 0, 3)
-    ps.mspi("1", ('W', 7), 0)
+    #ps.mspi("1", ('W', 7), 0)       comment out (litex problem 25mar2021)
     ps.sdmmc("0", ('W', 11), 0)
     ps.vss("I", ('W', 30), 0, 4, 1)
     ps.vdd("I", ('W', 31), 0, 4, 1)
-    #ps.mspi("0", ('W', 8), 0)
-    #ps.mspi("1", ('W', 8), 0)
 
     #ps.mquadspi("1", ('S', 0), 0)
 
@@ -107,7 +105,9 @@ def pinspec():
 
     ls180 = ['SD0', 'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
-                'MTWI', 'MSPI0', 'MSPI1', 'SDR']
+                'MTWI', 'MSPI0',
+                # 'MSPI1', litex problem 25mar2021
+                'SDR']
     ls180_eint = []
     ls180_pwm = []#['B0:PWM_0']
     descriptions = {
