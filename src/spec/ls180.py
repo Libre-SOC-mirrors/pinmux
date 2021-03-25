@@ -88,7 +88,7 @@ def pinspec():
     ps.pwm("", ('W', 2), 0, 0, 2)
     ps.eint("", ('W', 4), 0, 0, 3)
     #ps.mspi("1", ('W', 7), 0)       comment out (litex problem 25mar2021)
-    ps.sdmmc("0", ('W', 11), 0)
+    #ps.sdmmc("0", ('W', 11), 0)     comment out (litex problem 25mar2021)
     ps.vss("I", ('W', 30), 0, 4, 1)
     ps.vdd("I", ('W', 31), 0, 4, 1)
 
@@ -103,7 +103,9 @@ def pinspec():
     # using "BM:Name".  Pins are removed in-order as listed from
     # lists (interfaces, EINTs, PWMs) from available pins.
 
-    ls180 = ['SD0', 'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
+    ls180 = [
+            # 'SD0', litex problem 25mar2021
+            'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
                 'MTWI', 'MSPI0',
                 # 'MSPI1', litex problem 25mar2021
@@ -218,7 +220,7 @@ def pinparse(psp, pinspec):
                 suffix = 'clk'
             elif suffix == 'nss':
                 suffix = 'cs_n'
-            if name.startswith('mspi1'):
+            if name.startswith('mspi0'):
                 prefix = 'spimaster_'
             else:
                 prefix = 'spisdcard_'
