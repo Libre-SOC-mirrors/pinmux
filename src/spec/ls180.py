@@ -88,7 +88,7 @@ def pinspec():
     #ps.pwm("", ('W', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     ps.eint("", ('W', 4), 0, 0, 3)
     #ps.mspi("1", ('W', 7), 0)       comment out (litex problem 25mar2021)
-    ps.sdmmc("0", ('W', 11), 0)     # comment out (litex problem 25mar2021)
+    #ps.sdmmc("0", ('W', 11), 0)     # comment out (litex problem 25mar2021)
     ps.vss("I", ('W', 30), 0, 4, 1)
     ps.vdd("I", ('W', 31), 0, 4, 1)
 
