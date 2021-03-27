@@ -312,7 +312,7 @@ def pinparse(psp, pinspec):
             domain = 'EINT'
             i = name[-1]
             name = 'eint_%s' % i
-            name2 = 'eint(%s)' % i
+            name2 = 'eint%s' % i
             pad = ['p_' + name, name2, name2]
         # PWM
         elif name.startswith('pwm'):
