@@ -79,7 +79,7 @@ def pinspec():
     ps.mspi("0", ('S', 8), 0)
     ps.uart("0", ('S', 13), 0)
     ps.gpio("", ('S', 15), 0, 0, 8)
-    ps.sys("", ('S', 23), 0, 0, 7)
+    ps.sys("", ('S', 23), 0, 0, 2) # should be 7, to do all PLL pins
     ps.vss("I", ('S', 30), 0, 3, 1)
     ps.vdd("I", ('S', 31), 0, 3, 1)
 
