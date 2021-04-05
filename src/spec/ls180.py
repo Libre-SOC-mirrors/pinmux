@@ -233,8 +233,7 @@ def pinparse(psp, pinspec):
                 i = name[5:]
                 name = 'sdcard_data' + i
                 name2 = 'sdcard_data_%%s(%s)' % i
-                pad = ['p_' + name, name, name2 % 'o', name2 % 'i',
-                            'sdcard_data_oe']
+                pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
             elif name.startswith('sd0_cmd'):
                 name = 'sdcard_cmd'
                 name2 = 'sdcard_cmd_%s'
@@ -267,7 +266,7 @@ def pinparse(psp, pinspec):
                 i = name[5:]
                 name = 'sdram_dq_' + i
                 name2 = 'sdram_dq_%%s(%s)' % i
-                pad = ['p_'+name, name, name2 % 'o', name2 % 'i', 'sdram_dq_oe']
+                pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
             elif name == 'sdr_csn0':
                 name = 'sdram_cs_n'
                 pad = ['p_' + name, name, name]
