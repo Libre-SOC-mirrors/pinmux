@@ -92,7 +92,7 @@ if __name__ == '__main__':
                 pm, chip = module.pinparse(ps, pinspec)
                 litexmap = ps.pywrite(pyf, pm)
                 pinout, bankspec, pin_spec, fixedpins = ps.write(of)
-                chip['litex.map'] = litexmap
+                #chip['litex.map'] = litexmap
                 chip = json.dumps(chip)
                 with open("%s/litex_pinpads.json" % pinspec, "w") as f:
                     f.write(chip)

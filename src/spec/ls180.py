@@ -139,6 +139,7 @@ def pinspec():
 def pinparse(psp, pinspec):
     p = Parse(pinspec, verify=False)
     pinmap = {}
+    litexmap = {}
 
     print p.muxed_cells
     print p.muxed_cells_bank
@@ -157,6 +158,7 @@ def pinparse(psp, pinspec):
     n_extpower = 0
     for (padnum, name, x), bank in zip(p.muxed_cells, p.muxed_cells_bank):
         orig_name = name
+        litex_name = None
         domain = None # TODO, get this from the PinSpec.  sigh
         padnum = int(padnum)
         start = p.bankstart[bank]
@@ -226,6 +228,7 @@ def pinparse(psp, pinspec):
                 prefix = 'spisdcard_'
             name = prefix + suffix
             pad = ['p_' + name, name, name]
+            litex_name = name[:6] + suffix
         # SD/MMC
         elif name.startswith('sd0'):
             domain = 'SD'
@@ -241,6 +244,7 @@ def pinparse(psp, pinspec):
             else:
                 name = 'sdcard_' + name[4:]
                 pad = ['p_' + name, name, name]
+            litex_name = name[:6] + "_".join(name.split("_")[1:])
         # SDRAM
         elif name.startswith('sdr'):
             domain = 'SDR'
@@ -276,6 +280,7 @@ def pinparse(psp, pinspec):
             else:
                 name = 'sdram_' + name[4:]
                 pad = ['p_' + name, name, name]
+            litex_name = name[:5] + "_".join(name.split("_")[1:])
         # UART
         elif name.startswith('uart'):
             domain = 'UART'
@@ -324,6 +329,9 @@ def pinparse(psp, pinspec):
             pad = ['p_' + name, name, name]
             print ("GPIO pad", name, pad)
 
+        if litex_name is None:
+            litex_name = name
+
         # JTAG domain
         if name and name.startswith('jtag'):
             domain = 'JTAG'
@@ -345,6 +353,7 @@ def pinparse(psp, pinspec):
                         clocks[domain] = name
             # record remap
             pinmap[orig_name] = name
+            litexmap[litex_name] = name
 
         # add pad to iopads
         if domain and pad is not None:
@@ -412,6 +421,7 @@ def pinparse(psp, pinspec):
               'pads.instances' : iopads,
               'pins.specs' : psp.byspec,
               'pins.map' : pinmap,
+              'litex.map' : litexmap,
               'chip.domains' : domains,
               'chip.clocks' : clocks,
               'chip.n_intpower': n_intpower,
