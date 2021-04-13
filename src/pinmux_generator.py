@@ -19,6 +19,7 @@
 import getopt
 import os.path
 import sys
+import json
 from spec import modules, specgen, dummytest
 
 
@@ -88,15 +89,20 @@ if __name__ == '__main__':
         with open(fname, "w") as of:
             with open(pyname, "w") as pyf:
                 ps = module.pinspec()
+                pm, chip = module.pinparse(ps, pinspec)
+                litexmap = ps.pywrite(pyf, pm)
                 pinout, bankspec, pin_spec, fixedpins = ps.write(of)
+                chip['litex.map'] = litexmap
+                chip = json.dumps(chip)
+                with open("%s/litex_pinpads.json" % pinspec, "w") as f:
+                    f.write(chip)
+
                 if testing:
                     dummytest(ps, output_dir, output_type)
                 else:
                     specgen(of, output_dir, pinout,
                             bankspec, ps.muxwidths, pin_spec, fixedpins,
                             ps.fastbus)
-                pm = module.pinparse(ps, pinspec)
-                ps.pywrite(pyf, pm)
     else:
         if output_type == 'bsv':
             from bsv.pinmux_generator import pinmuxgen as gentypes

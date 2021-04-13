@@ -38,8 +38,7 @@ class PinSpec(Pinouts):
         self.scenarios.append((name, needed, eint, pwm, descriptions))
 
     def pywrite(self, pyf, pinmap):
-
-        python_dict_fns(pyf, pinmap, self, self.function_names)
+        return python_dict_fns(pyf, pinmap, self, self.function_names)
 
     def write(self, of):
 

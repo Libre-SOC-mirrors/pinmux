@@ -418,8 +418,4 @@ def pinparse(psp, pinspec):
               'chip.n_extpower': n_extpower,
            }
 
-    chip = json.dumps(chip)
-    with open("ls180/litex_pinpads.json", "w") as f:
-        f.write(chip)
-
-    return pinmap
+    return pinmap, chip
