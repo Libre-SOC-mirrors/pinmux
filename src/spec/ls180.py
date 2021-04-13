@@ -299,7 +299,9 @@ def pinparse(psp, pinspec):
         # I2C master-only
         elif name.startswith('mtwi'):
             domain = 'MTWI'
-            name = 'i2c' + name[4:]
+            suffix = name[4:]
+            litex_name = 'mtwi' + suffix
+            name = 'i2c' + suffix
             if name.startswith('i2c_sda'):
                 name2 = 'i2c_sda_%s'
                 pad = ['p_'+name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
