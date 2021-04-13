@@ -226,9 +226,9 @@ def pinparse(psp, pinspec):
                 prefix = 'spimaster_'
             else:
                 prefix = 'spisdcard_'
+            litex_name = name[:6] + suffix
             name = prefix + suffix
             pad = ['p_' + name, name, name]
-            litex_name = name[:6] + suffix
         # SD/MMC
         elif name.startswith('sd0'):
             domain = 'SD'
@@ -244,7 +244,7 @@ def pinparse(psp, pinspec):
             else:
                 name = 'sdcard_' + name[4:]
                 pad = ['p_' + name, name, name]
-            litex_name = name[:6] + "_".join(name.split("_")[1:])
+            litex_name = orig_name[:4] + "_".join(name.split("_")[1:])
         # SDRAM
         elif name.startswith('sdr'):
             domain = 'SDR'
@@ -280,7 +280,7 @@ def pinparse(psp, pinspec):
             else:
                 name = 'sdram_' + name[4:]
                 pad = ['p_' + name, name, name]
-            litex_name = name[:5] + "_".join(name.split("_")[1:])
+            litex_name = orig_name[:4] + "_".join(name.split("_")[1:])
         # UART
         elif name.startswith('uart'):
             domain = 'UART'
