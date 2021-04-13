@@ -288,12 +288,14 @@ def pinparse(psp, pinspec):
             pad = ['p_' + name, name, name]
         # GPIO
         elif name.startswith('gpio'):
+            gbank = name[4]
             domain = 'GPIO'
             i = name[7:]
             name = 'gpio_' + i
             name2 = 'gpio_%%s(%s)' % i
             pad = ['p_' + name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
             print ("GPIO pad", name, pad)
+            litex_name = "gpio_%s" % gbank + "_".join(name.split("_")[1:])
         # I2C master-only
         elif name.startswith('mtwi'):
             domain = 'MTWI'
