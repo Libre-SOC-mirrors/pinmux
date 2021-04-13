@@ -285,8 +285,12 @@ def vdd(suffix, bank):
     return (RangePin("-"), [], None)
 
 def sys(suffix, bank):
-    return (['CLK-', 'RST-', 'PLLCLK-', 'PLLOUT+',
-             'CSEL0-', 'CSEL1-', 'PLLOCK+'], [], 'CLK')
+    return (['CLK-', 'RST-',
+             'PLLCLK-',                    # PLL ref clock input
+             'PLLSELA0-', 'PLLSELA1-',     # PLL divider-selector
+             'PLLTESTOUT+',                # divided-output (for testing)
+             'PLLVCOUT+',                  # PLL VCO analog out (for testing)
+             ], [], 'CLK')
 
 # list functions by name here
 
