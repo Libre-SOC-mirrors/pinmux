@@ -44,7 +44,7 @@ def create_sv(fname, pins):
                          (woffs-scale*4.5, ht-scale*0.5),
                          stroke=svgwrite.rgb(16, 255, 16, '%'),
                          stroke_width=scale/10.0))
-        dwg.add(dwg.text(pin.upper(), insert=(woffs-scale*12, ht),
+        dwg.add(dwg.text(pin.upper(), insert=(woffs-scale*14, ht),
                          fill='black'))
         dwg.add(dwg.text("W%d" % (i+1), insert=(woffs-scale*1.5, ht),
                             fill='black'))
