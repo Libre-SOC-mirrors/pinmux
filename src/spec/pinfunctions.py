@@ -197,10 +197,10 @@ def sdram1(suffix, bank, n_adr=10):
         pname = "D%d*" % i
         buspins.append(pname)
         inout.append(pname)
-    for i in range(n_adr):
-        buspins.append("AD%d+" % i)
     for i in range(2):
         buspins.append("BA%d+" % i)
+    for i in range(n_adr):
+        buspins.append("AD%d+" % i)
     buspins += ['CLK+', 'CKE+', 'RASn+', 'CASn+', 'WEn+',
                 'CSn0+']
     return (buspins, inout, 'CLK')
