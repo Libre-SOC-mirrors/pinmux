@@ -59,31 +59,31 @@ def pinspec():
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
 
-    ps.vdd("E", ('S', 0), 0, 0, 1)
-    ps.vss("E", ('S', 1), 0, 0, 1)
-    ps.vdd("I", ('S', 2), 0, 0, 1)
-    ps.vss("I", ('S', 3), 0, 0, 1)
-    ps.mi2c("", ('S', 4), 0, 0, 2)
-    ps.sdram1("", ('S', 6), 0, 0, 15) # SDRAM DAM0, D0-7, AD0-3
-    ps.vss("I", ('S', 22), 0, 1, 1)
-    ps.vdd("I", ('S', 23), 0, 1, 1)
-    ps.vss("E", ('S', 24), 0, 1, 1)
-    ps.vdd("E", ('S', 25), 0, 1, 1)
-    ps.sdram1("", ('S', 26), 0, 15, 6) # AD4-9
+    ps.vdd("E", ('W', 0), 0, 0, 1)
+    ps.vss("E", ('W', 1), 0, 0, 1)
+    ps.vdd("I", ('W', 2), 0, 0, 1)
+    ps.vss("I", ('W', 3), 0, 0, 1)
+    ps.mi2c("", ('W', 4), 0, 0, 2)
+    ps.sdram1("", ('W', 6), 0, 0, 15) # SDRAM DAM0, D0-7, AD0-3
+    ps.vss("I", ('W', 22), 0, 1, 1)
+    ps.vdd("I", ('W', 23), 0, 1, 1)
+    ps.vss("E", ('W', 24), 0, 1, 1)
+    ps.vdd("E", ('W', 25), 0, 1, 1)
+    ps.sdram1("", ('W', 26), 0, 15, 6) # AD4-9
 
-    ps.sdram2("", ('W', 0), 0, 0, 4) # 1st 4, AD10-12,DQM1
-    ps.vdd("E", ('W', 4), 0, 2, 1)
-    ps.vss("E", ('W', 5), 0, 2, 1)
-    ps.vdd("I", ('W', 6), 0, 2, 1)
-    ps.vss("I", ('W', 7), 0, 2, 1)
-    ps.sdram2("", ('W', 8), 0, 4, 8) # D8-15
-    ps.sdram1("", ('W', 16), 0, 21, 9) # clk etc.
-    ps.vss("I", ('W', 22), 0, 3, 1)
-    ps.vdd("I", ('W', 23), 0, 3, 1)
-    ps.vss("E", ('W', 24), 0, 3, 1)
-    ps.vdd("E", ('W', 25), 0, 3, 1)
-    ps.uart("0", ('W', 26), 0)
-    ps.mspi("0", ('W', 28), 0)
+    ps.sdram2("", ('S', 0), 0, 0, 4) # 1st 4, AD10-12,DQM1
+    ps.vdd("E", ('S', 4), 0, 2, 1)
+    ps.vss("E", ('S', 5), 0, 2, 1)
+    ps.vdd("I", ('S', 6), 0, 2, 1)
+    ps.vss("I", ('S', 7), 0, 2, 1)
+    ps.sdram2("", ('S', 8), 0, 4, 8) # D8-15
+    ps.sdram1("", ('S', 16), 0, 21, 9) # clk etc.
+    ps.vss("I", ('S', 22), 0, 3, 1)
+    ps.vdd("I", ('S', 23), 0, 3, 1)
+    ps.vss("E", ('S', 24), 0, 3, 1)
+    ps.vdd("E", ('S', 25), 0, 3, 1)
+    ps.uart("0", ('S', 26), 0)
+    ps.mspi("0", ('S', 28), 0)
 
     ps.sys("", ('E', 0), 0, 5, 1) # analog VCO out in right top
     ps.gpio("", ('E', 1), 0, 0, 5) # GPIO 0-4
