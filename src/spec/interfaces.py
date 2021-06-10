@@ -64,7 +64,8 @@ class PinGen(object):
         self.fname = fname
 
     def __call__(self, suffix, offs, mux,
-                 start=None, limit=None, spec=None, origsuffix=None):
+                 start=None, limit=None, spec=None, origsuffix=None,
+                 rev=False):
         bank = offs[0]
         pf = self.pinfn(suffix, bank)
         print "pf", suffix, bank, pf
@@ -80,6 +81,9 @@ class PinGen(object):
         sk = "%s:%s" % (self.fname, str(suffix))
         print "pingroup pre", sk, pingroup
         pingroup = pingroup[start:limit]  # see comment in spec.pinfunctions
+        if rev:
+            # reverse order of pingroup
+            pingroup.reverse()
         print "pingroup post", sk, pingroup
         if self.pinouts.byspec.has_key(sk):
             self.pinouts.byspec[sk] += pingroup

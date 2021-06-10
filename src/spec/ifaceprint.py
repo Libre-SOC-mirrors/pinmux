@@ -22,6 +22,17 @@ def create_sv(fname, pins):
                         (woffs+width-scale*12, hoffs+height-scale*12),
             stroke=svgwrite.rgb(255, 255, 16, '%'),
             stroke_width=scale/10.0))
+
+    dwg.add(dwg.text("Libre-SOC ls180",
+                       insert=(woffs+width/2-scale*5, woffs+height/2),
+                     fill='white'))
+    dwg.add(dwg.text("In collaboration with LIP6.fr",
+                       insert=(woffs+width/2-scale*5, woffs+height/2+scale),
+                     fill='white'))
+    dwg.add(dwg.text("Cell Libraries by Chips4Makers",
+                       insert=(woffs+width/2-scale*5, woffs+height/2+scale*2),
+                     fill='white'))
+
     for i, pin in enumerate(pins['pads.west']):
         ht = hoffs + height - (i * scale) + scale*0.5
         dwg.add(dwg.line((woffs-scale*2, ht-scale*0.5),
