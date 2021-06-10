@@ -47,7 +47,7 @@ def create_sv(fname, pins):
         dwg.add(dwg.text(pin.upper(), insert=(woffs-scale*14, ht),
                          fill='black'))
         dwg.add(dwg.text("W%d" % (i+1), insert=(woffs-scale*1.5, ht),
-                            fill='black'))
+                            fill='white'))
 
     for i, pin in enumerate(pins['pads.east']):
         ht = hoffs + height - (i * scale) + scale*0.5
@@ -59,7 +59,7 @@ def create_sv(fname, pins):
         dwg.add(dwg.text(pin.upper(), insert=(wd+scale*5, ht-scale*0.25),
                          fill='black'))
         dwg.add(dwg.text("E%d" % (i+1), insert=(wd, ht-scale*0.25),
-                            fill='black'))
+                            fill='white'))
 
     for i, pin in enumerate(pins['pads.north']):
         wd = woffs + i * scale + scale*1.5
@@ -72,7 +72,7 @@ def create_sv(fname, pins):
         txt.rotate(-90, pos)
         dwg.add(txt)
         pos=(wd+scale*0.25, hoffs-scale*0.25)
-        txt = dwg.text("N%d" % (i+1), insert=pos, fill='black')
+        txt = dwg.text("N%d" % (i+1), insert=pos, fill='white')
         txt.rotate(-90, pos)
         dwg.add(txt)
 
@@ -88,7 +88,7 @@ def create_sv(fname, pins):
         txt.rotate(90, pos)
         dwg.add(txt)
         pos=(wd-scale*0.25, ht+scale*0.25)
-        txt = dwg.text("S%d" % (i+1), insert=pos, fill='black')
+        txt = dwg.text("S%d" % (i+1), insert=pos, fill='white')
         txt.rotate(90, pos)
         dwg.add(txt)
 
