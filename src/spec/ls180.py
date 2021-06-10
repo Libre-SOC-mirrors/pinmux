@@ -64,8 +64,8 @@ def pinspec():
     ps.vss("E", ('W', 7), 0, 0, 1)
     ps.vdd("I", ('W', 8), 0, 0, 1)
     ps.vss("I", ('W', 9), 0, 0, 1)
-    ps.mi2c("", ('W', 10), 0, 0, 2)
-    ps.sdram1("", ('W', 12), 0, 0, 15) # SDRAM DAM0, D0-7, AD0-3
+    ps.sdram1("", ('W', 10), 0, 0, 15, rev=True) # SDRAM DAM0, D0-7, AD0-3
+    ps.mi2c("", ('W', 26), 0, 0, 2)
     ps.vss("I", ('W', 28), 0, 1, 1)
     ps.vdd("I", ('W', 29), 0, 1, 1)
     ps.vss("E", ('W', 30), 0, 1, 1)
