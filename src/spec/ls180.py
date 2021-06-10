@@ -59,17 +59,17 @@ def pinspec():
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
 
-    ps.vdd("E", ('W', 0), 0, 0, 1)
-    ps.vss("E", ('W', 1), 0, 0, 1)
-    ps.vdd("I", ('W', 2), 0, 0, 1)
-    ps.vss("I", ('W', 3), 0, 0, 1)
-    ps.mi2c("", ('W', 4), 0, 0, 2)
-    ps.sdram1("", ('W', 6), 0, 0, 15) # SDRAM DAM0, D0-7, AD0-3
-    ps.vss("I", ('W', 22), 0, 1, 1)
-    ps.vdd("I", ('W', 23), 0, 1, 1)
-    ps.vss("E", ('W', 24), 0, 1, 1)
-    ps.vdd("E", ('W', 25), 0, 1, 1)
-    ps.sdram1("", ('W', 26), 0, 15, 6) # AD4-9
+    ps.sdram1("", ('W', 0), 0, 15, 6, rev=True) # AD4-9, turned round
+    ps.vdd("E", ('W', 6), 0, 0, 1)
+    ps.vss("E", ('W', 7), 0, 0, 1)
+    ps.vdd("I", ('W', 8), 0, 0, 1)
+    ps.vss("I", ('W', 9), 0, 0, 1)
+    ps.mi2c("", ('W', 10), 0, 0, 2)
+    ps.sdram1("", ('W', 12), 0, 0, 15) # SDRAM DAM0, D0-7, AD0-3
+    ps.vss("I", ('W', 28), 0, 1, 1)
+    ps.vdd("I", ('W', 29), 0, 1, 1)
+    ps.vss("E", ('W', 30), 0, 1, 1)
+    ps.vdd("E", ('W', 31), 0, 1, 1)
 
     ps.sdram2("", ('S', 0), 0, 0, 4) # 1st 4, AD10-12,DQM1
     ps.vdd("E", ('S', 4), 0, 2, 1)
@@ -85,21 +85,21 @@ def pinspec():
     ps.uart("0", ('S', 26), 0)
     ps.mspi("0", ('S', 28), 0)
 
-    ps.sys("", ('E', 0), 0, 5, 1) # analog VCO out in right top
-    ps.gpio("", ('E', 1), 0, 0, 5) # GPIO 0-4
+    ps.gpio("", ('E', 0), 0, 0, 6) # GPIO 0-5
     ps.vss("E", ('E', 6), 0, 4, 1)
     ps.vdd("E", ('E', 7), 0, 4, 1)
     ps.vdd("I", ('E', 8), 0, 4, 1)
     ps.vss("I", ('E', 9), 0, 4, 1)
-    ps.gpio("", ('E', 10), 0, 5, 3) # GPIO 5-7
+    ps.gpio("", ('E', 10), 0, 6, 3) # GPIO 6-8
     ps.jtag("", ('E', 13), 0, 0, 4)
-    ps.gpio("", ('E', 17), 0, 8, 5) # GPIO 8-12
+    ps.gpio("", ('E', 17), 0, 9, 5) # GPIO 9-13
     ps.vss("I", ('E', 22), 0, 5, 1)
     ps.vdd("I", ('E', 23), 0, 5, 1)
     ps.vss("E", ('E', 24), 0, 5, 1)
     ps.vdd("E", ('E', 25), 0, 5, 1)
-    ps.gpio("", ('E', 26), 0, 13, 3) # GPIO 13-15
-    ps.eint("", ('E', 29), 0, 0, 3)
+    ps.gpio("", ('E', 26), 0, 14, 2) # GPIO 14-15
+    ps.eint("", ('E', 28), 0, 0, 3)
+    ps.sys("", ('E', 31), 0, 5, 1) # analog VCO out in right top
 
     ps.vss("E", ('N', 6), 0, 6, 1)
     ps.vdd("E", ('N', 7), 0, 6, 1)
