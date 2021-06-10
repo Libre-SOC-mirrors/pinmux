@@ -87,8 +87,8 @@ def pinspec():
 
     ps.sys("", ('E', 0), 0, 5, 1) # analog VCO out in right top
     ps.gpio("", ('E', 1), 0, 0, 5) # GPIO 0-4
-    ps.vss("I", ('E', 6), 0, 4, 1)
-    ps.vdd("I", ('E', 7), 0, 4, 1)
+    ps.vss("E", ('E', 6), 0, 4, 1)
+    ps.vdd("E", ('E', 7), 0, 4, 1)
     ps.vdd("I", ('E', 8), 0, 4, 1)
     ps.vss("I", ('E', 9), 0, 4, 1)
     ps.gpio("", ('E', 10), 0, 5, 3) # GPIO 5-7
@@ -96,8 +96,8 @@ def pinspec():
     ps.gpio("", ('E', 17), 0, 8, 5) # GPIO 8-12
     ps.vss("I", ('E', 22), 0, 5, 1)
     ps.vdd("I", ('E', 23), 0, 5, 1)
-    ps.vss("I", ('E', 24), 0, 5, 1)
-    ps.vdd("I", ('E', 25), 0, 5, 1)
+    ps.vss("E", ('E', 24), 0, 5, 1)
+    ps.vdd("E", ('E', 25), 0, 5, 1)
     ps.gpio("", ('E', 26), 0, 13, 3) # GPIO 13-15
     ps.eint("", ('E', 29), 0, 0, 3)
 
@@ -111,8 +111,8 @@ def pinspec():
     ps.sys("", ('N', 27), 0, 0, 5) # all but analog out in top right
     ps.vss("I", ('N', 22), 0, 7, 1)
     ps.vdd("I", ('N', 23), 0, 7, 1)
-    ps.vss("I", ('N', 24), 0, 7, 1)
-    ps.vdd("I", ('N', 25), 0, 7, 1)
+    ps.vss("E", ('N', 24), 0, 7, 1)
+    ps.vdd("E", ('N', 25), 0, 7, 1)
 
     #ps.mquadspi("1", ('S', 0), 0)
 
