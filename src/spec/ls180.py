@@ -87,7 +87,8 @@ def pinspec():
     ps.vdd("I", ('E', 1), 0, 4, 1)
     ps.vdd("I", ('E', 2), 0, 4, 1)
     ps.vss("I", ('E', 3), 0, 4, 1)
-    ps.mspi("0", ('E', 4), 0)
+    ps.sys("", ('E', 4), 0, 5, 1) # analog VCO out in right top
+    ps.mspi("0", ('E', 5), 0)
     ps.gpio("", ('E', 9), 0, 0, 16)
     ps.eint("", ('E', 25), 0, 0, 3)
     ps.vss("I", ('E', 28), 0, 5, 1)
@@ -102,7 +103,7 @@ def pinspec():
     #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
     #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
-    ps.sys("", ('N', 22), 0, 0, 6) # should be 6, to do all PLL pins
+    ps.sys("", ('N', 23), 0, 0, 5) # all but analog out in top right
     ps.vss("I", ('N', 28), 0, 7, 1)
     ps.vdd("I", ('N', 29), 0, 7, 1)
     ps.vss("I", ('N', 30), 0, 7, 1)
