@@ -2,13 +2,18 @@
 
 from copy import deepcopy
 from collections import OrderedDict
-import svgwrite
 from math import pi
 
 
 def create_sv(fname, pins):
     """unsophisticated drawer of an SVG
     """
+
+    try:
+        import svgwrite
+    except ImportError:
+        print ("WARNING, no SVG image, not producing image %s" % fname)
+        return
 
     scale = 15
     width = len(pins['pads.north']) * scale
