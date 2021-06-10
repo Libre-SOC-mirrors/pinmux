@@ -2,6 +2,82 @@
 
 from copy import deepcopy
 from collections import OrderedDict
+import svgwrite
+from math import pi
+
+
+def create_sv(fname, pins):
+    """unsophisticated drawer of an SVG
+    """
+
+    scale = 15
+    width = len(pins['pads.north']) * scale
+    height = len(pins['pads.east']) * scale
+    woffs = scale*18#-width/2
+    hoffs = scale*18#-height/2
+
+    dwg = svgwrite.Drawing(fname, profile='full',
+                           size=(width+scale*40, height+scale*40))
+    dwg.add(dwg.rect((woffs-scale*2, hoffs-scale*2),
+                        (woffs+width-scale*12, hoffs+height-scale*12),
+            stroke=svgwrite.rgb(255, 255, 16, '%'),
+            stroke_width=scale/10.0))
+    for i, pin in enumerate(pins['pads.west']):
+        ht = hoffs + height - (i * scale) + scale*0.5
+        dwg.add(dwg.line((woffs-scale*2, ht-scale*0.5),
+                         (woffs-scale*4.5, ht-scale*0.5),
+                         stroke=svgwrite.rgb(255, 255, 16, '%'),
+                         stroke_width=scale/10.0))
+        dwg.add(dwg.text(pin.upper(), insert=(woffs-scale*12, ht),
+                         fill='white'))
+        dwg.add(dwg.text("W%d" % (i+1), insert=(woffs-scale*1.5, ht),
+                            fill='white'))
+
+    for i, pin in enumerate(pins['pads.east']):
+        ht = hoffs + height - (i * scale) + scale*0.5
+        wd = width + woffs + scale*2
+        dwg.add(dwg.line((wd+scale*2, ht-scale*0.5),
+                         (wd+scale*4.5, ht-scale*0.5),
+                         stroke=svgwrite.rgb(255, 255, 16, '%'),
+                         stroke_width=scale/10.0))
+        dwg.add(dwg.text(pin.upper(), insert=(wd+scale*5, ht-scale*0.25),
+                         fill='white'))
+        dwg.add(dwg.text("E%d" % (i+1), insert=(wd, ht-scale*0.25),
+                            fill='white'))
+
+    for i, pin in enumerate(pins['pads.north']):
+        wd = woffs + i * scale + scale*1.5
+        dwg.add(dwg.line((wd, hoffs-scale*2),
+                         (wd, hoffs-scale*4.5),
+                         stroke=svgwrite.rgb(255, 255, 16, '%'),
+                         stroke_width=scale/10.0))
+        pos=(wd, hoffs-scale*5.0)
+        txt = dwg.text(pin.upper(), insert=pos, fill='white')
+        txt.rotate(-90, pos)
+        dwg.add(txt)
+        pos=(wd+scale*0.25, hoffs-scale*0.25)
+        txt = dwg.text("N%d" % (i+1), insert=pos, fill='white')
+        txt.rotate(-90, pos)
+        dwg.add(txt)
+
+    for i, pin in enumerate(pins['pads.south']):
+        wd = woffs + i * scale + scale*1.5
+        ht = hoffs + height + scale*2
+        dwg.add(dwg.line((wd, ht+scale*2),
+                         (wd, ht+scale*4.5),
+                         stroke=svgwrite.rgb(255, 255, 16, '%'),
+                         stroke_width=scale/10.0))
+        pos=(wd-scale*0.25, ht+scale*5.0)
+        txt = dwg.text(pin.upper(), insert=pos, fill='white')
+        txt.rotate(90, pos)
+        dwg.add(txt)
+        pos=(wd-scale*0.25, ht+scale*0.25)
+        txt = dwg.text("S%d" % (i+1), insert=pos, fill='white')
+        txt.rotate(90, pos)
+        dwg.add(txt)
+
+    dwg.save()
+
 
 def display(of, pins, banksel=None, muxwidth=4):
     of.write("""\
