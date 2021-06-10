@@ -286,8 +286,8 @@ def vdd(suffix, bank):
 
 def sys(suffix, bank):
     return (['RST-',                       # reset line
+             'PLLCLK-',                       # incoming clock (to PLL)
              'PLLSELA0-', 'PLLSELA1-',     # PLL divider-selector
-            'PLLCLK-',                       # incoming clock (to PLL)
              'PLLTESTOUT+',                # divided-output (for testing)
              'PLLVCOUT+',                  # PLL VCO analog out (for testing)
              ], [], 'CLK')
