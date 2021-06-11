@@ -41,7 +41,7 @@ def bond_int_to_ext(pin, bank):
     if bank == 'W':
         if pin >= 29: # 29, 30, 31
             return 'N', pin-29, 100+(31-pin)
-        if pin <= 2:
+        if pin <= 2: # 0, 1, 2
             return 'S', 2-pin, 3-pin
         return 'W', 28-pin, 103+(28-pin)
     if bank == 'E':
@@ -49,7 +49,7 @@ def bond_int_to_ext(pin, bank):
             return 'N', 35+(31-pin), 67-(31-pin)
         if pin <= 2:
             return 'S', pin+35, 36+pin
-        return 'E', 28-pin, 39+(28-pin)
+        return 'E', 28-pin, 39+(pin-3)
 
 
 def create_sv(fname, pins):
@@ -86,10 +86,32 @@ def create_sv(fname, pins):
     woffs = scale*40#-width/2
     hoffs = scale*40#-height/2
 
+    nepads = bondmap['N'].keys()
+    nepads.sort()
+    wepads = bondmap['W'].keys()
+    wepads.sort()
+    eepads = bondmap['E'].keys()
+    eepads.sort()
+    sepads = bondmap['S'].keys()
+    sepads.sort()
+
+    owoffs = woffs + (width/2) - len(nepads)/2 * outerscale
+    ohoffs = hoffs + (height/2) - len(wepads)/2 * outerscale
+
     dwg = svgwrite.Drawing(fname, profile='full',
-                           size=(width+scale*80, height+scale*80))
+                           size=(width+scale*85, height+scale*80))
+
+    # outer QFP rect
+    dwg.add(dwg.rect((owoffs-scale*2.5, ohoffs-scale*4.5),
+                        (len(nepads)*outerscale+scale*9,
+                         len(wepads)*outerscale+scale*13),
+            fill='white',
+            stroke=svgwrite.rgb(0, 128, 0, '%'),
+            stroke_width=scale/5.0))
+
+    # inner lead rect
     dwg.add(dwg.rect((woffs-scale*2, hoffs-scale*2),
-                        (woffs+width-scale*34, hoffs+height-scale*34),
+                        (width+scale*6, height+scale*6),
             stroke=svgwrite.rgb(16, 255, 16, '%'),
             stroke_width=scale/10.0))
 
@@ -160,18 +182,6 @@ def create_sv(fname, pins):
         txt.rotate(90, pos)
         dwg.add(txt)
 
-    nepads = bondmap['N'].keys()
-    nepads.sort()
-    wepads = bondmap['W'].keys()
-    wepads.sort()
-    eepads = bondmap['E'].keys()
-    eepads.sort()
-    sepads = bondmap['S'].keys()
-    sepads.sort()
-
-    owoffs = woffs + (width/2) - len(nepads)/2 * outerscale
-    ohoffs = hoffs + (height/2) - len(wepads)/2 * outerscale
-
     # north outer pads
     for i in nepads:
         (epinnum, ipin, bank) = pad = bondmap['N'][i]
@@ -238,7 +248,7 @@ def create_sv(fname, pins):
     for i in eepads:
         (epinnum, ipin, bank) = pad = bondmap['E'][i]
         ht = ohoffs + (i * outerscale) + outerscale*1.5
-        wd = owoffs+len(nepads)*outerscale
+        wd = owoffs+len(nepads)*outerscale + outerscale*1
         endline = (wd+outerscale*0.5, ht)
         startline = innerpos[bank][ipin]
         dwg.add(dwg.line(startline,
@@ -262,6 +272,15 @@ def create_sv(fname, pins):
     leads = svgwrite.image.Image(data, pos,
                                        size=(327,300))
     dwg.add(leads)
+    dwg.add(dwg.text("GREATEK QFP128L",
+                       insert=(50,150),
+                        font_size=20,
+                     fill='black'))
+    dwg.add(dwg.text("D/W J1-03128-001",
+                       insert=(50,180),
+                        font_size=20,
+                     fill='black'))
+
 
     # add QFP lead image in centre
     image_data = open(lead_drawing, "rb").read()
@@ -302,6 +321,23 @@ def create_sv(fname, pins):
     dwg.add(dwg.text("IMEC TSMC 180nm",
                        insert=(woffs+width/2-scale*5, woffs+height/2+scale*3),
                      fill='black'))
+
+    # add package marking circles
+    pos = (owoffs-outerscale*0, ohoffs+len(wepads)*outerscale+outerscale*2.5)
+    dwg.add(dwg.circle(pos, scale*2,
+                         fill='white',
+                         stroke=svgwrite.rgb(16, 16, 16, '%'),
+                         stroke_width=scale/5.0))
+    dwg.add(dwg.circle(pos, scale*1,
+                         fill='black',
+                         stroke=svgwrite.rgb(255, 16, 16, '%'),
+                         stroke_width=scale/5.0))
+    pos = (owoffs+len(nepads)*outerscale+outerscale*2, ohoffs-outerscale*0.5)
+    dwg.add(dwg.circle(pos, scale*2,
+                         fill='white',
+                         stroke=svgwrite.rgb(16, 16, 16, '%'),
+                         stroke_width=scale/5.0))
+
 
     dwg.save()
 
