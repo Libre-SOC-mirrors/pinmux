@@ -10,6 +10,7 @@ cwd = os.path.split(os.path.abspath(__file__))[0]
 lead_drawing = cwd + "/greatek_qfp_128L.png"
 pack_drawing = cwd + "/greatek_qfp_128_fp.png"
 c4m_drawing = cwd + "/c4mlogo.png"
+ls180_drawing = cwd + "/ls180-img.png"
 
 def bond_int_to_ext(pin, bank):
     """ note that internal numbering is 0-31 whereas the DISPLAY internal
@@ -129,7 +130,7 @@ def create_sv(fname, pins):
                          endline,
                          stroke=svgwrite.rgb(16, 255, 16, '%'),
                          stroke_width=scale/10.0))
-        dwg.add(dwg.text(pin.upper(), insert=(woffs-scale*14, ht),
+        dwg.add(dwg.text(pin.upper(), insert=(woffs-scale*12, ht),
                          fill='black'))
         dwg.add(dwg.text("W%d" % (i+1), insert=(woffs-scale*1.5, ht),
                             fill='white'))
@@ -265,6 +266,15 @@ def create_sv(fname, pins):
         dwg.add(dwg.text("%d E" % epinnum, insert=pos,
                             fill='blue'))
 
+    # add ls180 image
+    image_data = open(ls180_drawing, "rb").read()
+    encoded = base64.b64encode(image_data).decode()
+    data = 'data:image/png;base64,{}'.format(encoded)
+    pos=(width/2+woffs-225, height/2+hoffs-225)
+    leads = svgwrite.image.Image(data, pos,
+                                       size=(480,480))
+    dwg.add(leads)
+
     # add QFP pack image in top-right
     image_data = open(pack_drawing, "rb").read()
     encoded = base64.b64encode(image_data).decode()
@@ -284,55 +294,71 @@ def create_sv(fname, pins):
 
 
     # add QFP lead image in centre
+    sz=320
     image_data = open(lead_drawing, "rb").read()
     encoded = base64.b64encode(image_data).decode()
     data = 'data:image/png;base64,{}'.format(encoded)
-    pos=(woffs+scale*3.5, hoffs+scale*3.5)
+    pos=(woffs+width+scale*23.5, 0)
     leads = svgwrite.image.Image(data, pos,
-                                       size=(400,400))
-    leads.rotate(-90, (pos[0]+200, pos[1]+200))
+                                       size=(sz,sz))
+    leads.rotate(-90, (pos[0]+sz/2, pos[1]+sz/2))
     dwg.add(leads)
 
     dwg.add(dwg.text("GREATEK ELECTRONICS INC.",
-                       insert=(woffs+width/2-scale*5, woffs+height/2-scale*6),
+                       insert=(woffs+width+scale*29, scale*8),
                      fill='black'))
     dwg.add(dwg.text("INNER LEAD DRAWING",
-                       insert=(woffs+width/2-scale*5, woffs+height/2-scale*5),
+                       insert=(woffs+width+scale*29, scale*9),
                      fill='black'))
     dwg.add(dwg.text("QFP 128L OPEN STAMPING",
-                       insert=(woffs+width/2-scale*5, woffs+height/2-scale*4),
+                       insert=(woffs+width+scale*29, scale*10),
                      fill='black'))
     dwg.add(dwg.text("BODY 14x20x2.75mm",
-                       insert=(woffs+width/2-scale*5, woffs+height/2-scale*3),
+                       insert=(woffs+width+scale*29, scale*11),
                      fill='black'))
     dwg.add(dwg.text("L/F PAD SIZE 236x236mil^2",
-                       insert=(woffs+width/2-scale*5, woffs+height/2-scale*2),
+                       insert=(woffs+width+scale*29, scale*12),
                      fill='black'))
 
     # add C4M Logo
     image_data = open(c4m_drawing, "rb").read()
     encoded = base64.b64encode(image_data).decode()
     data = 'data:image/png;base64,{}'.format(encoded)
-    pos=(woffs+scale*0.0, hoffs+height-scale*1.5)
+    pos=(woffs+scale*5.0, hoffs+height-scale*5.0)
     leads = svgwrite.image.Image(data, pos,
                                        size=(50,50))
     dwg.add(leads)
 
+    if False:
+        # add SRAMs
+        for i in range(4):
+            dwg.add(dwg.rect((woffs+scale+75*i, hoffs+scale),
+                            (70,50),
+                fill='white',
+                stroke=svgwrite.rgb(16, 255, 16, '%'),
+                stroke_width=scale/10.0))
+        # add PLL
+        dwg.add(dwg.rect((woffs+width-scale, hoffs+scale),
+                            (25,20),
+                fill='white',
+                stroke=svgwrite.rgb(16, 255, 16, '%'),
+                stroke_width=scale/10.0))
+
     # add attribution
     dwg.add(dwg.text("Libre-SOC ls180 QFP-128",
-                       insert=(woffs+width/2-scale*5, woffs+height/2),
+                       insert=(woffs+width/2-scale*5, scale*4),
                      fill='black'))
     dwg.add(dwg.text("In collaboration with LIP6.fr",
-                       insert=(woffs+width/2-scale*5, woffs+height/2+scale),
+                       insert=(woffs+width/2-scale*5, scale*5),
                      fill='black'))
     dwg.add(dwg.text("Cell Libraries by Chips4Makers",
-                       insert=(woffs+width/2-scale*5, woffs+height/2+scale*2),
+                       insert=(woffs+width/2-scale*5, scale*6),
                      fill='black'))
     dwg.add(dwg.text("IMEC TSMC 180nm",
-                       insert=(woffs+width/2-scale*5, woffs+height/2+scale*3),
+                       insert=(woffs+width/2-scale*5, scale*7),
                      fill='black'))
     dwg.add(dwg.text("RED Semiconductor",
-                       insert=(woffs+width/2-scale*5, woffs+height/2+scale*4),
+                       insert=(woffs+width/2-scale*5, scale*8),
                      fill='black'))
 
     # add package marking circles
