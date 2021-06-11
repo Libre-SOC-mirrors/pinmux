@@ -74,4 +74,6 @@ The complete python file for this table is : src/spec/minitest.py .
 Original minitest: src/spec/minitest_old.py
 
 
+# Viewing pinout image
 
+    pqiv --watch-files=on --background-pattern=white ls180/ls180.svg
