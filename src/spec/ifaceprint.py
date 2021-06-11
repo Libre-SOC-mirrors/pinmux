@@ -4,6 +4,47 @@ from copy import deepcopy
 from collections import OrderedDict
 from math import pi
 
+def bond_int_to_ext(pin, bank):
+    """ note that internal numbering is 0-31 whereas the DISPLAY internal
+        numbering is 1-32.  this uses the INTERNAL numbering.
+
+        side: N S E W
+
+        outer ring numbers: the python list order of the outer pads
+        middle numbers: the package number wires (plus side they are on)
+        inner numbers:  the IO pad *python internal (0-31)* numbers plus side
+
+       0     1   2      3   N  34     35   36   37
+      N102 N101 N100    99  N  68    N67  N66  N65
+      W29  W30  W31     N0  N N31    E29  E30  E31
+
+    25  103 W28                       E28  64 25
+     W    W  W                         E  E   E
+     0  128 W3                        E3  39  0
+
+      W2  W1   W0      S0   S S31    E0   E1   E2
+      S1  S2   S3       4   S  35    S36  S37  S38
+       0     1   2      3   S  34     35   36   37
+
+    """
+    # returns side, order-on-the-side, pin number
+    if bank == 'N':
+        return 'N', pin+3, 99-pin
+    if bank == 'S':
+        return 'S', pin+3, 4+pin
+    if bank == 'W':
+        if pin >= 29: # 29, 30, 31
+            return 'N', pin-29, 100+(31-pin)
+        if pin <= 2:
+            return 'S', 2-pin, 3-pin
+        return 'W', pin-3, 103+(28-pin)
+    if bank == 'E':
+        if pin >= 29:
+            return 'N', pin+6, 67-(pin-29)
+        if pin <= 2:
+            return 'S', pin+35, 36+pin
+        return 'E', pin-3, 39+(pin-3)
+
 
 def create_sv(fname, pins):
     """unsophisticated drawer of an SVG
@@ -15,16 +56,30 @@ def create_sv(fname, pins):
         print ("WARNING, no SVG image, not producing image %s" % fname)
         return
 
+    # create internal to external map
+    bondmap = {'N': {}, 'S': {},  'E': {},  'W': {} }
+    padside = {'pads.north': 'N', 'pads.east': 'E', 'pads.south': 'S',
+               'pads.west': 'W'}
+    for pinpad, bank in padside.items():
+        for ipin in range(len(pins[pinpad])):
+            eside, enum, epinnum = bond_int_to_ext(ipin, bank)
+            bondmap[eside][enum] = (epinnum, ipin, bank)
+    with open("/tmp/bondmap.txt", "w") as f:
+        for k,v in bondmap.items():
+            f.write("%s\n" % k)
+            for enum, (epinnum, ipin, bank) in v.items():
+                f.write("    %d %d  -> %s %d\n" % (enum, epinnum, bank, ipin))
+
     scale = 15
     width = len(pins['pads.north']) * scale
     height = len(pins['pads.east']) * scale
-    woffs = scale*18#-width/2
-    hoffs = scale*18#-height/2
+    woffs = scale*40#-width/2
+    hoffs = scale*40#-height/2
 
     dwg = svgwrite.Drawing(fname, profile='full',
-                           size=(width+scale*40, height+scale*40))
+                           size=(width+scale*80, height+scale*80))
     dwg.add(dwg.rect((woffs-scale*2, hoffs-scale*2),
-                        (woffs+width-scale*12, hoffs+height-scale*12),
+                        (woffs+width-scale*34, hoffs+height-scale*34),
             stroke=svgwrite.rgb(16, 255, 16, '%'),
             stroke_width=scale/10.0))
 
