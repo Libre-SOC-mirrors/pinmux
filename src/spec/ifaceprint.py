@@ -9,6 +9,7 @@ import base64
 cwd = os.path.split(os.path.abspath(__file__))[0]
 lead_drawing = cwd + "/greatek_qfp_128L.png"
 pack_drawing = cwd + "/greatek_qfp_128_fp.png"
+c4m_drawing = cwd + "/c4mlogo.png"
 
 def bond_int_to_ext(pin, bank):
     """ note that internal numbering is 0-31 whereas the DISPLAY internal
@@ -308,6 +309,15 @@ def create_sv(fname, pins):
                        insert=(woffs+width/2-scale*5, woffs+height/2-scale*2),
                      fill='black'))
 
+    # add C4M Logo
+    image_data = open(c4m_drawing, "rb").read()
+    encoded = base64.b64encode(image_data).decode()
+    data = 'data:image/png;base64,{}'.format(encoded)
+    pos=(woffs+scale*0.0, hoffs+height-scale*1.5)
+    leads = svgwrite.image.Image(data, pos,
+                                       size=(50,50))
+    dwg.add(leads)
+
     # add attribution
     dwg.add(dwg.text("Libre-SOC ls180 QFP-128",
                        insert=(woffs+width/2-scale*5, woffs+height/2),
@@ -320,6 +330,9 @@ def create_sv(fname, pins):
                      fill='black'))
     dwg.add(dwg.text("IMEC TSMC 180nm",
                        insert=(woffs+width/2-scale*5, woffs+height/2+scale*3),
+                     fill='black'))
+    dwg.add(dwg.text("RED Semiconductor",
+                       insert=(woffs+width/2-scale*5, woffs+height/2+scale*4),
                      fill='black'))
 
     # add package marking circles
