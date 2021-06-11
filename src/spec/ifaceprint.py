@@ -93,10 +93,12 @@ def create_sv(fname, pins):
                        insert=(woffs+width/2-scale*5, woffs+height/2+scale*2),
                      fill='white'))
 
+    outerpos = {'N': {}, 'S': {},  'E': {},  'W': {} }
     for i, pin in enumerate(pins['pads.west']):
         ht = hoffs + height - (i * scale) + scale*0.5
+        endline = (woffs-scale*4.5, ht-scale*0.5)
         dwg.add(dwg.line((woffs-scale*2, ht-scale*0.5),
-                         (woffs-scale*4.5, ht-scale*0.5),
+                         endline,
                          stroke=svgwrite.rgb(16, 255, 16, '%'),
                          stroke_width=scale/10.0))
         dwg.add(dwg.text(pin.upper(), insert=(woffs-scale*14, ht),
@@ -107,8 +109,9 @@ def create_sv(fname, pins):
     for i, pin in enumerate(pins['pads.east']):
         ht = hoffs + height - (i * scale) + scale*0.5
         wd = width + woffs + scale*2
+        endline = (wd+scale*4.5, ht-scale*0.5)
         dwg.add(dwg.line((wd+scale*2, ht-scale*0.5),
-                         (wd+scale*4.5, ht-scale*0.5),
+                         endline,
                          stroke=svgwrite.rgb(16, 255, 16, '%'),
                          stroke_width=scale/10.0))
         dwg.add(dwg.text(pin.upper(), insert=(wd+scale*5, ht-scale*0.25),
@@ -118,8 +121,9 @@ def create_sv(fname, pins):
 
     for i, pin in enumerate(pins['pads.north']):
         wd = woffs + i * scale + scale*1.5
+        endline = (wd, hoffs-scale*4.5)
         dwg.add(dwg.line((wd, hoffs-scale*2),
-                         (wd, hoffs-scale*4.5),
+                         endline,
                          stroke=svgwrite.rgb(16, 255, 16, '%'),
                          stroke_width=scale/10.0))
         pos=(wd, hoffs-scale*5.0)
@@ -134,8 +138,9 @@ def create_sv(fname, pins):
     for i, pin in enumerate(pins['pads.south']):
         wd = woffs + i * scale + scale*1.5
         ht = hoffs + height + scale*2
+        endline = (wd, ht+scale*4.5)
         dwg.add(dwg.line((wd, ht+scale*2),
-                         (wd, ht+scale*4.5),
+                         endline,
                          stroke=svgwrite.rgb(16, 255, 16, '%'),
                          stroke_width=scale/10.0))
         pos=(wd-scale*0.25, ht+scale*5.0)
