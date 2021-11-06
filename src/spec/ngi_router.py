@@ -48,6 +48,8 @@ def pinspec():
                       'GPIO': 'GPIO',
                       'EINT': 'External Interrupt',
                       'PWM': 'PWM',
+                      'RG0': 'Gigabit Ethernet 0',
+                      'RG1': 'Gigabit Ethernet 1',
                       'JTAG': 'JTAG',
                       'MTWI': 'I2C Master 1',
                       'SD0': 'SD/MMC 1',
@@ -100,20 +102,22 @@ def pinspec():
     ps.vdd("E", ('E', 25), 0, 5, 1)
     ps.gpio("", ('E', 26), 0, 14, 2) # GPIO 14-15
     ps.eint("", ('E', 28), 0, 0, 3)
+    ps.rgmii("0", ('E', 31), 0, 0, 18)
     ps.sys("", ('E', 63), 0, 5, 1) # analog VCO out in right top
 
     ps.vss("E", ('N', 6), 0, 6, 1)
     ps.vdd("E", ('N', 7), 0, 6, 1)
     ps.vdd("I", ('N', 8), 0, 6, 1)
     ps.vss("I", ('N', 9), 0, 6, 1)
+    ps.rgmii("1", ('N', 10), 0, 0, 18)
     #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
     #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
     ps.sys("", ('N', 59), 0, 0, 5) # all but analog out in top right
-    ps.vss("I", ('N', 22), 0, 7, 1)
-    ps.vdd("I", ('N', 23), 0, 7, 1)
-    ps.vss("E", ('N', 24), 0, 7, 1)
-    ps.vdd("E", ('N', 25), 0, 7, 1)
+    ps.vss("I", ('N', 54), 0, 7, 1)
+    ps.vdd("I", ('N', 55), 0, 7, 1)
+    ps.vss("E", ('N', 56), 0, 7, 1)
+    ps.vdd("E", ('N', 57), 0, 7, 1)
 
     #ps.mquadspi("1", ('S', 0), 0)
 
@@ -131,6 +135,7 @@ def pinspec():
             'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
                 'MTWI', 'MSPI0',
+                'RG0', 'RG1',
                 # 'MSPI1', litex problem 25mar2021
                 'SDR']
     ngi_router_eint = []
