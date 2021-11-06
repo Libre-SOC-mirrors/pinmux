@@ -116,7 +116,7 @@ def pinspec():
 
     #ps.mquadspi("1", ('S', 0), 0)
 
-    print "ps clocks", ps.clocks
+    print ("ps clocks", ps.clocks)
 
     # Scenarios below can be spec'd out as either "find first interface"
     # by name/number e.g. SPI1, or as "find in bank/mux" which must be
@@ -163,8 +163,8 @@ def pinparse(psp, pinspec):
     pinmap = {}
     litexmap = {}
 
-    print p.muxed_cells
-    print p.muxed_cells_bank
+    print (p.muxed_cells)
+    print (p.muxed_cells_bank)
 
     ps = [''] * 32
     pn = [''] * 32
@@ -185,7 +185,7 @@ def pinparse(psp, pinspec):
         padnum = int(padnum)
         start = p.bankstart[bank]
         banknum = padnum - start
-        print "bank", bank, banknum, "padname", name, padnum, x
+        print ("bank", bank, banknum, "padname", name, padnum, x)
         padbank = pads[bank]
         pad = None
         # VSS
@@ -218,7 +218,7 @@ def pinparse(psp, pinspec):
                 #name = 'p_sys_rst_1'
                 pad = [name, name, name]
                 padbank[banknum] = name
-                print "sys_rst add", bank, banknum, name
+                print ("sys_rst add", bank, banknum, name)
                 name = None
             elif name == 'sys_pllclk':
                 name = None # ignore
@@ -235,7 +235,7 @@ def pinparse(psp, pinspec):
                 pad = [name, name2, name2]
             #if name:
             #    iopads.append([pname, name, name])
-            print "sys pad", name
+            print ("sys pad", name)
         # SPI Card
         elif name.startswith('mspi0') or name.startswith('mspi1'):
             domain = 'MSPI'
@@ -388,18 +388,18 @@ def pinparse(psp, pinspec):
             fn, name = orig_name.split("_")
             if domain == 'PWM':
                 name = fn[3:]
-            print psp.byspec
+            print (psp.byspec)
             spec = None
             for k in psp.byspec.keys():
                 if k.startswith(domain):
                     spec = psp.byspec[k]
-            print "spec found", domain, spec
+            print ("spec found", domain, spec)
             assert spec is not None
             found = None
             for pname in spec:
                 if pname.lower().startswith(name):
                     found = pname
-            print "found spec", found
+            print ("found spec", found)
             assert found is not None
             # whewwww.  add the direction onto the pad spec list
             dirn = found[-1]
@@ -423,24 +423,24 @@ def pinparse(psp, pinspec):
                 iopads.append([name, name2, name2, "-"])
                 nc_idx += 1
 
-    print p.bankstart
+    print (p.bankstart)
     pprint(psp.clocks)
 
-    print
-    print "N pads", pn
-    print "S pads", ps
-    print "E pads", pe
-    print "W pads", pw
+    print()
+    print ("N pads", pn)
+    print ("S pads", ps)
+    print ("E pads", pe)
+    print ("W pads", pw)
 
     # do not want these
     del clocks['SYS']
     del domains['SYS']
 
-    print "chip domains (excluding sys-default)"
+    print ("chip domains (excluding sys-default)")
     pprint(domains)
-    print "chip clocks (excluding sys-default)"
+    print ("chip clocks (excluding sys-default)")
     pprint(clocks)
-    print "pin spec"
+    print ("pin spec")
     pprint(psp.byspec)
 
     chip = {

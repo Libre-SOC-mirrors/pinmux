@@ -61,7 +61,7 @@ class Parse(object):
                     if line1[i].startswith('pwm'):
                         line1[i] = 'pwm%s_out' % line1[i][4:]
                 line1 = [line1[0]] + line1[3:]
-                print "line", line1
+                print ("line", line1)
                 self.muxed_cells.append(line1)
 
         self.pinnumbers = sorted(self.pinnumbers)
@@ -115,7 +115,7 @@ class Parse(object):
     def get_max_cell_bitwidth(self):
         max_num_cells = 0
         for cell in self.muxed_cells:
-            print cell
+            print (cell)
             max_num_cells = max(len(cell) - 1, max_num_cells)
         return int(math.log(max_num_cells + 1, 2))
 

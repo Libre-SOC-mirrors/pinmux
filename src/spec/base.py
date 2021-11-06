@@ -18,7 +18,7 @@ class PinSpec(Pinouts):
         bankspec = OrderedDict()
         self.offs = 0
         pkeys = self.pinbanks.keys()
-        print self.pinbanks
+        print (self.pinbanks)
         for kn in pkeys:
             bankspec[kn] = self.offs
             self.offs += self.pinbanks[kn]

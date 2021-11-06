@@ -68,7 +68,7 @@ class PinGen(object):
                  rev=False):
         bank = offs[0]
         pf = self.pinfn(suffix, bank)
-        print "pf", suffix, bank, pf
+        print ("pf", suffix, bank, pf)
         pingroup, gangedgroup, clock = pf
         if clock:
             self.pinouts.clocks[self.fname] = clock
@@ -79,13 +79,13 @@ class PinGen(object):
         if start and limit:  # limit turns into an offset from start
             limit = start + limit
         sk = "%s:%s" % (self.fname, str(suffix))
-        print "pingroup pre", sk, pingroup
+        print ("pingroup pre", sk, pingroup)
         pingroup = pingroup[start:limit]  # see comment in spec.pinfunctions
         if rev:
             # reverse order of pingroup
             pingroup.reverse()
-        print "pingroup post", sk, pingroup
-        if self.pinouts.byspec.has_key(sk):
+        print ("pingroup post", sk, pingroup)
+        if sk in self.pinouts.byspec:
             self.pinouts.byspec[sk] += pingroup
         else:
             self.pinouts.byspec[sk] = deepcopy(pingroup)

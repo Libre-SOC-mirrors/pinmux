@@ -72,14 +72,14 @@ def specgen(of, pth, pinouts, bankspec, muxwidths, pinbanks, fixedpins,
     # truly dreadful way to work out the max mux size...
     for k in pks:
         for (sz, bname) in bankpins:
-            print "keys", k, sz, bname
+            print ("keys", k, sz, bname)
             if k >= sz:
-                print "found", bname
+                print ("found", bname)
                 muxentries[k] = muxwidths[bname]
                 cellbank[k] = bname
                 break
 
-    print muxentries
+    print (muxentries)
     # write out the mux...
     with open(os.path.join(pth, 'pinmap.txt'), 'w') as g:
         for k in pks:

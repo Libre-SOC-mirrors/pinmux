@@ -88,13 +88,13 @@ def create_sv(fname, pins):
     woffs = scale*40#-width/2
     hoffs = scale*40#-height/2
 
-    nepads = bondmap['N'].keys()
+    nepads = list(bondmap['N'].keys())
     nepads.sort()
-    wepads = bondmap['W'].keys()
+    wepads = list(bondmap['W'].keys())
     wepads.sort()
-    eepads = bondmap['E'].keys()
+    eepads = list(bondmap['E'].keys())
     eepads.sort()
-    sepads = bondmap['S'].keys()
+    sepads = list(bondmap['S'].keys())
     sepads.sort()
 
     owoffs = woffs + (width/2) - len(nepads)/2 * outerscale
@@ -442,7 +442,7 @@ def find_fn(fname, names):
 def map_name(pinmap, fn, fblower, pin, rename):
     if not rename:
         if pin[:-1].isdigit():
-            print "map name digit", pin, fn, fblower
+            print ("map name digit", pin, fn, fblower)
             if fn in ['PWM', 'EINT', 'VDD', 'VSS']:
                 return fn.lower() + pin.lower()
         if fn == 'GPIO':
@@ -455,8 +455,8 @@ def map_name(pinmap, fn, fblower, pin, rename):
         pk = '%s%s_out' % (fblower, pin[:-1])
     else:
         pk = '%s_%s' % (fblower, pin[:-1])
-    print "map name", pk, fblower, pinmap.has_key(pk)
-    if not pinmap.has_key(pk):
+    print ("map name", pk, fblower, pk in pinmap)
+    if not pk in pinmap:
         return pin.lower()
     remapped = pinmap[pk]
     uscore = remapped.find('_')
@@ -487,7 +487,7 @@ def python_pindict(of, pinmap, pins, function_names, dname, remap):
                 of.write("\n                ")
                 count = 0
         of.write("]\n")
-        print "    dict %s" % dname, a, n, pingroup
+        print ("    dict %s" % dname, a, n, pingroup)
     of.write("\n\n")
     return res
 
@@ -503,20 +503,20 @@ def python_dict_fns(of, pinmap, pins, function_names):
     fnidx = list(fns.keys())
     fnidx.sort(key=fnsplit)
 
-    print "python fnames", function_names
-    print "python speckeys", pins.byspec.keys()
-    print "python dict fns", dir(pins.gpio)
-    print pins.gpio.pinfn('', '')
-    print pins.pwm.pinfn('', '')
-    print pins.sdmmc.pinfn('', '')
-    print "by spec", pins.byspec
-    print pinmap
+    print ("python fnames", function_names)
+    print ("python speckeys", pins.byspec.keys())
+    print ("python dict fns", dir(pins.gpio))
+    print (pins.gpio.pinfn('', ''))
+    print (pins.pwm.pinfn('', ''))
+    print (pins.sdmmc.pinfn('', ''))
+    print ("by spec", pins.byspec)
+    print (pinmap)
 
     pd = python_pindict(of, {}, pins, function_names, 'pindict', False)
     ld = python_pindict(of, pinmap, pins, function_names, 'litexdict', True)
 
-    print "pd", pd
-    print "ld", ld
+    print ("pd", pd)
+    print ("ld", ld)
     # process results and create name map
     litexmap = OrderedDict()
     for k in pd.keys():
@@ -528,7 +528,7 @@ def python_dict_fns(of, pinmap, pins, function_names):
             if k in ['eint', 'pwm', 'gpio', 'vdd', 'vss']: # sigh
                 lname = "%s_%s" % (k, lname)
             litexmap[pname] = lname
-    print "litexmap", litexmap
+    print ("litexmap", litexmap)
     of.write("litexmap = {\n")
     for k, v in litexmap.items():
         of.write("\t'%s': '%s',\n" % (k, v))
@@ -584,10 +584,10 @@ def check_functions(of, title, bankspec, fns, pins, required, eint, pwm,
 
     of.write("# Pinmap for %s\n\n" % title)
 
-    print "fn_idx", fnidx
-    print "fns", fns
-    print "fnspec", pins.fnspec.keys()
-    print "required", required
+    print ("fn_idx", fnidx)
+    print ("fns", fns)
+    print ("fnspec", pins.fnspec.keys())
+    print ("required", required)
     for name in required:
         of.write("## %s\n\n" % name)
         if descriptions and name in descriptions:
@@ -649,10 +649,10 @@ def check_functions(of, title, bankspec, fns, pins, required, eint, pwm,
             removedcount += 1
             of.write("* %s %d %s%d/%d\n" % (fname, pin_, bank, pin, mux))
 
-        print fns
+        print (fns)
         if removedcount != count:
             if fname is None:
-                print "no match between required and available pins"
+                print ("no match between required and available pins")
             else:
                 print ("not all found", name, removedcount, count, title, found,
                    fns[fname])
