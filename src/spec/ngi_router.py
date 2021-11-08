@@ -101,20 +101,19 @@ def pinspec():
     ps.gpio("", ('E', 10), 0, 6, 3) # GPIO 6-8
     ps.jtag("", ('E', 13), 0, 0, 4)
     ps.gpio("", ('E', 17), 0, 9, 5) # GPIO 9-13
-    ps.vss("I", ('E', 22), 0, 5, 1)
-    ps.vdd("I", ('E', 23), 0, 5, 1)
-    ps.vss("E", ('E', 24), 0, 5, 1)
-    ps.vdd("E", ('E', 25), 0, 5, 1)
-    ps.gpio("", ('E', 26), 0, 14, 2) # GPIO 14-15
-    ps.eint("", ('E', 28), 0, 0, 3)
-    ps.rgmii("0", ('E', 31), 0, 0, 18)
+    #ps.vss("I", ('E', 22), 0, 5, 1)
+    #ps.vdd("I", ('E', 23), 0, 5, 1)
+    #ps.vss("E", ('E', 24), 0, 5, 1)
+    #ps.vdd("E", ('E', 25), 0, 5, 1)
+    #ps.gpio("", ('E', 26), 0, 14, 2) # GPIO 14-15
+    #ps.eint("", ('E', 28), 0, 0, 3)
     ps.sys("", ('E', 63), 0, 5, 1) # analog VCO out in right top
 
     ps.vss("E", ('N', 6), 0, 6, 1)
     ps.vdd("E", ('N', 7), 0, 6, 1)
     ps.vdd("I", ('N', 8), 0, 6, 1)
     ps.vss("I", ('N', 9), 0, 6, 1)
-    ps.rgmii("1", ('N', 10), 0, 0, 18)
+    
     #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
     #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
@@ -124,6 +123,8 @@ def pinspec():
     ps.vss("E", ('N', 56), 0, 7, 1)
     ps.vdd("E", ('N', 57), 0, 7, 1)
 
+    ps.rgmii("0", ('E', 42), 0, 0, 18)
+    ps.rgmii("1", ('E', 22), 0, 0, 18)
     ps.rgmii("2", ('N', 31), 0, 0, 18)
     #ps.mquadspi("1", ('S', 0), 0)
 
