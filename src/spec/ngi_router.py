@@ -40,24 +40,29 @@ def pinspec():
         ]}
     fixedpins = {}
     function_names = {
-                      'PWM': 'PWM (pulse-width modulation)',
-                      'MSPI0': 'SPI Master 1 (general)',
-                      'MSPI1': 'SPI Master 2 (SDCard)',
-                      'UART0': 'UART (TX/RX) 1',
-                      'SYS': 'System Control',
-                      'GPIO': 'GPIO',
-                      'EINT': 'External Interrupt',
-                      'PWM': 'PWM',
+                      # Essential
                       'RG0': 'Gigabit Ethernet 0',
                       'RG1': 'Gigabit Ethernet 1',
-                      'JTAG': 'JTAG',
-                      'MTWI': 'I2C Master 1',
-                      'SD0': 'SD/MMC 1',
+                      'RG2': 'Gigabit Ethernet 2',
+                      'RG3': 'Gigabit Ethernet 3',
+                      'RG4': 'Gigabit Ethernet 4',
+                      'ULPI0': 'USB ULPI0 PHY',
+                      'ULPI1': 'USB ULPI1 PHY',
                       'SDR': 'SDRAM',
-                      'VDD': 'Power',
-                      'VSS': 'GND',
-                      #'LPC1': 'Low Pincount Interface 1',
-                      #'LPC2': 'Low Pincount Interface 2',
+                      'UART0': 'UART (TX/RX)',
+                      'JTAG': 'JTAG',
+                      'VDD': '1.8V Core Power',
+                      'VSS': '1.8V Core GND',
+                      'VDD': '3.3V I/O Power',
+                      'VSS': '3.3V I/O GND',
+                      'SYS': 'System Control',
+                      'MSPI0': 'SPI Master 0 (general)',
+                      # Non-Essential
+                      'GPIO': 'GPIO',
+                      'EINT': 'External Interrupt',
+                      'MTWI': 'I2C Master',
+                      'QSPI': 'QSPI Master',
+                      'SD0': 'SD/MMC',
                       }
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
@@ -119,6 +124,7 @@ def pinspec():
     ps.vss("E", ('N', 56), 0, 7, 1)
     ps.vdd("E", ('N', 57), 0, 7, 1)
 
+    ps.rgmii("2", ('N', 31), 0, 0, 18)
     #ps.mquadspi("1", ('S', 0), 0)
 
     print ("ps clocks", ps.clocks)
@@ -135,7 +141,7 @@ def pinspec():
             'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
                 'MTWI', 'MSPI0',
-                'RG0', 'RG1',
+                'RG0', 'RG1', 'RG2', 'RG3', 'RG4',
                 # 'MSPI1', litex problem 25mar2021
                 'SDR']
     ngi_router_eint = []
