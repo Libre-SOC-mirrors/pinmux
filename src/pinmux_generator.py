@@ -21,7 +21,7 @@ import os.path
 import sys
 import json
 from spec import modules, specgen, dummytest
-from spec.ifaceprint import create_sv
+from spec.ifaceprint import create_sv, temp_create_sv
 
 
 def printhelp():
@@ -103,7 +103,12 @@ if __name__ == '__main__':
                 jchip = json.dumps(chip)
                 with open("%s/litex_pinpads.json" % pinspec, "w") as f:
                     f.write(jchip)
-                create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
+                # TODO: fix create_sv to allow different packages (and die images)                
+                # Test with different package size, once working 'create_sv' will be improved                
+                if pinspec == "ngi_router":
+                    temp_create_sv("%s/%s.svg" % (pinspec, pinspec), chip)                
+                else:
+                    create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
     else:
         if output_type == 'bsv':
             from bsv.pinmux_generator import pinmuxgen as gentypes

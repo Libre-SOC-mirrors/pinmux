@@ -380,6 +380,333 @@ def create_sv(fname, pins):
 
     dwg.save()
 
+def temp_create_sv(fname, pins):
+    """unsophisticated drawer of an SVG
+    """
+
+    try:
+        import svgwrite
+    except ImportError:
+        print ("WARNING, no SVG image, not producing image %s" % fname)
+        return
+
+    # create internal to external map
+    bondmap = {'N': {}, 'S': {},  'E': {},  'W': {} }
+    padside = {'pads.north': 'N', 'pads.east': 'E', 'pads.south': 'S',
+               'pads.west': 'W'}
+    sidepad = {}
+    for pinpad, bank in padside.items():
+        sidepad[bank] = pinpad
+        for ipin in range(len(pins[pinpad])):
+            eside, enum, epinnum = bond_int_to_ext(ipin, bank)
+            bondmap[eside][enum] = (epinnum, ipin, bank)
+    with open("/tmp/bondmap.txt", "w") as f:
+        for k,v in bondmap.items():
+            f.write("%s\n" % k)
+            for enum, (epinnum, ipin, bank) in v.items():
+                f.write("    %d %d  -> %s %d\n" % (enum, epinnum, bank, ipin))
+
+    scale = 15
+    outerscale = scale * 2.0
+
+    width = len(pins['pads.north']) * scale
+    height = len(pins['pads.east']) * scale
+    woffs = scale*40#-width/2
+    hoffs = scale*40#-height/2
+
+    nepads = list(bondmap['N'].keys())
+    nepads.sort()
+    wepads = list(bondmap['W'].keys())
+    wepads.sort()
+    eepads = list(bondmap['E'].keys())
+    eepads.sort()
+    sepads = list(bondmap['S'].keys())
+    sepads.sort()
+
+    owoffs = woffs + (width/2) - len(nepads)/2 * outerscale
+    ohoffs = hoffs + (height/2) - len(wepads)/2 * outerscale
+
+    dwg = svgwrite.Drawing(fname, profile='full',
+                           size=(width+scale*85, height+scale*80))
+
+    # outer QFP rect
+    # dwg.add(dwg.rect((owoffs-scale*2.5, ohoffs-scale*4.5),
+    dwg.add(dwg.rect((owoffs-scale*2.5, ohoffs-scale*4.5),
+                        (len(nepads)*outerscale+scale*9,
+                         len(wepads)*outerscale+scale*13),
+            fill='white',
+            stroke=svgwrite.rgb(0, 128, 0, '%'),
+            stroke_width=scale/5.0))
+
+    # inner lead rect
+    dwg.add(dwg.rect((woffs-scale*2, hoffs-scale*2),
+                        (width+scale*6, height+scale*6),
+            stroke=svgwrite.rgb(16, 255, 16, '%'),
+            stroke_width=scale/10.0))
+
+    # record the inner line (iopad) position so that the outer one can
+    # match with it
+    innerpos = {'N': {}, 'S': {},  'E': {},  'W': {} }
+
+    # create the inner diagram
+    for i, pin in enumerate(pins['pads.west']):
+        ht = hoffs + height - (i * scale) + scale*0.5
+        endline = (woffs-scale*4.5, ht-scale*0.5)
+        innerpos['W'][i] = endline
+        dwg.add(dwg.line((woffs-scale*2, ht-scale*0.5),
+                         endline,
+                         stroke=svgwrite.rgb(16, 255, 16, '%'),
+                         stroke_width=scale/10.0))
+        dwg.add(dwg.text(pin.upper(), insert=(woffs-scale*12, ht),
+                         fill='black'))
+        dwg.add(dwg.text("W%d" % (i+1), insert=(woffs-scale*1.5, ht),
+                            fill='white'))
+
+    for i, pin in enumerate(pins['pads.east']):
+        ht = hoffs + height - (i * scale) + scale*0.5
+        wd = width + woffs + scale*2
+        endline = (wd+scale*4.5, ht-scale*0.5)
+        innerpos['E'][i] = endline
+        dwg.add(dwg.line((wd+scale*2, ht-scale*0.5),
+                         endline,
+                         stroke=svgwrite.rgb(16, 255, 16, '%'),
+                         stroke_width=scale/10.0))
+        dwg.add(dwg.text(pin.upper(), insert=(wd+scale*5, ht-scale*0.25),
+                         fill='black'))
+        dwg.add(dwg.text("E%d" % (i+1), insert=(wd, ht-scale*0.25),
+                            fill='white'))
+
+    for i, pin in enumerate(pins['pads.north']):
+        wd = woffs + i * scale + scale*1.5
+        endline = (wd, hoffs-scale*4.5)
+        innerpos['N'][i] = endline
+        dwg.add(dwg.line((wd, hoffs-scale*2),
+                         endline,
+                         stroke=svgwrite.rgb(16, 255, 16, '%'),
+                         stroke_width=scale/10.0))
+        pos=(wd, hoffs-scale*5.0)
+        txt = dwg.text(pin.upper(), insert=pos, fill='black')
+        txt.rotate(-90, pos)
+        dwg.add(txt)
+        pos=(wd+scale*0.25, hoffs-scale*0.25)
+        txt = dwg.text("N%d" % (i+1), insert=pos, fill='white')
+        txt.rotate(-90, pos)
+        dwg.add(txt)
+
+    for i, pin in enumerate(pins['pads.south']):
+        wd = woffs + i * scale + scale*1.5
+        ht = hoffs + height + scale*2
+        endline = (wd, ht+scale*4.5)
+        innerpos['S'][i] = endline
+        dwg.add(dwg.line((wd, ht+scale*2),
+                         endline,
+                         stroke=svgwrite.rgb(16, 255, 16, '%'),
+                         stroke_width=scale/10.0))
+        pos=(wd-scale*0.25, ht+scale*5.0)
+        txt = dwg.text(pin.upper(), insert=pos, fill='black')
+        txt.rotate(90, pos)
+        dwg.add(txt)
+        pos=(wd-scale*0.25, ht+scale*0.25)
+        txt = dwg.text("S%d" % (i+1), insert=pos, fill='white')
+        txt.rotate(90, pos)
+        dwg.add(txt)
+
+    # north outer pads
+    for i in nepads:
+        (epinnum, ipin, bank) = pad = bondmap['N'][i]
+        wd = owoffs + i * outerscale + outerscale*1.5
+        endline = (wd, ohoffs-outerscale*2)
+        startline = innerpos[bank][ipin]
+        dwg.add(dwg.line(startline,
+                         endline,
+                         stroke=svgwrite.rgb(255, 16, 16, '%'),
+                         stroke_width=scale/10.0))
+        pin = pins[sidepad[bank]][ipin]
+        pos=(wd, ohoffs-outerscale*4.0)
+        txt = dwg.text("%s (%s%d)" % (pin.upper(), bank, ipin+1),
+                        insert=pos, fill='black')
+        txt.rotate(-90, pos)
+        dwg.add(txt)
+        pos=(wd, ohoffs-outerscale*2.5)
+        txt = dwg.text("%d N" % epinnum, insert=pos, fill='blue')
+        txt.rotate(-90, pos)
+        dwg.add(txt)
+
+    # west outer pads
+    for i in wepads:
+        (epinnum, ipin, bank) = pad = bondmap['W'][i]
+        ht = ohoffs + (i * outerscale) + outerscale*1.5
+        endline = (owoffs+outerscale*0.5, ht)
+        startline = innerpos[bank][ipin]
+        dwg.add(dwg.line(startline,
+                         endline,
+                         stroke=svgwrite.rgb(255, 16, 16, '%'),
+                         stroke_width=scale/10.0))
+        pin = pins[sidepad[bank]][ipin]
+        pos = (owoffs-outerscale*6.0, ht)
+        dwg.add(dwg.text("%s (%s%d)" % (pin.upper(), bank, ipin+1),
+                         pos,
+                         fill='black'))
+        pos = (owoffs-outerscale*1.0, ht)
+        dwg.add(dwg.text("%d W" % epinnum, insert=pos,
+                            fill='blue'))
+
+    # south outer pads
+    for i in sepads:
+        (epinnum, ipin, bank) = pad = bondmap['S'][i]
+        wd = owoffs + i * outerscale + outerscale*1.5
+        ht = ohoffs + len(wepads)*outerscale + outerscale*4
+        endline = (wd, ht)
+        startline = innerpos[bank][ipin]
+        dwg.add(dwg.line(startline,
+                         endline,
+                         stroke=svgwrite.rgb(255, 16, 16, '%'),
+                         stroke_width=scale/10.0))
+        pin = pins[sidepad[bank]][ipin]
+        pos=(wd-outerscale*0.25, ht+outerscale*1.5)
+        txt = dwg.text("%s (%s%d)" % (pin.upper(), bank, ipin+1),
+                        insert=pos, fill='black')
+        txt.rotate(90, pos)
+        dwg.add(txt)
+        pos=(wd-outerscale*0.25, ht+outerscale*0.5)
+        txt = dwg.text("%d S" % epinnum, insert=pos, fill='blue')
+        txt.rotate(90, pos)
+        dwg.add(txt)
+
+    # east outer pads
+    for i in eepads:
+        (epinnum, ipin, bank) = pad = bondmap['E'][i]
+        ht = ohoffs + (i * outerscale) + outerscale*1.5
+        wd = owoffs+len(nepads)*outerscale + outerscale*1
+        endline = (wd+outerscale*0.5, ht)
+        startline = innerpos[bank][ipin]
+        dwg.add(dwg.line(startline,
+                         endline,
+                         stroke=svgwrite.rgb(255, 16, 16, '%'),
+                         stroke_width=scale/10.0))
+        pin = pins[sidepad[bank]][ipin]
+        pos = (wd+outerscale*2.5, ht)
+        dwg.add(dwg.text("%s (%s%d)" % (pin.upper(), bank, ipin+1),
+                         pos,
+                         fill='black'))
+        pos = (wd+outerscale*1.0, ht)
+        dwg.add(dwg.text("%d E" % epinnum, insert=pos,
+                            fill='blue'))
+
+    # add ls180 image
+    image_data = open(ls180_drawing, "rb").read()
+    encoded = base64.b64encode(image_data).decode()
+    data = 'data:image/png;base64,{}'.format(encoded)
+    pos=(width/2+woffs-225, height/2+hoffs-225)
+    leads = svgwrite.image.Image(data, pos,
+                                       size=(480,480))
+    dwg.add(leads)
+
+    # add QFP pack image in top-right
+    image_data = open(pack_drawing, "rb").read()
+    encoded = base64.b64encode(image_data).decode()
+    data = 'data:image/png;base64,{}'.format(encoded)
+    pos=(0, 0)
+    leads = svgwrite.image.Image(data, pos,
+                                       size=(327,300))
+    dwg.add(leads)
+    dwg.add(dwg.text("GREATEK QFP128L",
+                       insert=(50,150),
+                        font_size=20,
+                     fill='black'))
+    dwg.add(dwg.text("D/W J1-03128-001",
+                       insert=(50,180),
+                        font_size=20,
+                     fill='black'))
+
+
+    # add QFP lead image in centre
+    sz=320
+    image_data = open(lead_drawing, "rb").read()
+    encoded = base64.b64encode(image_data).decode()
+    data = 'data:image/png;base64,{}'.format(encoded)
+    pos=(woffs+width+scale*23.5, 0)
+    leads = svgwrite.image.Image(data, pos,
+                                       size=(sz,sz))
+    leads.rotate(-90, (pos[0]+sz/2, pos[1]+sz/2))
+    dwg.add(leads)
+
+    dwg.add(dwg.text("GREATEK ELECTRONICS INC.",
+                       insert=(woffs+width+scale*29, scale*8),
+                     fill='black'))
+    dwg.add(dwg.text("INNER LEAD DRAWING",
+                       insert=(woffs+width+scale*29, scale*9),
+                     fill='black'))
+    dwg.add(dwg.text("QFP 128L OPEN STAMPING",
+                       insert=(woffs+width+scale*29, scale*10),
+                     fill='black'))
+    dwg.add(dwg.text("BODY 14x20x2.75mm",
+                       insert=(woffs+width+scale*29, scale*11),
+                     fill='black'))
+    dwg.add(dwg.text("L/F PAD SIZE 236x236mil^2",
+                       insert=(woffs+width+scale*29, scale*12),
+                     fill='black'))
+
+    # add C4M Logo
+    image_data = open(c4m_drawing, "rb").read()
+    encoded = base64.b64encode(image_data).decode()
+    data = 'data:image/png;base64,{}'.format(encoded)
+    pos=(woffs+scale*5.0, hoffs+height-scale*5.0)
+    leads = svgwrite.image.Image(data, pos,
+                                       size=(50,50))
+    dwg.add(leads)
+
+    if False:
+        # add SRAMs
+        for i in range(4):
+            dwg.add(dwg.rect((woffs+scale+75*i, hoffs+scale),
+                            (70,50),
+                fill='white',
+                stroke=svgwrite.rgb(16, 255, 16, '%'),
+                stroke_width=scale/10.0))
+        # add PLL
+        dwg.add(dwg.rect((woffs+width-scale, hoffs+scale),
+                            (25,20),
+                fill='white',
+                stroke=svgwrite.rgb(16, 255, 16, '%'),
+                stroke_width=scale/10.0))
+
+    # add attribution
+    dwg.add(dwg.text("Libre-SOC ls180 QFP-128",
+                       insert=(woffs+width/2-scale*5, scale*4),
+                     fill='black'))
+    dwg.add(dwg.text("In collaboration with LIP6.fr",
+                       insert=(woffs+width/2-scale*5, scale*5),
+                     fill='black'))
+    dwg.add(dwg.text("Cell Libraries by Chips4Makers",
+                       insert=(woffs+width/2-scale*5, scale*6),
+                     fill='black'))
+    dwg.add(dwg.text("IMEC TSMC 180nm",
+                       insert=(woffs+width/2-scale*5, scale*7),
+                     fill='black'))
+    dwg.add(dwg.text("RED Semiconductor",
+                       insert=(woffs+width/2-scale*5, scale*8),
+                     fill='black'))
+
+    # add package marking circles
+    pos = (owoffs-outerscale*0, ohoffs+len(wepads)*outerscale+outerscale*2.5)
+    dwg.add(dwg.circle(pos, scale*2,
+                         fill='white',
+                         stroke=svgwrite.rgb(16, 16, 16, '%'),
+                         stroke_width=scale/5.0))
+    dwg.add(dwg.circle(pos, scale*1,
+                         fill='black',
+                         stroke=svgwrite.rgb(255, 16, 16, '%'),
+                         stroke_width=scale/5.0))
+    pos = (owoffs+len(nepads)*outerscale+outerscale*2, ohoffs-outerscale*0.5)
+    dwg.add(dwg.circle(pos, scale*2,
+                         fill='white',
+                         stroke=svgwrite.rgb(16, 16, 16, '%'),
+                         stroke_width=scale/5.0))
+
+
+    dwg.save()
+
 
 def display(of, pins, banksel=None, muxwidth=4):
     of.write("""\
