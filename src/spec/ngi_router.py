@@ -51,10 +51,8 @@ def pinspec():
                       'SDR': 'SDRAM',
                       'UART0': 'UART (TX/RX)',
                       'JTAG': 'JTAG',
-                      'VDD': '1.8V Core Power',
-                      'VSS': '1.8V Core GND',
-                      'VDD': '3.3V I/O Power',
-                      'VSS': '3.3V I/O GND',
+                      'VDD': 'Power',
+                      'VSS': 'GND',
                       'SYS': 'System Control',
                       'MSPI0': 'SPI Master 0 (general)',
                       # Non-Essential
@@ -67,65 +65,99 @@ def pinspec():
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
 
-    ps.sdram1("", ('W', 0), 0, 15, 6, rev=True) # AD4-9, turned round
-    ps.vdd("E", ('W', 6), 0, 0, 1)
-    ps.vss("E", ('W', 7), 0, 0, 1)
-    ps.vdd("I", ('W', 8), 0, 0, 1)
-    ps.vss("I", ('W', 9), 0, 0, 1)
-    ps.sdram1("", ('W', 10), 0, 0, 15, rev=True) # SDRAM DAM0, D0-7, AD0-3
-    ps.mi2c("", ('W', 26), 0, 0, 2)
-    ps.vss("I", ('W', 28), 0, 1, 1)
-    ps.vdd("I", ('W', 29), 0, 1, 1)
-    ps.vss("E", ('W', 30), 0, 1, 1)
-    ps.vdd("E", ('W', 31), 0, 1, 1)
+    #ps.sdram1("", ('W', 0), 0, 15, 6, rev=True) # AD4-9, turned round
+    #ps.vdd("E", ('W', 6), 0, 0, 1)
+    #ps.vss("E", ('W', 7), 0, 0, 1)
+    #ps.vdd("I", ('W', 8), 0, 0, 1)
+    #ps.vss("I", ('W', 9), 0, 0, 1)
+    #ps.sdram1("", ('W', 10), 0, 0, 15, rev=True) # SDRAM DAM0, D0-7, AD0-3
+    #ps.mi2c("", ('W', 26), 0, 0, 2)
+    #ps.vss("I", ('W', 28), 0, 1, 1)
+    #ps.vdd("I", ('W', 29), 0, 1, 1)
+    
+    
+    
+    
+    
+    ps.vdd("I", ('W', 0), 0, 0, 1)
+    ps.vss("I", ('W', 1), 0, 0, 1)
+    ps.vdd("E", ('W', 2), 0, 0, 1)
+    ps.vss("E", ('W', 3), 0, 0, 1)
+    ps.ulpi("0", ('W', 4), 0, 0, 12)
+    ps.vdd("I", ('W', 16), 0, 1, 1)
+    ps.vss("I", ('W', 17), 0, 1, 1)
+    ps.ulpi("1", ('W', 18), 0, 0, 12)
+    ps.vdd("E", ('W', 30), 0, 1, 1)
+    ps.vss("E", ('W', 31), 0, 1, 1)
+    ps.uart("0", ('W', 32), 0)
+    ps.vdd("I", ('W', 34), 0, 2, 1)
+    ps.vss("I", ('W', 35), 0, 2, 1)
+    ps.eint("", ('W', 36), 0, 0, 3)
+    ps.vdd("E", ('W', 42), 0, 2, 1)
+    ps.vss("E", ('W', 43), 0, 2, 1)
+    ps.gpio("", ('W', 44), 0, 0, 16) # GPIO 0-16
+    ps.vdd("I", ('W', 60), 0, 3, 1)
+    ps.vss("I", ('W', 61), 0, 3, 1)
+    ps.vdd("E", ('W', 62), 0, 3, 1)
+    ps.vss("E", ('W', 63), 0, 3, 1)
+    
 
-    ps.sdram2("", ('S', 0), 0, 0, 4) # 1st 4, AD10-12,DQM1
+    #ps.sdram2("", ('S', 0), 0, 0, 4) # 1st 4, AD10-12,DQM1
     ps.vdd("E", ('S', 4), 0, 2, 1)
     ps.vss("E", ('S', 5), 0, 2, 1)
     ps.vdd("I", ('S', 6), 0, 2, 1)
     ps.vss("I", ('S', 7), 0, 2, 1)
-    ps.sdram2("", ('S', 8), 0, 4, 8) # D8-15
-    ps.sdram1("", ('S', 16), 0, 21, 9) # clk etc.
-    ps.vss("I", ('S', 22), 0, 3, 1)
-    ps.vdd("I", ('S', 23), 0, 3, 1)
-    ps.vss("E", ('S', 24), 0, 3, 1)
-    ps.vdd("E", ('S', 25), 0, 3, 1)
-    ps.uart("0", ('S', 26), 0)
-    ps.mspi("0", ('S', 28), 0)
+    #ps.sdram2("", ('S', 8), 0, 4, 8) # D8-15
+    #ps.sdram1("", ('S', 16), 0, 21, 9) # clk etc.
+    #ps.vss("I", ('S', 22), 0, 3, 1)
+    #ps.vdd("I", ('S', 23), 0, 3, 1)
+    #ps.vss("E", ('S', 24), 0, 3, 1)
+    #ps.vdd("E", ('S', 25), 0, 3, 1)
+    #ps.mspi("0", ('S', 28), 0)
 
-    ps.gpio("", ('E', 0), 0, 0, 6) # GPIO 0-5
-    ps.vss("E", ('E', 6), 0, 4, 1)
-    ps.vdd("E", ('E', 7), 0, 4, 1)
-    ps.vdd("I", ('E', 8), 0, 4, 1)
-    ps.vss("I", ('E', 9), 0, 4, 1)
-    ps.gpio("", ('E', 10), 0, 6, 3) # GPIO 6-8
-    ps.jtag("", ('E', 13), 0, 0, 4)
-    ps.gpio("", ('E', 17), 0, 9, 5) # GPIO 9-13
+    
+    ps.vss("E", ('E', 0), 0, 0, 1)
+    ps.vdd("E", ('E', 1), 0, 0, 1)
+    #ps.sdram1("", ('W', 0), 0, 0, 6)
+    ps.vss("E", ('E', 20), 0, 4, 1)
+    ps.vdd("E", ('E', 21), 0, 4, 1)
+    ps.vss("E", ('E', 40), 0, 4, 1)
+    ps.vdd("E", ('E', 41), 0, 4, 1)
+    ps.vss("I", ('E', 60), 0, 4, 1)
+    ps.vdd("I", ('E', 61), 0, 4, 1)
+    #ps.vdd("I", ('E', 8), 0, 4, 1)
+    #ps.vss("I", ('E', 9), 0, 4, 1)
+    #ps.gpio("", ('E', 10), 0, 6, 3) # GPIO 6-8
+    #ps.jtag("", ('E', 13), 0, 0, 4)
+    #ps.gpio("", ('E', 17), 0, 9, 5) # GPIO 9-13
     #ps.vss("I", ('E', 22), 0, 5, 1)
     #ps.vdd("I", ('E', 23), 0, 5, 1)
     #ps.vss("E", ('E', 24), 0, 5, 1)
     #ps.vdd("E", ('E', 25), 0, 5, 1)
     #ps.gpio("", ('E', 26), 0, 14, 2) # GPIO 14-15
-    #ps.eint("", ('E', 28), 0, 0, 3)
+    
     ps.sys("", ('E', 63), 0, 5, 1) # analog VCO out in right top
 
-    ps.vss("E", ('N', 6), 0, 6, 1)
-    ps.vdd("E", ('N', 7), 0, 6, 1)
-    ps.vdd("I", ('N', 8), 0, 6, 1)
-    ps.vss("I", ('N', 9), 0, 6, 1)
+    ps.vss("E", ('N', 0), 0, 0, 1)
+    ps.vdd("E", ('N', 1), 0, 0, 1)
+    ps.vdd("I", ('N', 2), 0, 0, 1)
+    ps.vss("I", ('N', 3), 0, 0, 1)
+    ps.sdram1("", ('N', 4), 0, 0, 39)
     
     #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
     #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
     ps.sys("", ('N', 59), 0, 0, 5) # all but analog out in top right
-    ps.vss("I", ('N', 54), 0, 7, 1)
-    ps.vdd("I", ('N', 55), 0, 7, 1)
-    ps.vss("E", ('N', 56), 0, 7, 1)
-    ps.vdd("E", ('N', 57), 0, 7, 1)
+    ps.vss("I", ('N', 54), 0, 0, 1)
+    ps.vdd("I", ('N', 55), 0, 0, 1)
+    ps.vss("E", ('N', 56), 0, 0, 1)
+    ps.vdd("E", ('N', 57), 0, 0, 1)
 
     ps.rgmii("0", ('E', 42), 0, 0, 18)
     ps.rgmii("1", ('E', 22), 0, 0, 18)
-    ps.rgmii("2", ('N', 31), 0, 0, 18)
+    ps.rgmii("2", ('E', 2), 0, 0, 18)
+    ps.rgmii("3", ('S', 44), 0, 0, 18)
+    ps.rgmii("4", ('S', 24), 0, 0, 18)
     #ps.mquadspi("1", ('S', 0), 0)
 
     print ("ps clocks", ps.clocks)
@@ -136,15 +168,17 @@ def pinspec():
     # EINT and PWM are grouped together, specially, but may still be spec'd
     # using "BM:Name".  Pins are removed in-order as listed from
     # lists (interfaces, EINTs, PWMs) from available pins.
-
     ngi_router = [
-            # 'SD0', litex problem 25mar2021
-            'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
-             'VDD', 'VSS', 'SYS',
-                'MTWI', 'MSPI0',
-                'RG0', 'RG1', 'RG2', 'RG3', 'RG4',
-                # 'MSPI1', litex problem 25mar2021
-                'SDR']
+            'RG0', 'RG1', 'RG2', 'RG3', 'RG4',
+            'ULPI0', 'ULPI0',
+            'SDR',
+            'UART0', 'JTAG',
+            'VDD', 'VSS',
+            'SYS',
+            'MSPI0', 'MTWI',
+            'GPIO', 'EINT',
+            'QSPI', 'SD0'
+                ]
     ngi_router_eint = []
     ngi_router_pwm = []#['B0:PWM_0']
     descriptions = {
