@@ -21,6 +21,8 @@ python src/pinmux_generator.py -v -o minitest -s minitest
 python src/pinmux_generator.py -v -o minitest
 ```
 
+Make sure you've installed the svgwrite library (via pip), if you want to generate the SVG image (strongly recommended!).
+
 * Existing specifications in 'src/spec/' : m_class, i_class, c_class, microtest, minitest
 
 * Testing pinmux using cocotb:
