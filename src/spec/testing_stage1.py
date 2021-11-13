@@ -3,6 +3,7 @@ from nmigen.build.dsl import Resource, Subsignal, Pins
 from nmigen.build.plat import TemplatedPlatform
 from nmigen import Elaboratable, Signal, Module, Instance
 from collections import OrderedDict
+from jtag import JTAG
 
 # Was thinking of using these functions, but skipped for simplicity for now
 # XXX nope.  the output from JSON file.
@@ -95,10 +96,12 @@ def I2CResource(*args, scl, sda):
 # ridiculously-simple top-level module.  doesn't even have a sync domain
 # and can't have one until a clock has been established by DummyPlatform.
 class Blinker(Elaboratable):
-    def __init__(self):
-        pass
+    def __init__(self, pinset):
+        self.jtag = JTAG(pinset, "sync")
+
     def elaborate(self, platform):
         m = Module()
+        m.submodules.jtag = self.jtag
         count = Signal(5)
         m.d.sync += count.eq(5)
         print ("resources", platform.resources.items())
@@ -216,5 +219,5 @@ resources = create_resources(pinset)
 print(pinset)
 print(resources)
 p = DummyPlatform (resources)
-p.build(Blinker())
+p.build(Blinker(pinset))
 
