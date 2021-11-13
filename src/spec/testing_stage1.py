@@ -52,13 +52,16 @@ def create_resources(pinset):
             ios = []
             for pin in pins:
                 pname = "gpio"+pin[:-1] # strip "*" on end
-                ios.append(Subsignal(pname, Pins(pname, assert_width=1)))
+                ios.append(Subsignal(pname, Pins(pname, dir="io",
+                                                 assert_width=1)))
             resources.append(Resource.family(periph, 0, default_name="gpio",
                                              ios=ios))
 
     # add clock and reset
-    resources.append(Resource("clk", 0, Pins("sys_clk", dir="i")))
-    resources.append(Resource("rst", 0, Pins("sys_rst", dir="i")))
+    clk = Resource("clk", 0, Pins("sys_clk", dir="i"))
+    rst = Resource("rst", 0, Pins("sys_rst", dir="i"))
+    resources.append(clk)
+    resources.append(rst)
     return resources
 
 
@@ -91,6 +94,8 @@ class Blinker(Elaboratable):
         # get the GPIO bank, mess about with some of the pins
         m.d.comb += gpio.gpio0.o.eq(1)
         m.d.comb += gpio.gpio1.o.eq(gpio.gpio2.i)
+        m.d.comb += gpio.gpio1.oe.eq(count[4])
+        m.d.sync += count[0].eq(gpio.gpio1.i)
         # get the UART resource, mess with the output tx
         uart = platform.request("uart", 0)
         print (uart, uart.fields)
