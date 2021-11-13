@@ -2,6 +2,7 @@
 from nmigen.build.dsl import Resource, Subsignal, Pins
 from nmigen.build.plat import TemplatedPlatform
 from nmigen import Elaboratable, Signal, Module
+from collections import OrderedDict
 
 # Was thinking of using these functions, but skipped for simplicity for now
 # XXX nope.  the output from JSON file.
@@ -48,10 +49,12 @@ def create_resources(pinset):
         elif periph == 'gpio':
             #print("GPIO required!")
             print ("GPIO is defined as '*' type, meaning i, o and oe needed")
-            resources.append(Resource('gpio', 0,
-              Subsignal("i", Pins('i0', dir="i", conn=None, assert_width=1)),
-              Subsignal("oe", Pins('oe0', dir="o", conn=None, assert_width=1)),
-              Subsignal("o", Pins('o0', dir="o", conn=None, assert_width=1))))
+            ios = []
+            for pin in pins:
+                pname = "gpio"+pin[:-1] # strip "*" on end
+                ios.append(Subsignal(pname, Pins(pname, assert_width=1)))
+            resources.append(Resource.family(periph, 0, default_name="gpio",
+                                             ios=ios))
     return resources
 
 
@@ -78,6 +81,16 @@ class Blinker(Elaboratable):
         m = Module()
         count = Signal(5)
         m.d.comb += count.eq(5)
+        print ("resources", platform.resources.items())
+        gpio = platform.request("gpio", 0)
+        print (gpio, gpio.layout, gpio.fields)
+        # get the GPIO bank, mess about with some of the pins
+        m.d.comb += gpio.gpio0.o.eq(1)
+        m.d.comb += gpio.gpio1.o.eq(gpio.gpio2.i)
+        # get the UART resource, mess with the output tx
+        uart = platform.request("uart", 0)
+        print (uart, uart.fields)
+        m.d.comb += uart.tx.eq(1)
         return m
 
 
@@ -97,8 +110,8 @@ class Blinker(Elaboratable):
 # TODO: investigate how the heck to get it to output ilang. or verilog.
 # or, anything, really.  but at least it doesn't barf
 class DummyPlatform(TemplatedPlatform):
-    resources = []
     connectors = []
+    resources = OrderedDict()
     required_tools = []
     command_templates = ['/bin/true']
     file_templates = {
@@ -114,8 +127,8 @@ class DummyPlatform(TemplatedPlatform):
     }
     toolchain = None
     def __init__(self, resources):
-        self.resources = resources
         super().__init__()
+        self.add_resources(resources)
 
 """
 and to create a Platform instance with that list, and build
@@ -130,6 +143,5 @@ resources = create_resources(pinset)
 print(pinset)
 print(resources)
 p = DummyPlatform (resources)
-p.resources = create_resources(pinset)
 p.build(Blinker())
 
