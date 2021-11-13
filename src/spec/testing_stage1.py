@@ -154,6 +154,54 @@ class DummyPlatform(TemplatedPlatform):
         super().__init__()
         self.add_resources(resources)
 
+    # XXX these aren't strictly necessary right now but the next
+    # phase is to add JTAG Boundary Scan so it maaay be worth adding?
+    # at least for the print statements
+    def get_input(self, pin, port, attrs, invert):
+        self._check_feature("single-ended input", pin, attrs,
+                            valid_xdrs=(0,), valid_attrs=None)
+
+        print ("    get_input", pin, "port", port, port.layout)
+        m = Module()
+        m.d.comb += pin.i.eq(self._invert_if(invert, port))
+        return m
+
+    def get_output(self, pin, port, attrs, invert):
+        self._check_feature("single-ended output", pin, attrs,
+                            valid_xdrs=(0,), valid_attrs=None)
+
+        print ("    get_output", pin, "port", port, port.layout)
+        m = Module()
+        m.d.comb += port.eq(self._invert_if(invert, pin.o))
+        return m
+
+    def get_tristate(self, pin, port, attrs, invert):
+        self._check_feature("single-ended tristate", pin, attrs,
+                            valid_xdrs=(0,), valid_attrs=None)
+
+        m = Module()
+        m.submodules += Instance("$tribuf",
+            p_WIDTH=pin.width,
+            i_EN=pin.oe,
+            i_A=self._invert_if(invert, pin.o),
+            o_Y=port,
+        )
+        return m
+
+    def get_input_output(self, pin, port, attrs, invert):
+        self._check_feature("single-ended input/output", pin, attrs,
+                            valid_xdrs=(0,), valid_attrs=None)
+        print ("    get_input_output", pin, "port", port, port.layout)
+        m = Module()
+        m.submodules += Instance("$tribuf",
+            p_WIDTH=pin.width,
+            i_EN=pin.oe,
+            i_A=self._invert_if(invert, pin.o),
+            o_Y=port,
+        )
+        m.d.comb += pin.i.eq(self._invert_if(invert, port))
+        return m
+
 
 """
 and to create a Platform instance with that list, and build
