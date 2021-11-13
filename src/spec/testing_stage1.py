@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 from nmigen.build.dsl import Resource, Subsignal, Pins
 from nmigen.build.plat import TemplatedPlatform
+from nmigen.build.res import ResourceManager
 from nmigen import Elaboratable, Signal, Module, Instance
 from collections import OrderedDict
 from jtag import JTAG
+from copy import deepcopy
 
 # Was thinking of using these functions, but skipped for simplicity for now
 # XXX nope.  the output from JSON file.
@@ -105,7 +107,7 @@ class Blinker(Elaboratable):
         count = Signal(5)
         m.d.sync += count.eq(5)
         print ("resources", platform.resources.items())
-        gpio = platform.request("gpio", 0)
+        gpio = platform.core['gpio']
         print (gpio, gpio.layout, gpio.fields)
         # get the GPIO bank, mess about with some of the pins
         m.d.comb += gpio.gpio0.o.eq(1)
@@ -113,7 +115,7 @@ class Blinker(Elaboratable):
         m.d.comb += gpio.gpio1.oe.eq(count[4])
         m.d.sync += count[0].eq(gpio.gpio1.i)
         # get the UART resource, mess with the output tx
-        uart = platform.request("uart", 0)
+        uart = platform.core['uart']
         print (uart, uart.fields)
         m.d.comb += uart.tx.eq(1)
         return m
@@ -153,9 +155,32 @@ class DummyPlatform(TemplatedPlatform):
     toolchain = None
     default_clk = "clk" # should be picked up / overridden by platform sys.clk
     default_rst = "rst" # should be picked up / overridden by platform sys.rst
-    def __init__(self, resources):
+    def __init__(self, pinset):
         super().__init__()
+        # create set of pin resources based on the pinset, this is for the core
+        resources = create_resources(pinset)
         self.add_resources(resources)
+        # make a *second* - identical - set of pin resources for the IO ring
+        padres = deepcopy(resources)
+        self.pad_mgr = ResourceManager(padres, [])
+        # allocate all resources, right now, so that a lookup can be created
+        # between core IO names and pads
+        self.core = {}
+        self.pads = {}
+        # request every single peripheral in the pinset.
+        for periph, pins in pinset.items():
+            self.core[periph] = self.request(periph)
+            self.pads[periph] = self.pad_mgr.request(periph)
+        # now create a lookup between the pad and the core, so that
+        # JTAG boundary scan can be inserted in between
+        self.padlookup = {}
+        core = list(self.iter_single_ended_pins())
+        pads = list(self.pad_mgr.iter_single_ended_pins())
+        print ("core", core)
+        print ("pads", pads)
+        for pad, core in zip(pads, core):
+            print ("iter", pad)
+            self.padlookup[pad[0].name] = core
 
     # XXX these aren't strictly necessary right now but the next
     # phase is to add JTAG Boundary Scan so it maaay be worth adding?
@@ -165,6 +190,9 @@ class DummyPlatform(TemplatedPlatform):
                             valid_xdrs=(0,), valid_attrs=None)
 
         print ("    get_input", pin, "port", port, port.layout)
+        if pin.name not in ['clk_0', 'rst_0']: # sigh
+            pad = self.padlookup[pin.name]
+            print ("       pad", pad)
         m = Module()
         m.d.comb += pin.i.eq(self._invert_if(invert, port))
         return m
@@ -215,9 +243,7 @@ something random
    p.build(Blinker())
 """
 pinset = dummy_pinset()
-resources = create_resources(pinset)
 print(pinset)
-print(resources)
-p = DummyPlatform (resources)
+p = DummyPlatform (pinset)
 p.build(Blinker(pinset))
 
