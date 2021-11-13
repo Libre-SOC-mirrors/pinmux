@@ -55,6 +55,10 @@ def create_resources(pinset):
                 ios.append(Subsignal(pname, Pins(pname, assert_width=1)))
             resources.append(Resource.family(periph, 0, default_name="gpio",
                                              ios=ios))
+
+    # add clock and reset
+    resources.append(Resource("clk", 0, Pins("sys_clk", dir="i")))
+    resources.append(Resource("rst", 0, Pins("sys_rst", dir="i")))
     return resources
 
 
@@ -80,7 +84,7 @@ class Blinker(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         count = Signal(5)
-        m.d.comb += count.eq(5)
+        m.d.sync += count.eq(5)
         print ("resources", platform.resources.items())
         gpio = platform.request("gpio", 0)
         print (gpio, gpio.layout, gpio.fields)
@@ -126,6 +130,8 @@ class DummyPlatform(TemplatedPlatform):
         """,
     }
     toolchain = None
+    default_clk = "clk" # should be picked up / overridden by platform sys.clk
+    default_rst = "rst" # should be picked up / overridden by platform sys.rst
     def __init__(self, resources):
         super().__init__()
         self.add_resources(resources)
