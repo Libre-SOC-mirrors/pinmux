@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from nmigen import Platform # Not sure where platform comes from?
+
+# Was thinking of using these functions, but skipped for simplicity for now
 #from pinfunctions import i2s, lpc, emmc, sdmmc, mspi, mquadspi, spi, quadspi, i2c, mi2c, jtag, uart, uartfull, rgbttl, ulpi, rgmii, flexbus1, flexbus2, sdram1, sdram2, sdram3, vss, vdd, sys, eint, pwm, gpio
 
 # File for stage 1 pinmux tested proposed by Luke, https://bugs.libre-soc.org/show_bug.cgi?id=50#c10
@@ -57,5 +60,7 @@ def dummy_pinset():
            }
 
 # testing .....
-resources = dummy_pinset()
-print(resources)
+p=Platform()
+p.resources=dummy_pinset()
+print(p.resources)
+p.build(Blinker())
