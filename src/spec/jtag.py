@@ -6,9 +6,7 @@ using Staf Verhaegen (Chips4Makers) wishbone TAP
 from collections import OrderedDict
 from nmigen import (Module, Signal, Elaboratable, Cat)
 from nmigen.cli import rtlil
-from c4m.nmigen.jtag.tap import IOType
-from soc.debug.dmi import  DMIInterface, DBGCore
-from soc.debug.dmi2jtag import DMITAP
+from c4m.nmigen.jtag.tap import IOType, TAP
 
 # map from pinmux to c4m jtag iotypes
 iotypes = {'-': IOType.In,
@@ -61,11 +59,11 @@ class Pins:
                 scan_idx += scanlens[iotype] # inc boundary reg scan offset
 
 
-class JTAG(DMITAP, Pins):
+class JTAG(TAP, Pins):
     # 32-bit data width here so that it matches with litex
     def __init__(self, pinset, domain, wb_data_wid=32):
         self.domain = domain
-        DMITAP.__init__(self, ir_width=4)
+        TAP.__init__(self, ir_width=4)
         Pins.__init__(self, pinset)
 
         # enumerate pin specs and create IOConn Records.
@@ -135,7 +133,7 @@ class JTAG(DMITAP, Pins):
 
 if __name__ == '__main__':
     pinset = dummy_pinset()
-    dut = JTAG(pinset)
+    dut = JTAG(pinset, "sync")
 
     vl = rtlil.convert(dut)
     with open("test_jtag.il", "w") as f:
