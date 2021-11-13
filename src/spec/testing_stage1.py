@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from nmigen.build.dsl import Resource, Subsignal, Pins
 from nmigen.build.plat import TemplatedPlatform
-from nmigen import Elaboratable, Signal, Module
+from nmigen import Elaboratable, Signal, Module, Instance
 from collections import OrderedDict
 
 # Was thinking of using these functions, but skipped for simplicity for now
@@ -52,8 +52,21 @@ def create_resources(pinset):
             ios = []
             for pin in pins:
                 pname = "gpio"+pin[:-1] # strip "*" on end
-                ios.append(Subsignal(pname, Pins(pname, dir="io",
-                                                 assert_width=1)))
+                pads = []
+                # urrrr... tristsate and io assume a single pin which is
+                # of course exactly what we don't want in an ASIC: we want
+                # *all three* pins but the damn port is not outputted
+                # as a triplet, it's a single Record named "io". sigh.
+                # therefore the only way to get a triplet of i/o/oe
+                # is to *actually* create explicit triple pins
+                pads.append(Subsignal("i",
+                            Pins(pname+"_i", dir="i", assert_width=1)))
+                pads.append(Subsignal("o",
+                            Pins(pname+"_o", dir="o", assert_width=1)))
+                pads.append(Subsignal("oe",
+                            Pins(pname+"_oe", dir="oe", assert_width=1)))
+                ios.append(Resource.family(pname, 0, default_name=pname,
+                                                 ios=pads))
             resources.append(Resource.family(periph, 0, default_name="gpio",
                                              ios=ios))
 
@@ -140,6 +153,7 @@ class DummyPlatform(TemplatedPlatform):
     def __init__(self, resources):
         super().__init__()
         self.add_resources(resources)
+
 
 """
 and to create a Platform instance with that list, and build
