@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from nmigen import Platform # Not sure where platform comes from?
+from nmigen.build.dsl import Resource, Subsignal, Pins
+from nmigen.build.plat import Platform # Not sure where platform comes from?
 
 # Was thinking of using these functions, but skipped for simplicity for now
 #from pinfunctions import i2s, lpc, emmc, sdmmc, mspi, mquadspi, spi, quadspi, i2c, mi2c, jtag, uart, uartfull, rgbttl, ulpi, rgmii, flexbus1, flexbus2, sdram1, sdram2, sdram3, vss, vdd, sys, eint, pwm, gpio
@@ -8,59 +9,70 @@ from nmigen import Platform # Not sure where platform comes from?
 
 def dummy_pinset():
     # sigh this needs to come from pinmux.
-    num_gpios = 16
-    num_eint = 3
-    num_pow3v3 = 10
-    num_pow1v8 = 13
-
     gpios = []
-    for i in range(num_gpios):
+    for i in range(16):
         gpios.append("%d*" % i)
-    
-    eint = []
-    for i in range(num_eint):
-        eint.append("%d-" % i)
-
-    vdd3v3 = []
-    vss3v3 = []
-    vdd1v8 = []
-    vss1v8 = []
-    for i in range(num_pow3v3):
-        vdd3v3.append("%d-" % i)
-        vss3v3.append("%d-" % i)
-    for i in range(num_pow1v8):
-        vdd1v8.append("%d-" % i)
-        vss1v8.append("%d-" % i)
-
-    rgmii = ['erxd0-', 'erxd1-', 'erxd2-', 'erxd3-', 'etxd0+', 'etxd1+', 'etxd2+', 'etxd3+', 'erxck-', 'erxerr-', 'erxdv-', 'emdc+', 'emdio*', 'etxen+', 'etxck+', 'ecrs-', 'ecol+', 'etxerr+']
-    ulpi = ['CK+', 'DIR+', 'STP+', 'NXT+', 'D0*', 'D1*', 'D2*', 'D3*', 'D4*', 'D5*', 'D6*', 'D7*']
-    
-    sdr = ['DQM0+', 'D0*', 'D1*', 'D2*', 'D3*', 'D4*', 'D5*', 'D6*', 'D7*', 'BA0+', 'BA1+', 'AD0+', 'AD1+', 'AD2+', 'AD3+', 'AD4+', 'AD5+', 'AD6+', 'AD7+', 'AD8+', 'AD9+', 'CLK+', 'CKE+', 'RASn+', 'CASn+', 'WEn+', 'CSn0+']
     return {'uart': ['tx+', 'rx-'],
             'gpio': gpios,
-            'i2c': ['sda*', 'scl+'],
-            'rg0': rgmii,
-            'rg1': rgmii,
-            'rg2': rgmii,
-            'rg3': rgmii,
-            'rg4': rgmii,
-            'ulpi0': ulpi,
-            'ulpi1': ulpi,
-            'sdr': sdr,
-            'jtag': ['TMS-', 'TDI-', 'TDO+', 'TCK+'],
-            'vdd3v3': vdd3v3,
-            'vss3v3': vss3v3,
-            'vdd1v8': vdd1v8,
-            'vss1v8': vss1v8,
-            'sys': ['RST-', 'PLLCLK-', 'PLLSELA0-', 'PLLSELA1-', 'PLLTESTOUT+', 'PLLVCOUT+'],
-            'mspi0': ['CK+', 'NSS+', 'MOSI+', 'MISO-'],
-            'eint': eint,
-            'qspi': ['CK+', 'NSS+', 'IO0*', 'IO1*', 'IO2*', 'IO3*'],
-            'sd0': ['CMD*', 'CLK+', 'D0*', 'D1*', 'D2*', 'D3*'],
-           }
+            'i2c': ['sda*', 'scl+']}
 
-# testing .....
-p=Platform()
-p.resources=dummy_pinset()
-print(p.resources)
+"""
+a function is needed which turns the results of dummy_pinset()
+into:
+
+[UARTResource("uart", 0, tx=..., rx=..),
+ I2CResource("i2c", 0, scl=..., sda=...),
+ Resource("gpio", 0, Subsignal("i"...), Subsignal("o"...)
+ Resource("gpio", 1, Subsignal("i"...), Subsignal("o"...)
+ ...
+]
+"""
+def create_resources(pinset):
+    resources = []
+    for periph, pins in pinset.items():
+        print(periph, pins)
+        if periph == 'i2c':
+            #print("I2C required!")
+            resources.append(I2CResource('i2c', 0, sda='sda0', scl='scl0')) 
+        elif periph == 'uart':
+            #print("UART required!")
+            resources.append(UARTResource('uart', 0, tx='tx0', rx='rx0'))
+        elif periph == 'gpio':
+            #print("GPIO required!")
+            resources.append(Resource('gpio', 0, Subsignal("i", Pins('i0', dir="i", conn=None, assert_width=1)), Subsignal("o", Pins('o0', dir="o", conn=None, assert_width=1))))
+    return resources
+
+def UARTResource(*args, rx, tx, rts=None, cts=None, dtr=None, dsr=None, dcd=None, ri=None, 
+                 conn=None, attrs=None, role=None):  
+    io = []
+    io.append(Subsignal("rx", Pins(rx, dir="i", conn=conn, assert_width=1)))
+    io.append(Subsignal("tx", Pins(tx, dir="o", conn=conn, assert_width=1)))
+    if attrs is not None:
+        io.append(attrs)
+    return Resource.family(*args, default_name="uart", ios=io)
+
+def I2CResource(*args, scl, sda, conn=None, attrs=None):
+    io = []
+    io.append(Subsignal("scl", Pins(scl, dir="io", conn=conn, assert_width=1)))
+    io.append(Subsignal("sda", Pins(sda, dir="io", conn=conn, assert_width=1)))
+    if attrs is not None:
+        io.append(attrs)
+    return Resource.family(*args, default_name="i2c", ios=io)
+
+
+"""
+and to create a Platform instance with that list, and build
+something random
+
+   p=Platform()
+   p.resources=listofstuff
+   p.build(Blinker())
+"""
+pinset = dummy_pinset()
+resources = create_resources(pinset)
+print(pinset)
+print(resources)
+p=Platform(resources)
+p.resources = create_resources(pinset)
 p.build(Blinker())
+
