@@ -48,7 +48,7 @@
 
 def i2s(suffix, bank):
     return (['MCK+', 'BCK+', 'LRCK+', 'DI-', 'DO+'],
-            [])
+            [], "MCK")
 
 
 # XXX TODO: correct these.  this is a stub for now
