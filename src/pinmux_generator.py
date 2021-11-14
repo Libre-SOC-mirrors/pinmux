@@ -22,7 +22,7 @@ import sys
 import json
 from spec import modules, specgen, dummytest
 from spec.ifaceprint import create_sv, temp_create_sv
-
+import jsoncreate
 
 def printhelp():
     print ('''pinmux_generator.py [-o outputdir] [-v|--validate] [-h|--help]
@@ -98,21 +98,20 @@ if __name__ == '__main__':
                     specgen(of, output_dir, pinout,
                             bankspec, ps.muxwidths, pin_spec, fixedpins,
                             ps.fastbus)
-                if hasattr(module, "pinparse"):
-                    pm, chip = module.pinparse(ps, pinspec)
-                    litexmap = ps.pywrite(pyf, pm)
-                    jchip = json.dumps(chip)
-                    with open("%s/litex_pinpads.json" % pinspec, "w") as f:
-                        f.write(jchip)
-                    # octavius: please keep line-lengths to below 80 chars
-                    # TODO: fix create_sv to allow different packages
-                    # (and die images)
-                    # Test with different package size, once working
-                    # 'create_sv' will be improved
-                    if pinspec == "ngi_router":
-                        temp_create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
-                    else:
-                        create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
+                pm, chip = jsoncreate.pinparse(ps, pinspec)
+                litexmap = ps.pywrite(pyf, pm)
+                jchip = json.dumps(chip)
+                with open("%s/litex_pinpads.json" % pinspec, "w") as f:
+                    f.write(jchip)
+                # octavius: please keep line-lengths to below 80 chars
+                # TODO: fix create_sv to allow different packages
+                # (and die images)
+                # Test with different package size, once working
+                # 'create_sv' will be improved
+                if pinspec == "ngi_router":
+                    temp_create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
+                else:
+                    create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
     else:
         if output_type == 'bsv':
             from bsv.pinmux_generator import pinmuxgen as gentypes
