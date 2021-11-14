@@ -882,8 +882,10 @@ def display_fns(of, bankspec, pins, function_names):
     for fname in fnidx:
         fnbase = find_fn(fname, fn_names)
         #fblower = fnbase.lower()
-        assert fnbase in function_names, "fn %s not in descriptions %s" % \
-            (fname, str(function_names.keys()))
+        if fnbase not in function_names:
+            print ("fn %s not in descriptions %s" % \
+                (fname, str(function_names.keys())))
+            continue
         #print "name", fname, fnbase
         if fnbase != current_fn:
             if current_fn is not None:
