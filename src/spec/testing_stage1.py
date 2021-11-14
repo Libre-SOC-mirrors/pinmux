@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from nmigen.build.dsl import Resource, Subsignal, Pins
 from nmigen.build.plat import TemplatedPlatform
-from nmigen.build.res import ResourceManager
+from nmigen.build.res import ResourceManager, ResourceError
 from nmigen import Elaboratable, Signal, Module, Instance
 from collections import OrderedDict
 from jtag import JTAG
@@ -107,7 +107,7 @@ class Blinker(Elaboratable):
         count = Signal(5)
         m.d.sync += count.eq(5)
         print ("resources", platform.resources.items())
-        gpio = platform.core['gpio']
+        gpio = platform.request('gpio')
         print (gpio, gpio.layout, gpio.fields)
         # get the GPIO bank, mess about with some of the pins
         m.d.comb += gpio.gpio0.o.eq(1)
@@ -115,7 +115,7 @@ class Blinker(Elaboratable):
         m.d.comb += gpio.gpio1.oe.eq(count[4])
         m.d.sync += count[0].eq(gpio.gpio1.i)
         # get the UART resource, mess with the output tx
-        uart = platform.core['uart']
+        uart = platform.request('uart')
         print (uart, uart.fields)
         m.d.comb += uart.tx.eq(1)
         return m
@@ -161,24 +161,46 @@ class DummyPlatform(TemplatedPlatform):
         # create set of pin resources based on the pinset, this is for the core
         resources = create_resources(pinset)
         self.add_resources(resources)
-        # allocate all resources, right now, so that a lookup can be created
-        # between core IO names and pads
-        self.core = {}
-        self.pads = {}
-        # request every single peripheral in the pinset.
-        for periph, pins in pinset.items():
-            self.core[periph] = self.request(periph)
-            self.pads[periph] = self.pad_mgr.request(periph)
-        # now create a lookup between the pad and the core, so that
-        # JTAG boundary scan can be inserted in between
+        # record resource lookup between core IO names and pads
         self.padlookup = {}
-        core = list(self.iter_single_ended_pins())
-        pads = list(self.pad_mgr.iter_single_ended_pins())
+
+    def request(self, name, number=0, *, dir=None, xdr=None):
+        # okaaaay, bit of shenanigens going on: the important data structure
+        # here is Resourcemanager._ports.  requests add to _ports, which is
+        # what needs redirecting.  therefore what has to happen is to
+        # capture the number of ports *before* the request. sigh.
+        start_ports = len(self._ports)
+        value = super().request(name, number, dir=dir, xdr=xdr)
+        end_ports = len(self._ports)
+
+        # now make a corresponding (duplicate) request to the pad manager
+        # BUT, if it doesn't exist, don't sweat it
+        pad_start_ports = len(self.pad_mgr._ports)
+        try:
+            pvalue = self.pad_mgr.request(name, number, dir=dir, xdr=xdr)
+        except AssertionError:
+            return value
+        pad_end_ports = len(self.pad_mgr._ports)
+
+        # ok now we have the lengths: now create a lookup between the pad
+        # and the core, so that JTAG boundary scan can be inserted in between
+        core = self._ports[start_ports:end_ports]
+        pads = self.pad_mgr._ports[pad_start_ports:pad_end_ports]
+        # oops if not the same numbers added. it's a duplicate. shouldn't happen
+        assert len(core) == len(pads), "argh, resource manager error"
         print ("core", core)
         print ("pads", pads)
+
+        # each of these returns a tuple (res, pin, port, attrs)
         for pad, core in zip(pads, core):
-            print ("iter", pad)
-            self.padlookup[pad[0].name] = core
+            pin = pad[1]
+            if pin is None: continue # skip when pin is None
+            print ("iter", pad, pin.name)
+            assert pin.name not in self.padlookup # no overwrites allowed!
+            self.padlookup[pin.name] = core
+
+        # finally return the value just like ResourceManager.request()
+        return value
 
     def add_resources(self, resources, no_boundary_scan=False):
         super().add_resources(resources)
