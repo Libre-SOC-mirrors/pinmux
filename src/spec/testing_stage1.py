@@ -156,13 +156,11 @@ class DummyPlatform(TemplatedPlatform):
     default_clk = "clk" # should be picked up / overridden by platform sys.clk
     default_rst = "rst" # should be picked up / overridden by platform sys.rst
     def __init__(self, pinset):
+        self.pad_mgr = ResourceManager([], [])
         super().__init__()
         # create set of pin resources based on the pinset, this is for the core
         resources = create_resources(pinset)
         self.add_resources(resources)
-        # make a *second* - identical - set of pin resources for the IO ring
-        padres = deepcopy(resources)
-        self.pad_mgr = ResourceManager(padres, [])
         # allocate all resources, right now, so that a lookup can be created
         # between core IO names and pads
         self.core = {}
@@ -181,6 +179,14 @@ class DummyPlatform(TemplatedPlatform):
         for pad, core in zip(pads, core):
             print ("iter", pad)
             self.padlookup[pad[0].name] = core
+
+    def add_resources(self, resources, no_boundary_scan=False):
+        super().add_resources(resources)
+        if no_boundary_scan:
+            return
+        # make a *second* - identical - set of pin resources for the IO ring
+        padres = deepcopy(resources)
+        self.pad_mgr.add_resources(padres)
 
     # XXX these aren't strictly necessary right now but the next
     # phase is to add JTAG Boundary Scan so it maaay be worth adding?
