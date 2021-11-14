@@ -174,7 +174,8 @@ class DummyPlatform(TemplatedPlatform):
         end_ports = len(self._ports)
 
         # now make a corresponding (duplicate) request to the pad manager
-        # BUT, if it doesn't exist, don't sweat it
+        # BUT, if it doesn't exist, don't sweat it: all it means is, the
+        # application did not request Boundary Scan for that resource.
         pad_start_ports = len(self.pad_mgr._ports)
         try:
             pvalue = self.pad_mgr.request(name, number, dir=dir, xdr=xdr)
