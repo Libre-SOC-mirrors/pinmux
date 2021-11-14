@@ -110,7 +110,7 @@ if __name__ == '__main__':
                 # 'create_sv' will be improved
                 if pinspec == "ngi_router":
                     temp_create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
-                else:
+                if pinspec == "ls180":
                     create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
     else:
         if output_type == 'bsv':

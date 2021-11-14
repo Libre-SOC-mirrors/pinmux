@@ -9,14 +9,12 @@ def pinparse(psp, pinspec):
     pinmap = {}
     litexmap = {}
 
-    print (p.muxed_cells)
-    print (p.muxed_cells_bank)
+    print ("muxed cells", p.muxed_cells)
+    print ("muxed cell banks", p.muxed_cells_bank)
 
-    ps = [''] * 32
-    pn = [''] * 32
-    pe = [''] * 32
-    pw = [''] * 32
-    pads = {'N': pn, 'S': ps, 'E': pe, 'W': pw}
+    pads = {}
+    for pname, psize in p.bankwidths.items():
+        pads[pname] = [''] * psize
 
     iopads = []
     domains = {}
@@ -24,7 +22,11 @@ def pinparse(psp, pinspec):
 
     n_intpower = 0
     n_extpower = 0
-    for (padnum, name, x), bank in zip(p.muxed_cells, p.muxed_cells_bank):
+    for clist, bank in zip(p.muxed_cells, p.muxed_cells_bank):
+        print ("cell", clist, bank)
+        padnum = clist[0]
+        name = clist[1]
+        x = clist[2]
         orig_name = name
         litex_name = None
         domain = None # TODO, get this from the PinSpec.  sigh
@@ -259,7 +261,7 @@ def pinparse(psp, pinspec):
 
     # not connected
     nc_idx = 0
-    for pl in [pe, pw, pn, ps]:
+    for pl in pads.values():
         for i in range(len(pl)):
             if pl[i] == '':
                 name = 'nc_%d' % nc_idx
@@ -273,14 +275,14 @@ def pinparse(psp, pinspec):
     pprint(psp.clocks)
 
     print()
-    print ("N pads", pn)
-    print ("S pads", ps)
-    print ("E pads", pe)
-    print ("W pads", pw)
+    for name, iopads in pads.items():
+        print ("%s pads" % name, iopads)
 
     # do not want these
-    del clocks['SYS']
-    del domains['SYS']
+    if 'SYS' in clocks:
+        del clocks['SYS']
+    if 'SYS' in domains:
+        del domains['SYS']
 
     print ("chip domains (excluding sys-default)")
     pprint(domains)
@@ -290,10 +292,6 @@ def pinparse(psp, pinspec):
     pprint(psp.byspec)
 
     chip = {
-             'pads.south'      : ps,
-              'pads.east'       : pe,
-              'pads.north'      : pn,
-              'pads.west'       : pw,
               'pads.instances' : iopads,
               'pins.specs' : psp.byspec,
               'pins.map' : pinmap,
@@ -303,5 +301,17 @@ def pinparse(psp, pinspec):
               'chip.n_intpower': n_intpower,
               'chip.n_extpower': n_extpower,
            }
+
+    if 'N' in pads:
+        chip['pads.north'] = pads['N']
+    if 'S' in pads:
+        chip['pads.south'] = pads['S']
+    if 'E' in pads:
+        chip['pads.east'] = pads['E']
+    if 'W' in pads:
+        chip['pads.west'] = pads['W']
+    else:
+        for name, iopads in pads.items():
+            chip['pads.side_%s' % name] = iopads
 
     return pinmap, chip
