@@ -194,9 +194,12 @@ class DummyPlatform(TemplatedPlatform):
         # each of these returns a tuple (res, pin, port, attrs)
         for pad, core in zip(pads, core):
             pin = pad[1]
+            corepin = core[1]
             if pin is None: continue # skip when pin is None
+            assert corepin is not None # if pad was None, core should be too
             print ("iter", pad, pin.name)
             assert pin.name not in self.padlookup # no overwrites allowed!
+            assert pin.name == corepin.name # has to be the same!
             self.padlookup[pin.name] = core
 
         # finally return the value just like ResourceManager.request()
