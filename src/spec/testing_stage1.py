@@ -20,7 +20,7 @@ from copy import deepcopy
 def dummy_pinset():
     # sigh this needs to come from pinmux.
     gpios = []
-    for i in range(16):
+    for i in range(4):
         gpios.append("%d*" % i)
     return {'uart': ['tx+', 'rx-'],
             'gpio': gpios,
