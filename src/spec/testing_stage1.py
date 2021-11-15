@@ -285,26 +285,22 @@ class ASICPlatform(TemplatedPlatform):
         m = Module()
         if pin.name in ['clk_0', 'rst_0']: # sigh
             print("No JTAG chain in-between")
-            m.submodules += Instance("$tribuf",
-                p_WIDTH=pin.width,
-                i_EN=pin.oe,
-                i_A=self._invert_if(invert, pin.o),
-                o_Y=port,
-            )
+            # Can port's i/o/oe be accessed like this?
+            m.d.comb += port.o.eq(pin.o)
+            m.d.comb += port.oe.eq(pin.oe)
+            m.d.comb += pin.i.eq(port.i)
             return m
         (res, pin, port, attrs) = self.padlookup[pin.name]
         io = self.jtag.ios[pin.name]
         print ("       pad", res, pin, port, attrs)
         print ("       pin", pin.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
-        m.submodules += Instance("$tribuf",
-            p_WIDTH=pin.width,
-            i_EN=io.pad.oe,
-            i_A=self._invert_if(invert, io.pad.o),
-            o_Y=port,
-        )
         m.d.comb += io.core.o.eq(pin.o)
         m.d.comb += io.core.oe.eq(pin.oe)
+        m.d.comb += pin.i.eq(io.core.i)
+        m.d.comb += io.pad.i.eq(port.i)
+        m.d.comb += port.o.eq(io.pad.o)
+        m.d.comb += port.oe.eq(io.pad.oe)
         return m
 
     def get_input_output(self, pin, port, attrs, invert):
