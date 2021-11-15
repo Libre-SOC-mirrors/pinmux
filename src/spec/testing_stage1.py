@@ -240,7 +240,8 @@ class ASICPlatform(TemplatedPlatform):
     def get_input(self, pin, port, attrs, invert):
         self._check_feature("single-ended input", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
-
+        # Create a module first
+        m=Module()
         print ("    get_input", pin, "port", port, port.layout)
         if pin.name not in ['clk_0', 'rst_0']: # sigh
             (res, pin, port, attrs) = self.padlookup[pin.name]
@@ -257,8 +258,12 @@ class ASICPlatform(TemplatedPlatform):
             # Your Mission, Should You Choose To Accept It, is to
             # work out which bleeding way round what the hell is
             # connected to what.
-        m = Module()
-        m.d.comb += pin.i.eq(self._invert_if(invert, port))
+            m.d.comb += io.pad.i.eq(self._invert_if(invert, port))
+            m.d.comb += pin.i.eq(io.pad.i)
+            m.d.comb += io.core.i.eq(pin.i)
+        else: # simple pass-through from port to pin
+            print("No JTAG chain in-between")
+            m.d.comb += pin.i.eq(self._invert_if(invert, port))
         return m
 
     def get_output(self, pin, port, attrs, invert):
