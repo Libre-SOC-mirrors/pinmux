@@ -96,7 +96,7 @@ def I2CResource(*args, scl, sda):
 
 
 # ridiculously-simple top-level module.  doesn't even have a sync domain
-# and can't have one until a clock has been established by DummyPlatform.
+# and can't have one until a clock has been established by ASICPlatform.
 class Blinker(Elaboratable):
     def __init__(self, pinset):
         self.jtag = JTAG(pinset, "sync")
@@ -136,7 +136,7 @@ class Blinker(Elaboratable):
 # sigh, have to create a dummy platform for now.
 # TODO: investigate how the heck to get it to output ilang. or verilog.
 # or, anything, really.  but at least it doesn't barf
-class DummyPlatform(TemplatedPlatform):
+class ASICPlatform(TemplatedPlatform):
     connectors = []
     resources = OrderedDict()
     required_tools = []
@@ -276,6 +276,6 @@ something random
 """
 pinset = dummy_pinset()
 print(pinset)
-p = DummyPlatform (pinset)
+p = ASICPlatform (pinset)
 p.build(Blinker(pinset))
 
