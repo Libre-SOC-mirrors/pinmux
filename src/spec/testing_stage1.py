@@ -241,7 +241,7 @@ class ASICPlatform(TemplatedPlatform):
         self._check_feature("single-ended input", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
         # Create a module first
-        m=Module()
+        m = Module()
         print ("    get_input", pin, "port", port, port.layout)
         if pin.name in ['clk_0', 'rst_0']: # sigh
             # simple pass-through from port to pin
