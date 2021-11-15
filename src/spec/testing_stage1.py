@@ -243,26 +243,18 @@ class ASICPlatform(TemplatedPlatform):
         # Create a module first
         m=Module()
         print ("    get_input", pin, "port", port, port.layout)
-        if pin.name not in ['clk_0', 'rst_0']: # sigh
-            (res, pin, port, attrs) = self.padlookup[pin.name]
-            io = self.jtag.ios[pin.name]
-            print ("       pad", res, pin, port, attrs)
-            print ("       pin", pin.layout)
-            print ("      jtag", io.core.layout, io.pad.layout)
-            # Layout basically contains the list of objects (and sizes)
-            # so a Layout of [('i', 1)] means, "this object has a Signal
-            # named i and it is of length 1".  threfore:
-            # * pin has a pin.i of length 1
-            # * io.core has an io.core.i of length 1
-            # * io.pad has an io.pad.i of length 1
-            # Your Mission, Should You Choose To Accept It, is to
-            # work out which bleeding way round what the hell is
-            # connected to what.
-            m.d.comb += io.pad.i.eq(self._invert_if(invert, port))
-            m.d.comb += pin.i.eq(io.core.i)
-        else: # simple pass-through from port to pin
+        if pin.name in ['clk_0', 'rst_0']: # sigh
+            else: # simple pass-through from port to pin
             print("No JTAG chain in-between")
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
+            return m
+        (res, pin, port, attrs) = self.padlookup[pin.name]
+        io = self.jtag.ios[pin.name]
+        print ("       pad", res, pin, port, attrs)
+        print ("       pin", pin.layout)
+        print ("      jtag", io.core.layout, io.pad.layout)
+        m.d.comb += io.pad.i.eq(self._invert_if(invert, port))
+        m.d.comb += pin.i.eq(io.core.i)
         return m
 
     def get_output(self, pin, port, attrs, invert):
