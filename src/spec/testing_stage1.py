@@ -4,7 +4,7 @@ from nmigen.build.plat import TemplatedPlatform
 from nmigen.build.res import ResourceManager, ResourceError
 from nmigen import Elaboratable, Signal, Module, Instance
 from collections import OrderedDict
-from jtag import JTAG
+from jtag import JTAG, resiotypes
 from copy import deepcopy
 
 # Was thinking of using these functions, but skipped for simplicity for now
@@ -99,7 +99,7 @@ def I2CResource(*args, scl, sda):
 # and can't have one until a clock has been established by ASICPlatform.
 class Blinker(Elaboratable):
     def __init__(self, pinset):
-        self.jtag = JTAG(pinset, "sync")
+        self.jtag = JTAG({}, "sync")
 
     def elaborate(self, platform):
         m = Module()
@@ -155,16 +155,23 @@ class ASICPlatform(TemplatedPlatform):
     toolchain = None
     default_clk = "clk" # should be picked up / overridden by platform sys.clk
     default_rst = "rst" # should be picked up / overridden by platform sys.rst
-    def __init__(self, pinset):
+
+    def __init__(self, resources, jtag):
         self.pad_mgr = ResourceManager([], [])
+        self.jtag = jtag
         super().__init__()
         # create set of pin resources based on the pinset, this is for the core
-        resources = create_resources(pinset)
         self.add_resources(resources)
         # record resource lookup between core IO names and pads
         self.padlookup = {}
 
     def request(self, name, number=0, *, dir=None, xdr=None):
+        """request a Resource (e.g. name="uart", number=0) which will
+        return a data structure containing Records of all the pins.
+
+        this override will also - automatically - create a JTAG Boundary Scan
+        connection *without* any change to the actual Platform.request() API
+        """
         # okaaaay, bit of shenanigens going on: the important data structure
         # here is Resourcemanager._ports.  requests add to _ports, which is
         # what needs redirecting.  therefore what has to happen is to
@@ -192,16 +199,29 @@ class ASICPlatform(TemplatedPlatform):
         print ("core", core)
         print ("pads", pads)
 
-        # each of these returns a tuple (res, pin, port, attrs)
+        # pad/core each return a list of tuples of (res, pin, port, attrs)
         for pad, core in zip(pads, core):
+            # create a lookup on pin name to get at the hidden pad instance
+            # this pin name will be handed to get_input, get_output etc.
+            # and without the padlookup you can't find the (duplicate) pad.
+            # note that self.padlookup and self.jtag.ios use the *exact* same
+            # pin.name per pin
             pin = pad[1]
             corepin = core[1]
             if pin is None: continue # skip when pin is None
             assert corepin is not None # if pad was None, core should be too
             print ("iter", pad, pin.name)
             assert pin.name not in self.padlookup # no overwrites allowed!
-            assert pin.name == corepin.name # has to be the same!
-            self.padlookup[pin.name] = core
+            assert pin.name == corepin.name       # has to be the same!
+            self.padlookup[pin.name] = pad        # store pad by pin name
+
+            # now add the IO Shift Register.  first identify the type
+            # then request a JTAG IOConn. we can't wire it up (yet) because
+            # we don't have a Module() instance. doh. that comes in get_input
+            # and get_output etc. etc.
+            iotype = resiotypes[pin.dir] # look up the C4M-JTAG IOType
+            io = self.jtag.add_io(iotype=iotype, name=pin.name) # create IOConn
+            self.jtag.ios[pin.name] = io # store IOConn Record by pin name
 
         # finally return the value just like ResourceManager.request()
         return value
@@ -275,7 +295,9 @@ something random
    p.build(Blinker())
 """
 pinset = dummy_pinset()
+top = Blinker(pinset)
 print(pinset)
-p = ASICPlatform (pinset)
-p.build(Blinker(pinset))
+resources = create_resources(pinset)
+p = ASICPlatform (resources, top.jtag)
+p.build(top)
 

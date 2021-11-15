@@ -15,6 +15,12 @@ iotypes = {'-': IOType.In,
            '*': IOType.InTriOut,
         }
 
+resiotypes = {'i': IOType.In,
+           'o': IOType.Out,
+           'oe': IOType.TriOut,
+           'io': IOType.InTriOut,
+        }
+
 scanlens = {IOType.In: 1,
            IOType.Out: 1,
            IOType.TriOut: 2,
@@ -30,13 +36,16 @@ def dummy_pinset():
              'gpio': gpios,
              'i2c': ['sda*', 'scl+']}
 
+
 # TODO: move to suitable location
 class Pins:
     """declare a list of pins, including name and direction.  grouped by fn
     the pin dictionary needs to be in a reliable order so that the JTAG
     Boundary Scan is also in a reliable order
     """
-    def __init__(self, pindict):
+    def __init__(self, pindict=None):
+        if pindict is None:
+            pindict = {}
         self.io_names = OrderedDict()
         if isinstance(pindict, OrderedDict):
             self.io_names.update(pindict)
@@ -68,13 +77,13 @@ class JTAG(TAP, Pins):
 
         # enumerate pin specs and create IOConn Records.
         # we store the boundary scan register offset in the IOConn record
-        self.ios = [] # these are enumerated in external_ports
+        self.ios = {} # these are enumerated in external_ports
         self.scan_len = 0
         for fn, pin, iotype, pin_name, scan_idx in list(self):
             io = self.add_io(iotype=iotype, name=pin_name)
             io._scan_idx = scan_idx # hmm shouldn't really do this
             self.scan_len += scan_idx # record full length of boundary scan
-            self.ios.append(io)
+            self.ios[pin_name] = io
 
         # this is redundant.  or maybe part of testing, i don't know.
         self.sr = self.add_shiftreg(ircode=4, length=3,
@@ -125,7 +134,7 @@ class JTAG(TAP, Pins):
         """
         ports = super().external_ports()           # gets JTAG signal names
         ports += list(self.wb.fields.values())     # wishbone signals
-        for io in self.ios:
+        for io in self.ios.values():
             ports += list(io.core.fields.values()) # io "core" signals
             ports += list(io.pad.fields.values())  # io "pad" signals"
         return ports
