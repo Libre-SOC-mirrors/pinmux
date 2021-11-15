@@ -240,7 +240,7 @@ class ASICPlatform(TemplatedPlatform):
     def get_input(self, pin, port, attrs, invert):
         self._check_feature("single-ended input", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
-        # Create a module first
+
         m = Module()
         print ("    get_input", pin, "port", port, port.layout)
         if pin.name in ['clk_0', 'rst_0']: # sigh
@@ -261,9 +261,20 @@ class ASICPlatform(TemplatedPlatform):
         self._check_feature("single-ended output", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
-        print ("    get_output", pin, "port", port, port.layout)
         m = Module()
-        m.d.comb += port.eq(self._invert_if(invert, pin.o))
+        print ("    get_output", pin, "port", port, port.layout)
+        if pin.name in ['clk_0', 'rst_0']: # sigh
+            # simple pass-through from pin to port
+            print("No JTAG chain in-between")
+            m.d.comb += port.eq(self._invert_if(invert, pin.o))
+            return m
+        (res, pin, port, attrs) = self.padlookup[pin.name]
+        io = self.jtag.ios[pin.name]
+        print ("       pad", res, pin, port, attrs)
+        print ("       pin", pin.layout)
+        print ("      jtag", io.core.layout, io.pad.layout)
+        m.d.comb += port.eq(self._invert_if(invert, io.pad.o))
+        m.d.comb += pin.o.eq(io.core.o)
         return m
 
     def get_tristate(self, pin, port, attrs, invert):
