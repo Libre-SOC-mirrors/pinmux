@@ -281,13 +281,30 @@ class ASICPlatform(TemplatedPlatform):
         self._check_feature("single-ended tristate", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
+        print ("    get_tristate", pin, "port", port, port.layout)
         m = Module()
+        if pin.name in ['clk_0', 'rst_0']: # sigh
+            print("No JTAG chain in-between")
+            m.submodules += Instance("$tribuf",
+                p_WIDTH=pin.width,
+                i_EN=pin.oe,
+                i_A=self._invert_if(invert, pin.o),
+                o_Y=port,
+            )
+            return m
+        (res, pin, port, attrs) = self.padlookup[pin.name]
+        io = self.jtag.ios[pin.name]
+        print ("       pad", res, pin, port, attrs)
+        print ("       pin", pin.layout)
+        print ("      jtag", io.core.layout, io.pad.layout)
         m.submodules += Instance("$tribuf",
             p_WIDTH=pin.width,
-            i_EN=pin.oe,
-            i_A=self._invert_if(invert, pin.o),
+            i_EN=io.pad.oe,
+            i_A=self._invert_if(invert, io.pad.o),
             o_Y=port,
         )
+        m.d.comb += io.core.o.eq(pin.o)
+        m.d.comb += io.core.oe.eq(pin.oe)
         return m
 
     def get_input_output(self, pin, port, attrs, invert):
