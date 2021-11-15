@@ -55,21 +55,16 @@ def create_resources(pinset):
             ios = []
             for pin in pins:
                 pname = "gpio"+pin[:-1] # strip "*" on end
-                pads = []
                 # urrrr... tristsate and io assume a single pin which is
                 # of course exactly what we don't want in an ASIC: we want
                 # *all three* pins but the damn port is not outputted
                 # as a triplet, it's a single Record named "io". sigh.
                 # therefore the only way to get a triplet of i/o/oe
                 # is to *actually* create explicit triple pins
-                pads.append(Subsignal("i",
-                            Pins(pname+"_i", dir="i", assert_width=1)))
-                pads.append(Subsignal("o",
-                            Pins(pname+"_o", dir="o", assert_width=1)))
-                pads.append(Subsignal("oe",
-                            Pins(pname+"_oe", dir="oe", assert_width=1)))
-                ios.append(Resource.family(pname, 0, default_name=pname,
-                                                 ios=pads))
+                pad = Subsignal("io",
+                            Pins("%s_i %s_o %s_oe" % (pname, pname, pname),
+                                 dir="io", assert_width=3))
+                ios.append(Resource(pname, 0, pad))
             resources.append(Resource.family(periph, 0, default_name="gpio",
                                              ios=ios))
 
@@ -110,10 +105,10 @@ class Blinker(Elaboratable):
         gpio = platform.request('gpio')
         print (gpio, gpio.layout, gpio.fields)
         # get the GPIO bank, mess about with some of the pins
-        m.d.comb += gpio.gpio0.o.eq(1)
-        m.d.comb += gpio.gpio1.o.eq(gpio.gpio2.i)
-        m.d.comb += gpio.gpio1.oe.eq(count[4])
-        m.d.sync += count[0].eq(gpio.gpio1.i)
+        m.d.comb += gpio.gpio0.io.o.eq(1)
+        m.d.comb += gpio.gpio1.io.o.eq(gpio.gpio2.io.i)
+        m.d.comb += gpio.gpio1.io.oe.eq(count[4])
+        m.d.sync += count[0].eq(gpio.gpio1.io.i)
         # get the UART resource, mess with the output tx
         uart = platform.request('uart')
         print (uart, uart.fields)
@@ -211,6 +206,7 @@ class ASICPlatform(TemplatedPlatform):
             if pin is None: continue # skip when pin is None
             assert corepin is not None # if pad was None, core should be too
             print ("iter", pad, pin.name)
+            print ("existing pads", self.padlookup.keys())
             assert pin.name not in self.padlookup # no overwrites allowed!
             assert pin.name == corepin.name       # has to be the same!
             self.padlookup[pin.name] = pad        # store pad by pin name
