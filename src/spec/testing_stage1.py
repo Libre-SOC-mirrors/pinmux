@@ -244,7 +244,7 @@ class ASICPlatform(TemplatedPlatform):
         m=Module()
         print ("    get_input", pin, "port", port, port.layout)
         if pin.name in ['clk_0', 'rst_0']: # sigh
-            else: # simple pass-through from port to pin
+            # simple pass-through from port to pin
             print("No JTAG chain in-between")
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
             return m
