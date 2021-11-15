@@ -259,8 +259,7 @@ class ASICPlatform(TemplatedPlatform):
             # work out which bleeding way round what the hell is
             # connected to what.
             m.d.comb += io.pad.i.eq(self._invert_if(invert, port))
-            m.d.comb += pin.i.eq(io.pad.i)
-            m.d.comb += io.core.i.eq(pin.i)
+            m.d.comb += pin.i.eq(io.core.i)
         else: # simple pass-through from port to pin
             print("No JTAG chain in-between")
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
