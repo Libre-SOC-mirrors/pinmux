@@ -112,7 +112,9 @@ class Blinker(Elaboratable):
         # get the UART resource, mess with the output tx
         uart = platform.request('uart')
         print (uart, uart.fields)
-        m.d.comb += uart.tx.eq(uart.rx)
+        intermediary = Signal()
+        m.d.comb += uart.tx.eq(intermediary)
+        m.d.comb += intermediary.eq(uart.rx)
         return m
 
 
