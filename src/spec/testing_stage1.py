@@ -264,6 +264,11 @@ class ASICPlatform(TemplatedPlatform):
         m.d.comb += padpin.i.eq(padport)
         m.d.comb += padport.io.eq(io.core.i)
         m.d.comb += io.pad.i.eq(pin.i)
+
+        print("+=+=+= pin: ", pin)
+        print("+=+=+= port: ", port.layout)
+        print("+=+=+= pad pin: ", padpin)
+        print("+=+=+= pad port: ", padport)
         return m
 
     def get_output(self, pin, port, attrs, invert):
@@ -338,10 +343,10 @@ class ASICPlatform(TemplatedPlatform):
             )
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
             return m
-        (res, pin, port, attrs) = self.padlookup[pin.name]
+        (padres, padpin, padport, padattrs) = self.padlookup[pin.name]
         io = self.jtag.ios[pin.name]
-        print ("       pad", res, pin, port, attrs)
-        print ("       pin", pin.layout)
+        print ("       pad", padres, padpin, padport, padattrs)
+        print ("       pin", padpin.layout)
         print ("       port layout", port.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
         #m.submodules += Instance("$tribuf",
@@ -350,15 +355,31 @@ class ASICPlatform(TemplatedPlatform):
         #    i_A=self._invert_if(invert, io.pad.o),
         #    o_Y=port,
         #)
+        # Create aliases for the port sub-signals
         port_i = port.io[0]
         port_o = port.io[1]
         port_oe = port.io[2]
-        m.d.comb += io.pad.i.eq(self._invert_if(invert, port_i))
-        m.d.comb += port_o.eq(self._invert_if(invert, io.pad.o))
-        m.d.comb += port_oe.eq(io.pad.o)
-        m.d.comb += pin.i.eq(io.core.i)
-        m.d.comb += io.core.o.eq(pin.o)
-        m.d.comb += io.core.oe.eq(pin.oe)
+        
+        padport_i = padport.io[0]
+        padport_o = padport.io[1]
+        padport_oe = padport.io[2]
+
+        # Connect SoC pins to SoC port
+        m.d.comb += pin.i.eq(port_i)
+        m.d.comb += port_o.eq(pin.o)
+        m.d.comb += port_oe.eq(pin.oe)
+        # Connect SoC port to JTAG io.core side 
+        m.d.comb += port_i.eq(io.core.i)
+        m.d.comb += io.core.o.eq(port_o)
+        m.d.comb += io.core.oe.eq(port_oe)
+        # Connect JTAG io.pad side to pad port
+        m.d.comb += io.pad.i.eq(padport_i)
+        m.d.comb += padport_o.eq(io.pad.o)
+        m.d.comb += padport_oe.eq(io.pad.oe)
+        # Connect pad port to pad pins
+        m.d.comb += padport_i.eq(padpin.i)
+        m.d.comb += padpin.o.eq(padport_o)
+        m.d.comb += padpin.oe.eq(padport_oe)
         return m
 
 
