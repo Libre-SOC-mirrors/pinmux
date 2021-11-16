@@ -112,7 +112,7 @@ class Blinker(Elaboratable):
         # get the UART resource, mess with the output tx
         uart = platform.request('uart')
         print (uart, uart.fields)
-        m.d.comb += uart.tx.eq(1)
+        m.d.comb += uart.tx.eq(uart.rx)
         return m
 
 
@@ -230,6 +230,15 @@ class ASICPlatform(TemplatedPlatform):
         padres = deepcopy(resources)
         self.pad_mgr.add_resources(padres)
 
+    #def iter_ports(self):
+    #    yield from super().iter_ports()
+    #    for io in self.jtag.ios.values():
+    #        print ("iter ports", io.layout, io)
+    #        for field in io.core.fields:
+    #            yield getattr(io.core, field)
+    #        for field in io.pad.fields:
+    #            yield getattr(io.pad, field)
+
     # XXX these aren't strictly necessary right now but the next
     # phase is to add JTAG Boundary Scan so it maaay be worth adding?
     # at least for the print statements
@@ -244,13 +253,14 @@ class ASICPlatform(TemplatedPlatform):
             print("No JTAG chain in-between")
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
             return m
-        (res, pin, port, attrs) = self.padlookup[pin.name]
+        (padres, padpin, padport, padattrs) = self.padlookup[pin.name]
         io = self.jtag.ios[pin.name]
-        print ("       pad", res, pin, port, attrs)
-        print ("       pin", pin.layout)
+        print ("       pad", padres, padpin, padport, attrs)
+        print ("       padpin", padpin.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
-        m.d.comb += io.pad.i.eq(self._invert_if(invert, port))
-        m.d.comb += pin.i.eq(io.core.i)
+        m.d.comb += padpin.i.eq(self._invert_if(invert, port))
+        m.d.comb += padport.io.eq(io.core.i)
+        m.d.comb += pin.i.eq(io.pad.i)
         return m
 
     def get_output(self, pin, port, attrs, invert):
@@ -264,13 +274,14 @@ class ASICPlatform(TemplatedPlatform):
             print("No JTAG chain in-between")
             m.d.comb += port.eq(self._invert_if(invert, pin.o))
             return m
-        (res, pin, port, attrs) = self.padlookup[pin.name]
+        (padres, padpin, padport, padattrs) = self.padlookup[pin.name]
         io = self.jtag.ios[pin.name]
-        print ("       pad", res, pin, port, attrs)
-        print ("       pin", pin.layout)
+        print ("       pad", padres, padpin, padport, padattrs)
+        print ("       pin", padpin.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
-        m.d.comb += port.eq(self._invert_if(invert, io.pad.o))
-        m.d.comb += pin.o.eq(io.core.o)
+        m.d.comb += port.eq(self._invert_if(invert, pin.o))
+        m.d.comb += padport.io.eq(io.core.o)
+        m.d.comb += padpin.o.eq(io.pad.o)
         return m
 
     def get_tristate(self, pin, port, attrs, invert):
@@ -281,16 +292,24 @@ class ASICPlatform(TemplatedPlatform):
         m = Module()
         if pin.name in ['clk_0', 'rst_0']: # sigh
             print("No JTAG chain in-between")
-            # Can port's i/o/oe be accessed like this?
-            m.d.comb += port.o.eq(pin.o)
-            m.d.comb += port.oe.eq(pin.oe)
-            m.d.comb += pin.i.eq(port.i)
+            m.submodules += Instance("$tribuf",
+                p_WIDTH=pin.width,
+                i_EN=pin.oe,
+                i_A=self._invert_if(invert, pin.o),
+                o_Y=port,
+            )
             return m
         (res, pin, port, attrs) = self.padlookup[pin.name]
         io = self.jtag.ios[pin.name]
         print ("       pad", res, pin, port, attrs)
         print ("       pin", pin.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
+        #m.submodules += Instance("$tribuf",
+        #    p_WIDTH=pin.width,
+        #    i_EN=io.pad.oe,
+        #    i_A=self._invert_if(invert, io.pad.o),
+        #    o_Y=port,
+        #)
         m.d.comb += io.core.o.eq(pin.o)
         m.d.comb += io.core.oe.eq(pin.oe)
         m.d.comb += pin.i.eq(io.core.i)
@@ -319,14 +338,20 @@ class ASICPlatform(TemplatedPlatform):
         io = self.jtag.ios[pin.name]
         print ("       pad", res, pin, port, attrs)
         print ("       pin", pin.layout)
+        print ("       port layout", port.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
-        m.submodules += Instance("$tribuf",
-            p_WIDTH=pin.width,
-            i_EN=io.pad.oe,
-            i_A=self._invert_if(invert, io.pad.o),
-            o_Y=port,
-        )
-        m.d.comb += io.pad.i.eq(self._invert_if(invert, port))
+        #m.submodules += Instance("$tribuf",
+        #    p_WIDTH=pin.width,
+        #    i_EN=io.pad.oe,
+        #    i_A=self._invert_if(invert, io.pad.o),
+        #    o_Y=port,
+        #)
+        port_i = port.io[0]
+        port_o = port.io[1]
+        port_oe = port.io[2]
+        m.d.comb += io.pad.i.eq(self._invert_if(invert, port_i))
+        m.d.comb += port_o.eq(self._invert_if(invert, io.pad.o))
+        m.d.comb += port_oe.eq(io.pad.o)
         m.d.comb += pin.i.eq(io.core.i)
         m.d.comb += io.core.o.eq(pin.o)
         m.d.comb += io.core.oe.eq(pin.oe)
