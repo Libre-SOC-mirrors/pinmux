@@ -260,9 +260,10 @@ class ASICPlatform(TemplatedPlatform):
         print ("       pad", padres, padpin, padport, attrs)
         print ("       padpin", padpin.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
-        m.d.comb += padpin.i.eq(self._invert_if(invert, port))
+        m.d.comb += pin.i.eq(self._invert_if(invert, port))
+        m.d.comb += padpin.i.eq(padport)
         m.d.comb += padport.io.eq(io.core.i)
-        m.d.comb += pin.i.eq(io.pad.i)
+        m.d.comb += io.pad.i.eq(pin.i)
         return m
 
     def get_output(self, pin, port, attrs, invert):
@@ -282,7 +283,8 @@ class ASICPlatform(TemplatedPlatform):
         print ("       pin", padpin.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
         m.d.comb += port.eq(self._invert_if(invert, pin.o))
-        m.d.comb += padport.io.eq(io.core.o)
+        m.d.comb += padport.io.eq(self._invert_if(invert, padpin.o))
+        m.d.comb += io.core.o.eq(port.io)
         m.d.comb += padpin.o.eq(io.pad.o)
         return m
 
