@@ -1,4 +1,5 @@
-"""DMI 2 JTAG test
+"""JTAG test copied from soc/debug/test/test_jtag_tap_srv.py
+Trying to avoid using soc modules here
 
 based on Staf Verhaegen (Chips4Makers) wishbone TAP
 """
@@ -9,17 +10,17 @@ from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
 #from soc.debug.dmi import DMIInterface, DBGCore
 #from soc.debug.test.dmi_sim import dmi_sim
-from soc.debug.jtag import JTAG
-from soc.debug.test.jtagremote import JTAGServer, JTAGClient
+from jtag import JTAG, resiotypes
+from jtagremote import JTAGServer, JTAGClient
 
 #from soc.bus.sram import SRAM
 from nmigen import Memory, Signal, Module
 
-from nmigen.back.pysim import Simulator, Delay, Settle, Tick
+from nmigen.sim import Simulator, Delay, Settle, Tick
 from nmutil.util import wrap
-from soc.debug.jtagutils import (jtag_read_write_reg,
-                                 jtag_srv, jtag_set_reset,
-                                 jtag_set_ir, jtag_set_get_dr)
+from jtagutils import (jtag_read_write_reg,
+                       jtag_srv, jtag_set_reset,
+                       jtag_set_ir, jtag_set_get_dr)
 
 def test_pinset():
     return {
@@ -221,7 +222,8 @@ def jtag_sim(dut, srv_dut):
 
 
 if __name__ == '__main__':
-    dut = JTAG(test_pinset(), wb_data_wid=64)
+    # Not sure if need to specify wb_data width here
+    dut = JTAG(test_pinset(), "sync") # , wb_data_wid=64)
     dut.stop = False
 
     # rather than the client access the JTAG bus directly
@@ -242,12 +244,12 @@ if __name__ == '__main__':
     cdut._ir_width = dut._ir_width
     cdut.scan_len = dut.scan_len
 
-    memory = Memory(width=64, depth=16)
-    sram = SRAM(memory=memory, bus=dut.wb)
+    #memory = Memory(width=64, depth=16)
+    #sram = SRAM(memory=memory, bus=dut.wb)
 
     m = Module()
     m.submodules.ast = dut
-    m.submodules.sram = sram
+    #m.submodules.sram = sram
 
     sim = Simulator(m)
     sim.add_clock(1e-6, domain="sync")      # standard clock
