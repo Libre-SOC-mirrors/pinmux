@@ -10,7 +10,7 @@ from nmigen import Elaboratable, Module, Signal, Cat, Const, Record, Array, Mux
 from nmutil.iocontrol import RecordObject
 from nmigen.utils import log2_int
 from nmigen.cli import rtlil
-from soc.config.state import CoreState
+from state import CoreState
 
 
 # DMI register addresses
