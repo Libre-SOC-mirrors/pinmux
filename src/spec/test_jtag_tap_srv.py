@@ -8,8 +8,8 @@ import sys
 from nmigen import (Module, Signal, Elaboratable, Const)
 from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
-#from soc.debug.dmi import DMIInterface, DBGCore
-#from soc.debug.test.dmi_sim import dmi_sim
+from dmi import DMIInterface, DBGCore
+from dmi_sim import dmi_sim
 from jtag import JTAG, resiotypes
 from jtagremote import JTAGServer, JTAGClient
 
