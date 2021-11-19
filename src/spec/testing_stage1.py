@@ -11,13 +11,19 @@ from copy import deepcopy
 from soc.bus.sram import SRAM
 
 from nmigen import Memory
-from nmigen.pysim import Simulator, Delay, Settle, Tick
+from nmigen.sim import Simulator, Delay, Settle, Tick
 
 from nmutil.util import wrap
 
 from soc.debug.jtagutils import (jtag_read_write_reg,
                                  jtag_srv, jtag_set_reset,
                                  jtag_set_ir, jtag_set_get_dr)
+
+from c4m.nmigen.jtag.tap import TAP, IOType
+from c4m.nmigen.jtag.bus import Interface as JTAGInterface
+from soc.debug.dmi import DMIInterface, DBGCore
+from soc.debug.test.dmi_sim import dmi_sim
+from soc.debug.test.jtagremote import JTAGServer, JTAGClient
 
 # Was thinking of using these functions, but skipped for simplicity for now
 # XXX nope.  the output from JSON file.
@@ -420,20 +426,19 @@ cdut.cbus = JTAGInterface()
 
 # set up client-server on port 44843-something
 top.jtag.s = JTAGServer()
-if len(sys.argv) != 2 or sys.argv[1] != 'server':
-    cdut.c = JTAGClient()
-    top.jtag.s.get_connection()
-else:
-    print ("running server only as requested, use openocd remote to test")
-    sys.stdout.flush()
-    top.jtag.s.get_connection(None) # block waiting for connection
+cdut.c = JTAGClient()
+top.jtag.s.get_connection()
+#else:
+#    print ("running server only as requested, use openocd remote to test")
+#    sys.stdout.flush()
+#    top.jtag.s.get_connection(None) # block waiting for connection
 
 # take copy of ir_width and scan_len
 cdut._ir_width = top.jtag._ir_width
 cdut.scan_len = top.jtag.scan_len
 
 memory = Memory(width=64, depth=16)
-sram = SRAM(memory=memory, bus=dut.wb)
+sram = SRAM(memory=memory, bus=top.jtag.wb)
 
 #m = Module()
 #m.submodules.ast = dut
@@ -443,8 +448,8 @@ sim = Simulator(top)
 sim.add_clock(1e-6, domain="sync")      # standard clock
 
 sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
-if len(sys.argv) != 2 or sys.argv[1] != 'server':
-    sim.add_sync_process(wrap(jtag_sim(cdut, top.jtag))) # actual jtag tester
+#if len(sys.argv) != 2 or sys.argv[1] != 'server':
+sim.add_sync_process(wrap(jtag_sim(cdut, top.jtag))) # actual jtag tester
 sim.add_sync_process(wrap(dmi_sim(top.jtag)))  # handles (pretends to be) DMI
 
 with sim.write_vcd("dmi2jtag_test_srv.vcd"):
