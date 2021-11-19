@@ -8,17 +8,17 @@ import sys
 from nmigen import (Module, Signal, Elaboratable, Const)
 from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
-from dmi import DMIInterface, DBGCore
-from dmi_sim import dmi_sim
+from soc.debug.dmi import DMIInterface, DBGCore
+from soc.debug.test.dmi_sim import dmi_sim
 from jtag import JTAG, resiotypes
-from jtagremote import JTAGServer, JTAGClient
+from soc.debug.test.jtagremote import JTAGServer, JTAGClient
 
-#from soc.bus.sram import SRAM
+from soc.bus.sram import SRAM
 from nmigen import Memory, Signal, Module
 
 from nmigen.sim import Simulator, Delay, Settle, Tick
 from nmutil.util import wrap
-from jtagutils import (jtag_read_write_reg,
+from soc.debug.jtagutils import (jtag_read_write_reg,
                        jtag_srv, jtag_set_reset,
                        jtag_set_ir, jtag_set_get_dr)
 
