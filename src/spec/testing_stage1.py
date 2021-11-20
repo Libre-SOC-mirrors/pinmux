@@ -400,6 +400,12 @@ class ASICPlatform(TemplatedPlatform):
         m.d.comb += padpin.oe.eq(padport_oe)
         return m
 
+    def toolchain_prepare(self, fragment, name, **kwargs):
+        """override toolchain_prepare in order to grab the fragment
+        """
+        self.fragment = fragment
+        return super().toolchain_prepare(fragment, name, **kwargs)
+
 
 """
 and to create a Platform instance with that list, and build
@@ -415,6 +421,15 @@ print(pinset)
 resources = create_resources(pinset)
 p = ASICPlatform (resources, top.jtag)
 p.build(top)
+# this is what needs to gets treated as "top", after "main module" top
+# is augmented with IO pads with JTAG tacked on.  the expectation that
+# the get_input() etc functions will be called magically by some other
+# function is unrealistic.
+top_fragment = p.fragment
+
+# XXX these modules are all being added *AFTER* the build process links
+# everything together.  the expectation that this would work is... unrealistic.
+# ordering, clearly, is important.
 
 # dut = JTAG(test_pinset(), wb_data_wid=64, domain="sync")
 top.jtag.stop = False
@@ -443,6 +458,11 @@ sram = SRAM(memory=memory, bus=top.jtag.wb)
 #m = Module()
 #m.submodules.ast = dut
 #m.submodules.sram = sram
+
+# XXX simulating top (the module that does not itself contain IO pads
+# because that's covered by build) cannot possibly be expected to work
+# particularly when modules have been added *after* the platform build()
+# function has been called.
 
 sim = Simulator(top)
 sim.add_clock(1e-6, domain="sync")      # standard clock
