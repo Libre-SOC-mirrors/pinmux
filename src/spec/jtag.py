@@ -14,13 +14,14 @@ iotypes = {'-': IOType.In,
            '>': IOType.TriOut,
            '*': IOType.InTriOut,
         }
-
+# Resources
+# nmigen Resources has a different encoding for direction: "i", "o", "io", "oe"
 resiotypes = {'i': IOType.In,
            'o': IOType.Out,
            'oe': IOType.TriOut,
            'io': IOType.InTriOut,
         }
-
+# How many bits in each signal type
 scanlens = {IOType.In: 1,
            IOType.Out: 1,
            IOType.TriOut: 2,
