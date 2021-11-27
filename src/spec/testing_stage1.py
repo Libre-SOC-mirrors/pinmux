@@ -113,10 +113,15 @@ def I2CResource(*args, scl, sda):
 class Blinker(Elaboratable):
     def __init__(self, pinset):
         self.jtag = JTAG({}, "sync")
+        memory = Memory(width=32, depth=16)
+        self.sram = SRAM(memory=memory, bus=self.jtag.wb)
+
 
     def elaborate(self, platform):
         m = Module()
         m.submodules.jtag = self.jtag
+        m.submodules.sram = self.sram
+
         count = Signal(5)
         m.d.sync += count.eq(5)
         print ("resources", platform.resources.items())
@@ -406,7 +411,6 @@ class ASICPlatform(TemplatedPlatform):
         self.fragment = fragment
         return super().toolchain_prepare(fragment, name, **kwargs)
 
-
 """
 and to create a Platform instance with that list, and build
 something random
@@ -417,15 +421,6 @@ something random
 """
 pinset = dummy_pinset()
 top = Blinker(pinset)
-print(pinset)
-resources = create_resources(pinset)
-p = ASICPlatform (resources, top.jtag)
-p.build(top)
-# this is what needs to gets treated as "top", after "main module" top
-# is augmented with IO pads with JTAG tacked on.  the expectation that
-# the get_input() etc functions will be called magically by some other
-# function is unrealistic.
-top_fragment = p.fragment
 
 # XXX these modules are all being added *AFTER* the build process links
 # everything together.  the expectation that this would work is... unrealistic.
@@ -452,19 +447,22 @@ top.jtag.s.get_connection()
 cdut._ir_width = top.jtag._ir_width
 cdut.scan_len = top.jtag.scan_len
 
-memory = Memory(width=64, depth=16)
-sram = SRAM(memory=memory, bus=top.jtag.wb)
-
-#m = Module()
-#m.submodules.ast = dut
-#m.submodules.sram = sram
+print(pinset)
+resources = create_resources(pinset)
+p = ASICPlatform (resources, top.jtag)
+p.build(top)
+# this is what needs to gets treated as "top", after "main module" top
+# is augmented with IO pads with JTAG tacked on.  the expectation that
+# the get_input() etc functions will be called magically by some other
+# function is unrealistic.
+top_fragment = p.fragment
 
 # XXX simulating top (the module that does not itself contain IO pads
 # because that's covered by build) cannot possibly be expected to work
 # particularly when modules have been added *after* the platform build()
 # function has been called.
 
-sim = Simulator(top)
+sim = Simulator(top_fragment)
 sim.add_clock(1e-6, domain="sync")      # standard clock
 
 sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
