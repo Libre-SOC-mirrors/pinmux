@@ -24,6 +24,7 @@ from c4m.nmigen.jtag.bus import Interface as JTAGInterface
 from soc.debug.dmi import DMIInterface, DBGCore
 from soc.debug.test.dmi_sim import dmi_sim
 from soc.debug.test.jtagremote import JTAGServer, JTAGClient
+from nmigen.build.res import ResourceError
 
 # Was thinking of using these functions, but skipped for simplicity for now
 # XXX nope.  the output from JSON file.
@@ -42,6 +43,7 @@ def dummy_pinset():
         gpios.append("%d*" % i)
     return {'uart': ['tx+', 'rx-'],
             'gpio': gpios,
+            #'jtag': ['tms-', 'tdi-', 'tdo+', 'tck+'],
             'i2c': ['sda*', 'scl+']}
 
 """
@@ -94,6 +96,14 @@ def create_resources(pinset):
     return resources
 
 
+def JTAGResource(*args):
+    io = []
+    io.append(Subsignal("tms", Pins("tms", dir="i", assert_width=1)))
+    io.append(Subsignal("tdi", Pins("tdi", dir="i", assert_width=1)))
+    io.append(Subsignal("tck", Pins("tck", dir="i", assert_width=1)))
+    io.append(Subsignal("tdo", Pins("tdo", dir="o", assert_width=1)))
+    return Resource.family(*args, default_name="jtag", ios=io)
+
 def UARTResource(*args, rx, tx):
     io = []
     io.append(Subsignal("rx", Pins(rx, dir="i", assert_width=1)))
@@ -116,7 +126,6 @@ class Blinker(Elaboratable):
         memory = Memory(width=32, depth=16)
         self.sram = SRAM(memory=memory, bus=self.jtag.wb)
 
-
     def elaborate(self, platform):
         m = Module()
         m.submodules.jtag = self.jtag
@@ -138,6 +147,14 @@ class Blinker(Elaboratable):
         intermediary = Signal()
         m.d.comb += uart.tx.eq(intermediary)
         m.d.comb += intermediary.eq(uart.rx)
+
+        # wire up JTAG otherwise we are in trouble (no clock)
+        jtag = platform.request('jtag')
+        m.d.comb += self.jtag.bus.tdi.eq(jtag.tdi)
+        m.d.comb += self.jtag.bus.tck.eq(jtag.tck)
+        m.d.comb += self.jtag.bus.tms.eq(jtag.tms)
+        m.d.comb += jtag.tdo.eq(self.jtag.bus.tdo)
+
         return m
 
 
@@ -160,7 +177,7 @@ class ASICPlatform(TemplatedPlatform):
     connectors = []
     resources = OrderedDict()
     required_tools = []
-    command_templates = ['/bin/true']
+    command_templates = ['/bin/true'] # no command needed: stops barfing
     file_templates = {
         **TemplatedPlatform.build_script_templates,
         "{{name}}.il": r"""
@@ -180,10 +197,14 @@ class ASICPlatform(TemplatedPlatform):
         self.pad_mgr = ResourceManager([], [])
         self.jtag = jtag
         super().__init__()
+
         # create set of pin resources based on the pinset, this is for the core
         self.add_resources(resources)
         # record resource lookup between core IO names and pads
         self.padlookup = {}
+
+        # add JTAG without scan
+        self.add_resources([JTAGResource('jtag', 0)], no_boundary_scan=True)
 
     def request(self, name, number=0, *, dir=None, xdr=None):
         """request a Resource (e.g. name="uart", number=0) which will
@@ -206,7 +227,7 @@ class ASICPlatform(TemplatedPlatform):
         pad_start_ports = len(self.pad_mgr._ports)
         try:
             pvalue = self.pad_mgr.request(name, number, dir=dir, xdr=xdr)
-        except AssertionError:
+        except ResourceError:
             return value
         pad_end_ports = len(self.pad_mgr._ports)
 
@@ -278,6 +299,10 @@ class ASICPlatform(TemplatedPlatform):
             print("No JTAG chain in-between")
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
             return m
+        if pin.name not in self.padlookup:
+            print("No pin named %s, not connecting to JTAG BS" % pin.name)
+            m.d.comb += pin.i.eq(self._invert_if(invert, port))
+            return m
         (padres, padpin, padport, padattrs) = self.padlookup[pin.name]
         io = self.jtag.ios[pin.name]
         print ("       pad", padres, padpin, padport, attrs)
@@ -303,6 +328,10 @@ class ASICPlatform(TemplatedPlatform):
         if pin.name in ['clk_0', 'rst_0']: # sigh
             # simple pass-through from pin to port
             print("No JTAG chain in-between")
+            m.d.comb += port.eq(self._invert_if(invert, pin.o))
+            return m
+        if pin.name not in self.padlookup:
+            print("No pin named %s, not connecting to JTAG BS" % pin.name)
             m.d.comb += port.eq(self._invert_if(invert, pin.o))
             return m
         (padres, padpin, padport, padattrs) = self.padlookup[pin.name]
@@ -353,9 +382,9 @@ class ASICPlatform(TemplatedPlatform):
     def get_input_output(self, pin, port, attrs, invert):
         self._check_feature("single-ended input/output", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
-        
+
         print ("    get_input_output", pin, "port", port, port.layout)
-        m = Module()    
+        m = Module()
         if pin.name in ['clk_0', 'rst_0']: # sigh
             print("No JTAG chain in-between")
             m.submodules += Instance("$tribuf",
@@ -382,7 +411,7 @@ class ASICPlatform(TemplatedPlatform):
         port_i = port.io[0]
         port_o = port.io[1]
         port_oe = port.io[2]
-        
+
         padport_i = padport.io[0]
         padport_o = padport.io[1]
         padport_oe = padport.io[2]
@@ -391,7 +420,7 @@ class ASICPlatform(TemplatedPlatform):
         m.d.comb += pin.i.eq(port_i)
         m.d.comb += port_o.eq(pin.o)
         m.d.comb += port_oe.eq(pin.oe)
-        # Connect SoC port to JTAG io.core side 
+        # Connect SoC port to JTAG io.core side
         m.d.comb += port_i.eq(io.core.i)
         m.d.comb += io.core.o.eq(port_o)
         m.d.comb += io.core.oe.eq(port_oe)
@@ -421,6 +450,7 @@ something random
 """
 pinset = dummy_pinset()
 top = Blinker(pinset)
+
 
 # XXX these modules are all being added *AFTER* the build process links
 # everything together.  the expectation that this would work is... unrealistic.
