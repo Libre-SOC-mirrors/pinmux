@@ -340,7 +340,7 @@ class ASICPlatform(TemplatedPlatform):
         print ("       pin", padpin.layout)
         print ("      jtag", io.core.layout, io.pad.layout)
         m.d.comb += port.eq(self._invert_if(invert, pin.o))
-        m.d.comb += padport.io.eq(self._invert_if(invert, padpin.o))
+        m.d.comb += padport.io.eq(padpin.o)
         m.d.comb += io.core.o.eq(port.io)
         m.d.comb += padpin.o.eq(io.pad.o)
         return m
