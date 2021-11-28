@@ -2,6 +2,7 @@
 from nmigen.build.dsl import Resource, Subsignal, Pins
 from nmigen.build.plat import TemplatedPlatform
 from nmigen.build.res import ResourceManager, ResourceError
+from nmigen.hdl.rec import Layout
 from nmigen import Elaboratable, Signal, Module, Instance
 from collections import OrderedDict
 from jtag import JTAG, resiotypes
@@ -115,9 +116,27 @@ def UARTResource(*args, rx, tx):
 
 def I2CResource(*args, scl, sda):
     io = []
-    io.append(Subsignal("scl", Pins(scl, dir="io", assert_width=1)))
-    io.append(Subsignal("sda", Pins(sda, dir="io", assert_width=1)))
+    fmt = "%s_i %s_o %s_oe"
+    scl = fmt % (scl, scl, scl)
+    sda = fmt % (sda, sda, sda)
+    io.append(Subsignal("scl", Pins(scl, dir="io", assert_width=3)))
+    io.append(Subsignal("sda", Pins(sda, dir="io", assert_width=3)))
     return Resource.family(*args, default_name="i2c", ios=io)
+
+
+def recurse_down(asicpad, jtagpad):
+    eqs = []
+    for asiclayout, jtaglayout in zip(asicpad.layout, jtagpad.layout):
+        apad = getattr(asicpad, asiclayout[0])
+        jpad = getattr(jtagpad, jtaglayout[0])
+        print ("recurse_down", asiclayout, jtaglayout, apad, jpad)
+        if isinstance(asiclayout[1], Layout):
+            eqs += recurse_down(apad, jpad)
+        elif asiclayout[0] == 'i':
+            eqs.append(jpad.eq(apad))
+        elif asiclayout[0] in ['o', 'oe']:
+            eqs.append(apad.eq(jpad))
+    return eqs
 
 
 # ridiculously-simple top-level module.  doesn't even have a sync domain
@@ -133,8 +152,17 @@ class Blinker(Elaboratable):
         self.jtag.padlookup = {}
         self.jtag.requests_made = []
         self.jtag.boundary_scan_pads = []
+        self.jtag.resource_table = {}
+        self.jtag.resource_table_pads = {}
+        self.jtag.eqs = []
         memory = Memory(width=32, depth=16)
         self.sram = SRAM(memory=memory, bus=self.jtag.wb)
+
+        for resource in resources:
+            print ("JTAG resource", resource)
+            if resource.name in ['clk', 'rst']: # hack
+                continue
+            self.add_jtag_request(resource.name, resource.number)
 
     def elaborate(self, platform):
         jtag_resources = self.jtag.pad_mgr.resources
@@ -146,7 +174,7 @@ class Blinker(Elaboratable):
         count = Signal(5)
         m.d.sync += count.eq(count+1)
         print ("resources", platform, jtag_resources.items())
-        gpio = self.jtag_request(m, 'gpio')
+        gpio = self.jtag_request('gpio')
         print (gpio, gpio.layout, gpio.fields)
         # get the GPIO bank, mess about with some of the pins
         m.d.comb += gpio.gpio0.io.o.eq(1)
@@ -154,7 +182,7 @@ class Blinker(Elaboratable):
         m.d.comb += gpio.gpio1.io.oe.eq(count[4])
         m.d.sync += count[0].eq(gpio.gpio1.io.i)
         # get the UART resource, mess with the output tx
-        uart = self.jtag_request(m, 'uart')
+        uart = self.jtag_request('uart')
         print (uart, uart.fields)
         intermediary = Signal()
         m.d.comb += uart.tx.eq(intermediary)
@@ -164,7 +192,10 @@ class Blinker(Elaboratable):
         # then add JTAG afterwards
         if platform is not None:
             for (name, number, dir, xdr) in self.jtag.requests_made:
-                platform.request(name, number, dir=dir, xdr=xdr)
+                asicpad = platform.request(name, number, dir=dir, xdr=xdr)
+                jtagpad = self.jtag.resource_table_pads[(name, number)]
+                print ("jtagpad", jtagpad, jtagpad.layout)
+                m.d.comb += recurse_down(asicpad, jtagpad)
 
             # wire up JTAG otherwise we are in trouble (no clock)
             jtag = platform.request('jtag')
@@ -173,6 +204,8 @@ class Blinker(Elaboratable):
             m.d.comb += self.jtag.bus.tms.eq(jtag.tms)
             m.d.comb += jtag.tdo.eq(self.jtag.bus.tdo)
 
+        # add the eq assignments connecting up JTAG boundary scan to core
+        m.d.comb += self.jtag.eqs
         return m
 
     def ports(self):
@@ -185,7 +218,10 @@ class Blinker(Elaboratable):
         yield self.jtag.bus.tms
         yield from self.jtag.boundary_scan_pads
 
-    def jtag_request(self, m, name, number=0, *, dir=None, xdr=None):
+    def jtag_request(self, name, number=0, *, dir=None, xdr=None):
+        return self.jtag.resource_table[(name, number)]
+
+    def add_jtag_request(self, name, number=0, *, dir=None, xdr=None):
         """request a Resource (e.g. name="uart", number=0) which will
         return a data structure containing Records of all the pins.
 
@@ -237,7 +273,7 @@ class Blinker(Elaboratable):
             print ("existing pads", padlookup.keys())
             assert padpin.name not in padlookup # no overwrites allowed!
             assert padpin.name == corepin.name       # has to be the same!
-            padlookup[padpin.name] = (core, pad)        # store pad by pin name
+            padlookup[padpin.name] = pad        # store pad by pin name
 
             # now add the IO Shift Register.  first identify the type
             # then request a JTAG IOConn. we can't wire it up (yet) because
@@ -257,9 +293,9 @@ class Blinker(Elaboratable):
                 print ("   jtag io core", io.core)
                 print ("   jtag io pad", io.pad)
                 # corepin is to be returned, here. so, connect jtag corein to it
-                m.d.comb += corepin.i.eq(io.core.i)
+                self.jtag.eqs += [corepin.i.eq(io.core.i)]
                 # and padpin to JTAG pad
-                m.d.comb += io.pad.i.eq(padpin.i)
+                self.jtag.eqs += [io.pad.i.eq(padpin.i)]
                 self.jtag.boundary_scan_pads.append(padpin.i)
             elif padpin.dir == 'o':
                 print ("jtag_request add output pin", padpin)
@@ -267,9 +303,9 @@ class Blinker(Elaboratable):
                 print ("   jtag io core", io.core)
                 print ("   jtag io pad", io.pad)
                 # corepin is to be returned, here. connect it to jtag core out
-                m.d.comb += io.core.o.eq(corepin.o)
+                self.jtag.eqs += [io.core.o.eq(corepin.o)]
                 # and JTAG pad to padpin
-                m.d.comb += padpin.o.eq(io.pad.o)
+                self.jtag.eqs += [padpin.o.eq(io.pad.o)]
                 self.jtag.boundary_scan_pads.append(padpin.o)
             elif padpin.dir == 'io':
                 print ("jtag_request add io    pin", padpin)
@@ -277,26 +313,28 @@ class Blinker(Elaboratable):
                 print ("   jtag io core", io.core)
                 print ("   jtag io pad", io.pad)
                 # corepin is to be returned, here. so, connect jtag corein to it
-                m.d.comb += corepin.i.eq(io.core.i)
+                self.jtag.eqs += [corepin.i.eq(io.core.i)]
                 # and padpin to JTAG pad
-                m.d.comb += io.pad.i.eq(padpin.i)
+                self.jtag.eqs += [io.pad.i.eq(padpin.i)]
                 # corepin is to be returned, here. connect it to jtag core out
-                m.d.comb += io.core.o.eq(corepin.o)
+                self.jtag.eqs += [io.core.o.eq(corepin.o)]
                 # and JTAG pad to padpin
-                m.d.comb += padpin.o.eq(io.pad.o)
+                self.jtag.eqs += [padpin.o.eq(io.pad.o)]
                 # corepin is to be returned, here. connect it to jtag core out
-                m.d.comb += io.core.oe.eq(corepin.oe)
+                self.jtag.eqs += [io.core.oe.eq(corepin.oe)]
                 # and JTAG pad to padpin
-                m.d.comb += padpin.oe.eq(io.pad.oe)
-`
+                self.jtag.eqs += [padpin.oe.eq(io.pad.oe)]
+
                 self.jtag.boundary_scan_pads.append(padpin.i)
                 self.jtag.boundary_scan_pads.append(padpin.o)
                 self.jtag.boundary_scan_pads.append(padpin.oe)
 
-        # finally return the *CORE* value just like ResourceManager.request()
+        # finally record the *CORE* value just like ResourceManager.request()
         # so that the module using this can connect to *CORE* i/o to the
         # resource.  pads are taken care of
-        return value
+        self.jtag.resource_table[(name, number)] = value
+        # and the *PAD* value so that it can be wired up externally
+        self.jtag.resource_table_pads[(name, number)] = pvalue
 
 
 '''
@@ -345,80 +383,9 @@ class ASICPlatform(TemplatedPlatform):
         # add JTAG without scan
         self.add_resources([JTAGResource('jtag', 0)], no_boundary_scan=True)
 
-    def _request(self, name, number=0, *, dir=None, xdr=None):
-        """request a Resource (e.g. name="uart", number=0) which will
-        return a data structure containing Records of all the pins.
-
-        this override will also - automatically - create a JTAG Boundary Scan
-        connection *without* any change to the actual Platform.request() API
-        """
-        pad_mgr = self.jtag.pad_mgr
-        pad_mgr = self.jtag.pad_mgr
-        padlookup = self.jtag.padlookup
-        # okaaaay, bit of shenanigens going on: the important data structure
-        # here is Resourcemanager._ports.  requests add to _ports, which is
-        # what needs redirecting.  therefore what has to happen is to
-        # capture the number of ports *before* the request. sigh.
-        start_ports = len(self._ports)
-        value = super().request(name, number, dir=dir, xdr=xdr)
-        end_ports = len(self._ports)
-
-        # now make a corresponding (duplicate) request to the pad manager
-        # BUT, if it doesn't exist, don't sweat it: all it means is, the
-        # application did not request Boundary Scan for that resource.
-        pad_start_ports = len(pad_mgr._ports)
-        try:
-            pvalue = pad_mgr.request(name, number, dir=dir, xdr=xdr)
-        except ResourceError:
-            return value
-        pad_end_ports = len(pad_mgr._ports)
-
-        # ok now we have the lengths: now create a lookup between the pad
-        # and the core, so that JTAG boundary scan can be inserted in between
-        core = self._ports[start_ports:end_ports]
-        pads = pad_mgr._ports[pad_start_ports:pad_end_ports]
-        # oops if not the same numbers added. it's a duplicate. shouldn't happen
-        assert len(core) == len(pads), "argh, resource manager error"
-        print ("core", core)
-        print ("pads", pads)
-
-        # pad/core each return a list of tuples of (res, pin, port, attrs)
-        for pad, core in zip(pads, core):
-            # create a lookup on pin name to get at the hidden pad instance
-            # this pin name will be handed to get_input, get_output etc.
-            # and without the padlookup you can't find the (duplicate) pad.
-            # note that self.padlookup and self.jtag.ios use the *exact* same
-            # pin.name per pin
-            pin = pad[1]
-            corepin = core[1]
-            if pin is None: continue # skip when pin is None
-            assert corepin is not None # if pad was None, core should be too
-            print ("iter", pad, pin.name)
-            print ("existing pads", padlookup.keys())
-            assert pin.name not in padlookup # no overwrites allowed!
-            assert pin.name == corepin.name       # has to be the same!
-            padlookup[pin.name] = pad        # store pad by pin name
-
-            # now add the IO Shift Register.  first identify the type
-            # then request a JTAG IOConn. we can't wire it up (yet) because
-            # we don't have a Module() instance. doh. that comes in get_input
-            # and get_output etc. etc.
-            iotype = resiotypes[pin.dir] # look up the C4M-JTAG IOType
-            io = self.jtag.add_io(iotype=iotype, name=pin.name) # create IOConn
-            self.jtag.ios[pin.name] = io # store IOConn Record by pin name
-
-        # finally return the value just like ResourceManager.request()
-        return value
-
     def add_resources(self, resources, no_boundary_scan=False):
         print ("ASICPlatform add_resources", resources)
-        super().add_resources(resources)
-        return
-        if no_boundary_scan:
-            return
-        # make a *second* - identical - set of pin resources for the IO ring
-        padres = deepcopy(resources)
-        self.jtag.pad_mgr.add_resources(padres)
+        return super().add_resources(resources)
 
     #def iter_ports(self):
     #    yield from super().iter_ports()
@@ -433,92 +400,38 @@ class ASICPlatform(TemplatedPlatform):
     # phase is to add JTAG Boundary Scan so it maaay be worth adding?
     # at least for the print statements
     def get_input(self, pin, port, attrs, invert):
-        padlookup = self.jtag.padlookup
         self._check_feature("single-ended input", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
         m = Module()
         print ("    get_input", pin, "port", port, port.layout)
-        if pin.name in ['clk_0', 'rst_0']: # sigh
-            # simple pass-through from port to pin
-            print("No JTAG chain in-between")
-            m.d.comb += pin.i.eq(self._invert_if(invert, port))
-            return m
-        if pin.name not in padlookup:
-            print("No pin named %s, not connecting to JTAG BS" % pin.name)
-            m.d.comb += pin.i.eq(self._invert_if(invert, port))
-            return m
-        (padres, padpin, padport, padattrs) = padlookup[pin.name]
-        io = self.jtag.ios[pin.name]
-        print ("       pad", padres, padpin, padport, attrs)
-        print ("       padpin", padpin.layout)
-        print ("      jtag", io.core.layout, io.pad.layout)
-        m.d.comb += pin.i.eq(io.core.i)
-        m.d.comb += padpin.i.eq(pin.i)
-        m.d.comb += padport.io.eq(self._invert_if(invert, port))
-        m.d.comb += io.pad.i.eq(padport.io)
-
-        print("+=+=+= pin: ", pin)
-        print("+=+=+= port: ", port.layout)
-        print("+=+=+= pad pin: ", padpin)
-        print("+=+=+= pad port: ", padport)
+        m.d.comb += pin.i.eq(self._invert_if(invert, port))
         return m
 
     def get_output(self, pin, port, attrs, invert):
-        padlookup = self.jtag.padlookup
         self._check_feature("single-ended output", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
         m = Module()
         print ("    get_output", pin, "port", port, port.layout)
-        if pin.name in ['clk_0', 'rst_0']: # sigh
-            # simple pass-through from pin to port
-            print("No JTAG chain in-between")
-            m.d.comb += port.eq(self._invert_if(invert, pin.o))
-            return m
-        if pin.name not in padlookup:
-            print("No pin named %s, not connecting to JTAG BS" % pin.name)
-            m.d.comb += port.eq(self._invert_if(invert, pin.o))
-            return m
-        (padres, padpin, padport, padattrs) = padlookup[pin.name]
-        io = self.jtag.ios[pin.name]
-        print ("       pad", padres, padpin, padport, padattrs)
-        print ("       pin", padpin.layout)
-        print ("      jtag", io.core.layout, io.pad.layout)
-        m.d.comb += io.core.o.eq(self._invert_if(invert, pin.o))
-        m.d.comb += pin.o.eq(padpin.o)
-        m.d.comb += port.eq(padport.io)
-        m.d.comb += padport.io.eq(io.pad.o)
+        m.d.comb += port.eq(self._invert_if(invert, pin.o))
         return m
 
     def get_tristate(self, pin, port, attrs, invert):
-        padlookup = self.jtag.padlookup
         self._check_feature("single-ended tristate", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
         print ("    get_tristate", pin, "port", port, port.layout)
         m = Module()
-        if pin.name in ['clk_0', 'rst_0']: # sigh
-            print("No JTAG chain in-between")
-            m.submodules += Instance("$tribuf",
-                p_WIDTH=pin.width,
-                i_EN=pin.oe,
-                i_A=self._invert_if(invert, pin.o),
-                o_Y=port,
-            )
-            return m
-        return m
-        (res, pin, port, attrs) = padlookup[pin.name]
-        io = self.jtag.ios[pin.name]
         print ("       pad", res, pin, port, attrs)
         print ("       pin", pin.layout)
-        print ("      jtag", io.core.layout, io.pad.layout)
-        #m.submodules += Instance("$tribuf",
-        #    p_WIDTH=pin.width,
-        #    i_EN=io.pad.oe,
-        #    i_A=self._invert_if(invert, io.pad.o),
-        #    o_Y=port,
-        #)
+        return m
+        #    m.submodules += Instance("$tribuf",
+        #        p_WIDTH=pin.width,
+        #        i_EN=pin.oe,
+        #        i_A=self._invert_if(invert, pin.o),
+        #        o_Y=port,
+        #    )
         m.d.comb += io.core.o.eq(pin.o)
         m.d.comb += io.core.oe.eq(pin.oe)
         m.d.comb += pin.i.eq(io.core.i)
@@ -528,35 +441,14 @@ class ASICPlatform(TemplatedPlatform):
         return m
 
     def get_input_output(self, pin, port, attrs, invert):
-        padlookup = self.jtag.padlookup
         self._check_feature("single-ended input/output", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
         print ("    get_input_output", pin, "port", port, port.layout)
         m = Module()
-        if pin.name in ['clk_0', 'rst_0']: # sigh
-            print("No JTAG chain in-between")
-            m.submodules += Instance("$tribuf",
-                p_WIDTH=pin.width,
-                i_EN=pin.oe,
-                i_A=self._invert_if(invert, pin.o),
-                o_Y=port,
-            )
-            m.d.comb += pin.i.eq(self._invert_if(invert, port))
-            return m
-        (padres, padpin, padport, padattrs) = padlookup[pin.name]
-        io = self.jtag.ios[pin.name]
-        print ("       padres", padres)
-        print ("       padpin", padpin)
-        print ("            layout", padpin.layout)
-        print ("       padport", padport)
-        print ("            layout", padport.layout)
-        print ("       padattrs", padattrs)
         print ("       port layout", port.layout)
         print ("       pin", pin)
         print ("            layout", pin.layout)
-        print ("      jtag io.core", io.core.layout)
-        print ("      jtag io.pad", io.pad.layout)
         #m.submodules += Instance("$tribuf",
         #    p_WIDTH=pin.width,
         #    i_EN=io.pad.oe,
@@ -568,27 +460,9 @@ class ASICPlatform(TemplatedPlatform):
         port_o = port.io[1]
         port_oe = port.io[2]
 
-        padport_i = padport.io[0]
-        padport_o = padport.io[1]
-        padport_oe = padport.io[2]
-
-        # connect i 
-        m.d.comb += pin.i.eq(io.core.i)
-        m.d.comb += padpin.i.eq(pin.i)
-        m.d.comb += padport_i.eq(self._invert_if(invert, port_i))
-        m.d.comb += io.pad.i.eq(padport_i)
-
-        # connect o
-        m.d.comb += io.core.o.eq(self._invert_if(invert, pin.o))
-        m.d.comb += pin.o.eq(padpin.o)
-        m.d.comb += port_o.eq(padport_o)
-        m.d.comb += padport_o.eq(io.pad.o)
-
-        # connect oe
-        m.d.comb += io.core.oe.eq(self._invert_if(invert, pin.oe))
-        m.d.comb += pin.oe.eq(padpin.oe)
-        m.d.comb += port_oe.eq(padport_oe)
-        m.d.comb += padport_oe.eq(io.pad.oe)
+        m.d.comb += pin.i.eq(self._invert_if(invert, port_i))
+        m.d.comb += port_o.eq(self._invert_if(invert, pin.o))
+        m.d.comb += port_oe.eq(pin.oe)
 
         return m
 
@@ -611,13 +485,11 @@ print(pinset)
 resources = create_resources(pinset)
 top = Blinker(pinset, resources)
 
-vl = rtlil.convert(top, ports=top.ports())
-with open("test_jtag_blinker.il", "w") as f:
-    f.write(vl)
+#vl = rtlil.convert(top, ports=top.ports())
+#with open("test_jtag_blinker.il", "w") as f:
+#    f.write(vl)
 
-sys.exit(0)
-
-if False:
+if True:
     # XXX these modules are all being added *AFTER* the build process links
     # everything together.  the expectation that this would work is...
     # unrealistic.  ordering, clearly, is important.
@@ -656,7 +528,7 @@ if False:
 # particularly when modules have been added *after* the platform build()
 # function has been called.
 
-sim = Simulator(top)
+sim = Simulator(top_fragment)
 sim.add_clock(1e-6, domain="sync")      # standard clock
 
 sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
