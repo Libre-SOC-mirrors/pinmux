@@ -84,10 +84,20 @@ def create_resources(pinset):
                 # as a triplet, it's a single Record named "io". sigh.
                 # therefore the only way to get a triplet of i/o/oe
                 # is to *actually* create explicit triple pins
-                pad = Subsignal("io",
-                            Pins("%s_i %s_o %s_oe" % (pname, pname, pname),
-                                 dir="io", assert_width=3))
-                ios.append(Resource(pname, 0, pad))
+                # XXX ARRRGH, doesn't work
+                #pad = Subsignal("io",
+                #            Pins("%s_i %s_o %s_oe" % (pname, pname, pname),
+                #                 dir="io", assert_width=3))
+                #ios.append(Resource(pname, 0, pad))
+                pads = []
+                pads.append(Subsignal("i",
+                            Pins(pname+"_i", dir="i", assert_width=1)))
+                pads.append(Subsignal("o",
+                            Pins(pname+"_o", dir="o", assert_width=1)))
+                pads.append(Subsignal("oe",
+                            Pins(pname+"_oe", dir="o", assert_width=1)))
+                ios.append(Resource.family(pname, 0, default_name=pname,
+                                                 ios=pads))
             resources.append(Resource.family(periph, 0, default_name="gpio",
                                              ios=ios))
 
@@ -115,16 +125,26 @@ def UARTResource(*args, rx, tx):
 
 
 def I2CResource(*args, scl, sda):
-    io = []
-    fmt = "%s_i %s_o %s_oe"
-    scl = fmt % (scl, scl, scl)
-    sda = fmt % (sda, sda, sda)
-    io.append(Subsignal("scl", Pins(scl, dir="io", assert_width=3)))
-    io.append(Subsignal("sda", Pins(sda, dir="io", assert_width=3)))
-    return Resource.family(*args, default_name="i2c", ios=io)
+    ios = []
+    pads = []
+    pads.append(Subsignal("i", Pins(sda+"_i", dir="i", assert_width=1)))
+    pads.append(Subsignal("o", Pins(sda+"_o", dir="o", assert_width=1)))
+    pads.append(Subsignal("oe", Pins(sda+"_oe", dir="o", assert_width=1)))
+    ios.append(Resource.family(sda, 0, default_name=sda, ios=pads))
+    pads = []
+    pads.append(Subsignal("i", Pins(scl+"_i", dir="i", assert_width=1)))
+    pads.append(Subsignal("o", Pins(scl+"_o", dir="o", assert_width=1)))
+    pads.append(Subsignal("oe", Pins(scl+"_oe", dir="o", assert_width=1)))
+    ios.append(Resource.family(scl, 0, default_name=scl, ios=pads))
+    return Resource.family(*args, default_name="i2c", ios=ios)
 
 
 def recurse_down(asicpad, jtagpad):
+    """recurse_down: messy ASIC-to-JTAG pad matcher which expects
+    at some point some Records named i, o and oe, and wires them
+    up in the right direction according to those names.  "i" for
+    input must come *from* the ASIC pad and connect *to* the JTAG pad
+    """
     eqs = []
     for asiclayout, jtaglayout in zip(asicpad.layout, jtagpad.layout):
         apad = getattr(asicpad, asiclayout[0])
@@ -139,8 +159,7 @@ def recurse_down(asicpad, jtagpad):
     return eqs
 
 
-# ridiculously-simple top-level module.  doesn't even have a sync domain
-# and can't have one until a clock has been established by ASICPlatform.
+# top-level demo module.
 class Blinker(Elaboratable):
     def __init__(self, pinset, resources):
         self.jtag = JTAG({}, "sync")
@@ -158,6 +177,7 @@ class Blinker(Elaboratable):
         memory = Memory(width=32, depth=16)
         self.sram = SRAM(memory=memory, bus=self.jtag.wb)
 
+        # allocate all resources in advance in pad/core ResourceManagers
         for resource in resources:
             print ("JTAG resource", resource)
             if resource.name in ['clk', 'rst']: # hack
@@ -177,10 +197,10 @@ class Blinker(Elaboratable):
         gpio = self.jtag_request('gpio')
         print (gpio, gpio.layout, gpio.fields)
         # get the GPIO bank, mess about with some of the pins
-        m.d.comb += gpio.gpio0.io.o.eq(1)
-        m.d.comb += gpio.gpio1.io.o.eq(gpio.gpio2.io.i)
-        m.d.comb += gpio.gpio1.io.oe.eq(count[4])
-        m.d.sync += count[0].eq(gpio.gpio1.io.i)
+        m.d.comb += gpio.gpio0.o.eq(1)
+        m.d.comb += gpio.gpio1.o.eq(gpio.gpio2.i)
+        m.d.comb += gpio.gpio1.oe.eq(count[4])
+        m.d.sync += count[0].eq(gpio.gpio1.i)
         # get the UART resource, mess with the output tx
         uart = self.jtag_request('uart')
         print (uart, uart.fields)
@@ -333,7 +353,8 @@ class Blinker(Elaboratable):
         # so that the module using this can connect to *CORE* i/o to the
         # resource.  pads are taken care of
         self.jtag.resource_table[(name, number)] = value
-        # and the *PAD* value so that it can be wired up externally
+
+        # and the *PAD* value so that it can be wired up externally as well
         self.jtag.resource_table_pads[(name, number)] = pvalue
 
 
@@ -423,7 +444,7 @@ class ASICPlatform(TemplatedPlatform):
 
         print ("    get_tristate", pin, "port", port, port.layout)
         m = Module()
-        print ("       pad", res, pin, port, attrs)
+        print ("       pad", pin, port, attrs)
         print ("       pin", pin.layout)
         return m
         #    m.submodules += Instance("$tribuf",
@@ -528,7 +549,7 @@ if True:
 # particularly when modules have been added *after* the platform build()
 # function has been called.
 
-sim = Simulator(top_fragment)
+sim = Simulator(top)
 sim.add_clock(1e-6, domain="sync")      # standard clock
 
 sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
