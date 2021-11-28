@@ -3,9 +3,12 @@
 using Staf Verhaegen (Chips4Makers) wishbone TAP
 """
 
+from nmigen.build.res import ResourceManager
+from nmigen.hdl.rec import Layout
 from collections import OrderedDict
-from nmigen import (Module, Signal, Elaboratable, Cat)
 from nmigen.cli import rtlil
+
+from nmigen import (Module, Signal, Elaboratable, Cat)
 from c4m.nmigen.jtag.tap import IOType, TAP
 
 # map from pinmux to c4m jtag iotypes
@@ -13,20 +16,23 @@ iotypes = {'-': IOType.In,
            '+': IOType.Out,
            '>': IOType.TriOut,
            '*': IOType.InTriOut,
-        }
+          }
+
 # Resources
 # nmigen Resources has a different encoding for direction: "i", "o", "io", "oe"
 resiotypes = {'i': IOType.In,
-           'o': IOType.Out,
-           'oe': IOType.TriOut,
-           'io': IOType.InTriOut,
-        }
+              'o': IOType.Out,
+              'oe': IOType.TriOut,
+              'io': IOType.InTriOut,
+             }
+
 # How many bits in each signal type
 scanlens = {IOType.In: 1,
-           IOType.Out: 1,
-           IOType.TriOut: 2,
-           IOType.InTriOut: 3,
-            }
+            IOType.Out: 1,
+            IOType.TriOut: 2,
+            IOType.InTriOut: 3,
+           }
+
 
 def dummy_pinset():
     # sigh this needs to come from pinmux.
@@ -69,9 +75,31 @@ class Pins:
                 scan_idx += scanlens[iotype] # inc boundary reg scan offset
 
 
+def recurse_down(asicpad, jtagpad):
+    """recurse_down: messy ASIC-to-JTAG pad matcher which expects
+    at some point some Records named i, o and oe, and wires them
+    up in the right direction according to those names.  "i" for
+    input must come *from* the ASIC pad and connect *to* the JTAG pad
+    """
+    eqs = []
+    for asiclayout, jtaglayout in zip(asicpad.layout, jtagpad.layout):
+        apad = getattr(asicpad, asiclayout[0])
+        jpad = getattr(jtagpad, jtaglayout[0])
+        print ("recurse_down", asiclayout, jtaglayout, apad, jpad)
+        if isinstance(asiclayout[1], Layout):
+            eqs += recurse_down(apad, jpad)
+        elif asiclayout[0] == 'i':
+            eqs.append(jpad.eq(apad))
+        elif asiclayout[0] in ['o', 'oe']:
+            eqs.append(apad.eq(jpad))
+    return eqs
+
+
 class JTAG(TAP, Pins):
-    # 32-bit data width here so that it matches with litex
-    def __init__(self, pinset, domain, wb_data_wid=32):
+    # 32-bit data width here.  use None to not add a wishbone interface
+    def __init__(self, pinset, domain, wb_data_wid=32, resources=None):
+        if resources is None:
+            resources = []
         self.domain = domain
         TAP.__init__(self, ir_width=4)
         Pins.__init__(self, pinset)
@@ -87,7 +115,8 @@ class JTAG(TAP, Pins):
                                     domain=domain)
 
         # create and connect wishbone
-        self.wb = self.add_wishbone(ircodes=[5, 6, 7], features={'err'},
+        if wb_data_wid is not None:
+            self.wb = self.add_wishbone(ircodes=[5, 6, 7], features={'err'},
                                    address_width=30, data_width=wb_data_wid,
                                    granularity=8, # 8-bit wide
                                    name="jtag_wb",
@@ -106,6 +135,42 @@ class JTAG(TAP, Pins):
                                      self.wb_sram_en)
         self.sr_en = self.add_shiftreg(ircode=11, length=len(en_sigs),
                                        domain=domain)
+
+        # Platform Resource Mirror: enumerated by boundary_elaborate()
+        # in order to make a transparent/auto wire-up of what would
+        # normally be directly connected to IO Pads, to go instead
+        # first through a JTAG Boundary Scan... *and then* get auto-
+        # connected on ultimately to the IO Pads.  to do that, the best
+        # API is one that reflects that of Platforms... and that means
+        # using duplicate ResourceManagers so that the user may use
+        # the exact same resource-requesting function, "request", and
+        # may also use the exact same Resource list
+
+        self.pad_mgr = ResourceManager([], [])
+        self.core_mgr = ResourceManager([], [])
+        self.pad_mgr.add_resources(resources)
+        self.core_mgr.add_resources(resources)
+
+        # record resource lookup between core IO names and pads
+        self.padlookup = {}
+        self.requests_made = []
+        self.boundary_scan_pads = []
+        self.resource_table = {}
+        self.resource_table_pads = {}
+        self.eqs = []                 # list of BS to core/pad connections
+
+        # allocate all resources in advance in pad/core ResourceManagers
+        # this is because whilst a completely new (different) platform is
+        # passed in to elaborate()s every time, that cannot happen with
+        # JTAG Boundary scanning: the resources are allocated *prior*
+        # to elaborate() being called [from Simulation(), Platform.build(),
+        # and many other sources, multiple times]
+
+        for resource in resources:
+            print ("JTAG resource", resource)
+            if resource.name in ['clk', 'rst']: # hack
+                continue
+            self.add_jtag_resource(resource.name, resource.number)
 
     def add_pins(self, pinlist):
         for fn, pin, iotype, pin_name, scan_idx in pinlist:
@@ -133,6 +198,30 @@ class JTAG(TAP, Pins):
 
         return m
 
+    def boundary_elaborate(self, m, platform):
+        jtag_resources = self.pad_mgr.resources
+        core_resources = self.core_mgr.resources
+
+        # platform requested: make the exact same requests,
+        # then add JTAG afterwards
+        if platform is not None:
+            for (name, number, dir, xdr) in self.requests_made:
+                asicpad = platform.request(name, number, dir=dir, xdr=xdr)
+                jtagpad = self.resource_table_pads[(name, number)]
+                print ("jtagpad", jtagpad, jtagpad.layout)
+                m.d.comb += recurse_down(asicpad, jtagpad)
+
+            # wire up JTAG otherwise we are in trouble
+            jtag = platform.request('jtag')
+            m.d.comb += self.bus.tdi.eq(jtag.tdi)
+            m.d.comb += self.bus.tck.eq(jtag.tck)
+            m.d.comb += self.bus.tms.eq(jtag.tms)
+            m.d.comb += jtag.tdo.eq(self.bus.tdo)
+
+        # add the eq assignments connecting up JTAG boundary scan to core
+        m.d.comb += self.eqs
+        return m
+
     def external_ports(self):
         """create a list of ports that goes into the top level il (or verilog)
         """
@@ -143,6 +232,136 @@ class JTAG(TAP, Pins):
             ports += list(io.pad.fields.values())  # io "pad" signals"
         return ports
 
+    def ports(self):
+        return list(self.iter_ports())
+
+    def iter_ports(self):
+        yield self.bus.tdi
+        yield self.bus.tdo
+        yield self.bus.tck
+        yield self.bus.tms
+        yield from self.boundary_scan_pads
+
+    def request(self, name, number=0, *, dir=None, xdr=None):
+        """looks like ResourceManager.request but can be called multiple times.
+        """
+        return self.resource_table[(name, number)]
+
+    def add_jtag_resource(self, name, number=0, *, dir=None, xdr=None):
+        """request a Resource (e.g. name="uart", number=0) which will
+        return a data structure containing Records of all the pins.
+
+        this override will also - automatically - create a JTAG Boundary Scan
+        connection *without* any change to the actual Platform.request() API
+        """
+        pad_mgr = self.pad_mgr
+        core_mgr = self.core_mgr
+        padlookup = self.padlookup
+        # okaaaay, bit of shenanigens going on: the important data structure
+        # here is Resourcemanager._ports.  requests add to _ports, which is
+        # what needs redirecting.  therefore what has to happen is to
+        # capture the number of ports *before* the request. sigh.
+        start_ports = len(core_mgr._ports)
+        value = core_mgr.request(name, number, dir=dir, xdr=xdr)
+        end_ports = len(core_mgr._ports)
+
+        # take a copy of the requests made
+        self.requests_made.append((name, number, dir, xdr))
+
+        # now make a corresponding (duplicate) request to the pad manager
+        # BUT, if it doesn't exist, don't sweat it: all it means is, the
+        # application did not request Boundary Scan for that resource.
+        pad_start_ports = len(pad_mgr._ports)
+        pvalue = pad_mgr.request(name, number, dir=dir, xdr=xdr)
+        pad_end_ports = len(pad_mgr._ports)
+
+        # ok now we have the lengths: now create a lookup between the pad
+        # and the core, so that JTAG boundary scan can be inserted in between
+        core = core_mgr._ports[start_ports:end_ports]
+        pads = pad_mgr._ports[pad_start_ports:pad_end_ports]
+        # oops if not the same numbers added. it's a duplicate. shouldn't happen
+        assert len(core) == len(pads), "argh, resource manager error"
+        print ("core", core)
+        print ("pads", pads)
+
+        # pad/core each return a list of tuples of (res, pin, port, attrs)
+        for pad, core in zip(pads, core):
+            # create a lookup on pin name to get at the hidden pad instance
+            # this pin name will be handed to get_input, get_output etc.
+            # and without the padlookup you can't find the (duplicate) pad.
+            # note that self.padlookup and self.ios use the *exact* same
+            # pin.name per pin
+            padpin = pad[1]
+            corepin = core[1]
+            if padpin is None: continue # skip when pin is None
+            assert corepin is not None # if pad was None, core should be too
+            print ("iter", pad, padpin.name)
+            print ("existing pads", padlookup.keys())
+            assert padpin.name not in padlookup # no overwrites allowed!
+            assert padpin.name == corepin.name       # has to be the same!
+            padlookup[padpin.name] = pad        # store pad by pin name
+
+            # now add the IO Shift Register.  first identify the type
+            # then request a JTAG IOConn. we can't wire it up (yet) because
+            # we don't have a Module() instance. doh. that comes in get_input
+            # and get_output etc. etc.
+            iotype = resiotypes[padpin.dir] # look up the C4M-JTAG IOType
+            io = self.add_io(iotype=iotype, name=padpin.name) # IOConn
+            self.ios[padpin.name] = io # store IOConn Record by pin name
+
+            # and connect up core to pads based on type.  could create
+            # Modules here just like in Platform.get_input/output but
+            # in some ways it is clearer by being simpler to wire them globally
+
+            if padpin.dir == 'i':
+                print ("jtag_request add input pin", padpin)
+                print ("                   corepin", corepin)
+                print ("   jtag io core", io.core)
+                print ("   jtag io pad", io.pad)
+                # corepin is to be returned, here. so, connect jtag corein to it
+                self.eqs += [corepin.i.eq(io.core.i)]
+                # and padpin to JTAG pad
+                self.eqs += [io.pad.i.eq(padpin.i)]
+                self.boundary_scan_pads.append(padpin.i)
+            elif padpin.dir == 'o':
+                print ("jtag_request add output pin", padpin)
+                print ("                    corepin", corepin)
+                print ("   jtag io core", io.core)
+                print ("   jtag io pad", io.pad)
+                # corepin is to be returned, here. connect it to jtag core out
+                self.eqs += [io.core.o.eq(corepin.o)]
+                # and JTAG pad to padpin
+                self.eqs += [padpin.o.eq(io.pad.o)]
+                self.boundary_scan_pads.append(padpin.o)
+            elif padpin.dir == 'io':
+                print ("jtag_request add io    pin", padpin)
+                print ("                   corepin", corepin)
+                print ("   jtag io core", io.core)
+                print ("   jtag io pad", io.pad)
+                # corepin is to be returned, here. so, connect jtag corein to it
+                self.eqs += [corepin.i.eq(io.core.i)]
+                # and padpin to JTAG pad
+                self.eqs += [io.pad.i.eq(padpin.i)]
+                # corepin is to be returned, here. connect it to jtag core out
+                self.eqs += [io.core.o.eq(corepin.o)]
+                # and JTAG pad to padpin
+                self.eqs += [padpin.o.eq(io.pad.o)]
+                # corepin is to be returned, here. connect it to jtag core out
+                self.eqs += [io.core.oe.eq(corepin.oe)]
+                # and JTAG pad to padpin
+                self.eqs += [padpin.oe.eq(io.pad.oe)]
+
+                self.boundary_scan_pads.append(padpin.i)
+                self.boundary_scan_pads.append(padpin.o)
+                self.boundary_scan_pads.append(padpin.oe)
+
+        # finally record the *CORE* value just like ResourceManager.request()
+        # so that the module using this can connect to *CORE* i/o to the
+        # resource.  pads are taken care of
+        self.resource_table[(name, number)] = value
+
+        # and the *PAD* value so that it can be wired up externally as well
+        self.resource_table_pads[(name, number)] = pvalue
 
 if __name__ == '__main__':
     pinset = dummy_pinset()
