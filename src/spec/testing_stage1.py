@@ -132,6 +132,7 @@ class Blinker(Elaboratable):
         # record resource lookup between core IO names and pads
         self.jtag.padlookup = {}
         self.jtag.requests_made = []
+        self.jtag.boundary_scan_pads = []
         memory = Memory(width=32, depth=16)
         self.sram = SRAM(memory=memory, bus=self.jtag.wb)
 
@@ -182,6 +183,7 @@ class Blinker(Elaboratable):
         yield self.jtag.bus.tdo
         yield self.jtag.bus.tck
         yield self.jtag.bus.tms
+        yield from self.jtag.boundary_scan_pads
 
     def jtag_request(self, m, name, number=0, *, dir=None, xdr=None):
         """request a Resource (e.g. name="uart", number=0) which will
@@ -245,7 +247,10 @@ class Blinker(Elaboratable):
             io = self.jtag.add_io(iotype=iotype, name=padpin.name) # IOConn
             self.jtag.ios[padpin.name] = io # store IOConn Record by pin name
 
-            # and connect up core to pads based on type
+            # and connect up core to pads based on type.  could create
+            # Modules here just like in Platform.get_input/output but
+            # in some ways it is clearer by being simpler to wire them globally
+
             if padpin.dir == 'i':
                 print ("jtag_request add input pin", padpin)
                 print ("                   corepin", corepin)
@@ -255,6 +260,7 @@ class Blinker(Elaboratable):
                 m.d.comb += corepin.i.eq(io.core.i)
                 # and padpin to JTAG pad
                 m.d.comb += io.pad.i.eq(padpin.i)
+                self.jtag.boundary_scan_pads.append(padpin.i)
             elif padpin.dir == 'o':
                 print ("jtag_request add output pin", padpin)
                 print ("                    corepin", corepin)
@@ -264,6 +270,7 @@ class Blinker(Elaboratable):
                 m.d.comb += io.core.o.eq(corepin.o)
                 # and JTAG pad to padpin
                 m.d.comb += padpin.o.eq(io.pad.o)
+                self.jtag.boundary_scan_pads.append(padpin.o)
             elif padpin.dir == 'io':
                 print ("jtag_request add io    pin", padpin)
                 print ("                   corepin", corepin)
@@ -281,6 +288,10 @@ class Blinker(Elaboratable):
                 m.d.comb += io.core.oe.eq(corepin.oe)
                 # and JTAG pad to padpin
                 m.d.comb += padpin.oe.eq(io.pad.oe)
+`
+                self.jtag.boundary_scan_pads.append(padpin.i)
+                self.jtag.boundary_scan_pads.append(padpin.o)
+                self.jtag.boundary_scan_pads.append(padpin.oe)
 
         # finally return the *CORE* value just like ResourceManager.request()
         # so that the module using this can connect to *CORE* i/o to the
