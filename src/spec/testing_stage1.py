@@ -123,6 +123,7 @@ def I2CResource(*args, scl, sda):
 class Blinker(Elaboratable):
     def __init__(self, pinset):
         self.jtag = JTAG({}, "sync")
+        self.jtag.core_mgr = ResourceManager([], [])
         memory = Memory(width=32, depth=16)
         self.sram = SRAM(memory=memory, bus=self.jtag.wb)
 
@@ -194,7 +195,6 @@ class ASICPlatform(TemplatedPlatform):
     default_rst = "rst" # should be picked up / overridden by platform sys.rst
 
     def __init__(self, resources, jtag):
-        self.pad_mgr = ResourceManager([], [])
         self.jtag = jtag
         super().__init__()
 
@@ -213,6 +213,7 @@ class ASICPlatform(TemplatedPlatform):
         this override will also - automatically - create a JTAG Boundary Scan
         connection *without* any change to the actual Platform.request() API
         """
+        core_mgr = self.jtag.core_mgr
         # okaaaay, bit of shenanigens going on: the important data structure
         # here is Resourcemanager._ports.  requests add to _ports, which is
         # what needs redirecting.  therefore what has to happen is to
@@ -224,17 +225,17 @@ class ASICPlatform(TemplatedPlatform):
         # now make a corresponding (duplicate) request to the pad manager
         # BUT, if it doesn't exist, don't sweat it: all it means is, the
         # application did not request Boundary Scan for that resource.
-        pad_start_ports = len(self.pad_mgr._ports)
+        pad_start_ports = len(core_mgr._ports)
         try:
-            pvalue = self.pad_mgr.request(name, number, dir=dir, xdr=xdr)
+            pvalue = core_mgr.request(name, number, dir=dir, xdr=xdr)
         except ResourceError:
             return value
-        pad_end_ports = len(self.pad_mgr._ports)
+        pad_end_ports = len(core_mgr._ports)
 
         # ok now we have the lengths: now create a lookup between the pad
         # and the core, so that JTAG boundary scan can be inserted in between
         core = self._ports[start_ports:end_ports]
-        pads = self.pad_mgr._ports[pad_start_ports:pad_end_ports]
+        pads = core_mgr._ports[pad_start_ports:pad_end_ports]
         # oops if not the same numbers added. it's a duplicate. shouldn't happen
         assert len(core) == len(pads), "argh, resource manager error"
         print ("core", core)
@@ -274,7 +275,7 @@ class ASICPlatform(TemplatedPlatform):
             return
         # make a *second* - identical - set of pin resources for the IO ring
         padres = deepcopy(resources)
-        self.pad_mgr.add_resources(padres)
+        self.jtag.core_mgr.add_resources(padres)
 
     #def iter_ports(self):
     #    yield from super().iter_ports()
