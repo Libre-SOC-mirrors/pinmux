@@ -124,8 +124,11 @@ class Blinker(Elaboratable):
     def __init__(self, pinset):
         self.jtag = JTAG({}, "sync")
         self.jtag.core_mgr = ResourceManager([], [])
+        # record resource lookup between core IO names and pads
+        self.jtag.padlookup = {}
         memory = Memory(width=32, depth=16)
         self.sram = SRAM(memory=memory, bus=self.jtag.wb)
+
 
     def elaborate(self, platform):
         m = Module()
@@ -200,8 +203,6 @@ class ASICPlatform(TemplatedPlatform):
 
         # create set of pin resources based on the pinset, this is for the core
         self.add_resources(resources)
-        # record resource lookup between core IO names and pads
-        self.padlookup = {}
 
         # add JTAG without scan
         self.add_resources([JTAGResource('jtag', 0)], no_boundary_scan=True)
@@ -214,6 +215,7 @@ class ASICPlatform(TemplatedPlatform):
         connection *without* any change to the actual Platform.request() API
         """
         core_mgr = self.jtag.core_mgr
+        padlookup = self.jtag.padlookup
         # okaaaay, bit of shenanigens going on: the important data structure
         # here is Resourcemanager._ports.  requests add to _ports, which is
         # what needs redirecting.  therefore what has to happen is to
@@ -253,10 +255,10 @@ class ASICPlatform(TemplatedPlatform):
             if pin is None: continue # skip when pin is None
             assert corepin is not None # if pad was None, core should be too
             print ("iter", pad, pin.name)
-            print ("existing pads", self.padlookup.keys())
-            assert pin.name not in self.padlookup # no overwrites allowed!
+            print ("existing pads", padlookup.keys())
+            assert pin.name not in padlookup # no overwrites allowed!
             assert pin.name == corepin.name       # has to be the same!
-            self.padlookup[pin.name] = pad        # store pad by pin name
+            padlookup[pin.name] = pad        # store pad by pin name
 
             # now add the IO Shift Register.  first identify the type
             # then request a JTAG IOConn. we can't wire it up (yet) because
@@ -290,6 +292,7 @@ class ASICPlatform(TemplatedPlatform):
     # phase is to add JTAG Boundary Scan so it maaay be worth adding?
     # at least for the print statements
     def get_input(self, pin, port, attrs, invert):
+        padlookup = self.jtag.padlookup
         self._check_feature("single-ended input", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
@@ -300,11 +303,11 @@ class ASICPlatform(TemplatedPlatform):
             print("No JTAG chain in-between")
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
             return m
-        if pin.name not in self.padlookup:
+        if pin.name not in padlookup:
             print("No pin named %s, not connecting to JTAG BS" % pin.name)
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
             return m
-        (padres, padpin, padport, padattrs) = self.padlookup[pin.name]
+        (padres, padpin, padport, padattrs) = padlookup[pin.name]
         io = self.jtag.ios[pin.name]
         print ("       pad", padres, padpin, padport, attrs)
         print ("       padpin", padpin.layout)
@@ -321,6 +324,7 @@ class ASICPlatform(TemplatedPlatform):
         return m
 
     def get_output(self, pin, port, attrs, invert):
+        padlookup = self.jtag.padlookup
         self._check_feature("single-ended output", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
@@ -331,11 +335,11 @@ class ASICPlatform(TemplatedPlatform):
             print("No JTAG chain in-between")
             m.d.comb += port.eq(self._invert_if(invert, pin.o))
             return m
-        if pin.name not in self.padlookup:
+        if pin.name not in padlookup:
             print("No pin named %s, not connecting to JTAG BS" % pin.name)
             m.d.comb += port.eq(self._invert_if(invert, pin.o))
             return m
-        (padres, padpin, padport, padattrs) = self.padlookup[pin.name]
+        (padres, padpin, padport, padattrs) = padlookup[pin.name]
         io = self.jtag.ios[pin.name]
         print ("       pad", padres, padpin, padport, padattrs)
         print ("       pin", padpin.layout)
@@ -347,6 +351,7 @@ class ASICPlatform(TemplatedPlatform):
         return m
 
     def get_tristate(self, pin, port, attrs, invert):
+        padlookup = self.jtag.padlookup
         self._check_feature("single-ended tristate", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
@@ -361,7 +366,7 @@ class ASICPlatform(TemplatedPlatform):
                 o_Y=port,
             )
             return m
-        (res, pin, port, attrs) = self.padlookup[pin.name]
+        (res, pin, port, attrs) = padlookup[pin.name]
         io = self.jtag.ios[pin.name]
         print ("       pad", res, pin, port, attrs)
         print ("       pin", pin.layout)
@@ -381,6 +386,7 @@ class ASICPlatform(TemplatedPlatform):
         return m
 
     def get_input_output(self, pin, port, attrs, invert):
+        padlookup = self.jtag.padlookup
         self._check_feature("single-ended input/output", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
@@ -396,7 +402,7 @@ class ASICPlatform(TemplatedPlatform):
             )
             m.d.comb += pin.i.eq(self._invert_if(invert, port))
             return m
-        (padres, padpin, padport, padattrs) = self.padlookup[pin.name]
+        (padres, padpin, padport, padattrs) = padlookup[pin.name]
         io = self.jtag.ios[pin.name]
         print ("       pad", padres, padpin, padport, padattrs)
         print ("       pin", padpin.layout)
