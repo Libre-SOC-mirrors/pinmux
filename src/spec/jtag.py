@@ -80,11 +80,7 @@ class JTAG(TAP, Pins):
         # we store the boundary scan register offset in the IOConn record
         self.ios = {} # these are enumerated in external_ports
         self.scan_len = 0
-        for fn, pin, iotype, pin_name, scan_idx in list(self):
-            io = self.add_io(iotype=iotype, name=pin_name)
-            io._scan_idx = scan_idx # hmm shouldn't really do this
-            self.scan_len += scan_idx # record full length of boundary scan
-            self.ios[pin_name] = io
+        self.add_pins(list(self))
 
         # this is redundant.  or maybe part of testing, i don't know.
         self.sr = self.add_shiftreg(ircode=4, length=3,
@@ -110,6 +106,13 @@ class JTAG(TAP, Pins):
                                      self.wb_sram_en)
         self.sr_en = self.add_shiftreg(ircode=11, length=len(en_sigs),
                                        domain=domain)
+
+    def add_pins(self, pinlist):
+        for fn, pin, iotype, pin_name, scan_idx in pinlist:
+            io = self.add_io(iotype=iotype, name=pin_name)
+            io._scan_idx = scan_idx # hmm shouldn't really do this
+            self.scan_len += scan_idx # record full length of boundary scan
+            self.ios[pin_name] = io
 
     def elaborate(self, platform):
         m = super().elaborate(platform)
