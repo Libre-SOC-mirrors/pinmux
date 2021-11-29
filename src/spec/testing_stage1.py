@@ -14,22 +14,22 @@ from nmigen.cli import rtlil
 import sys
 
 # extra dependencies for jtag testing (?)
-from soc.bus.sram import SRAM
+#from soc.bus.sram import SRAM
 
-from nmigen import Memory
+#from nmigen import Memory
 from nmigen.sim import Simulator, Delay, Settle, Tick
 
 from nmutil.util import wrap
 
-from soc.debug.jtagutils import (jtag_read_write_reg,
-                                 jtag_srv, jtag_set_reset,
-                                 jtag_set_ir, jtag_set_get_dr)
+#from soc.debug.jtagutils import (jtag_read_write_reg,
+#                                 jtag_srv, jtag_set_reset,
+#                                 jtag_set_ir, jtag_set_get_dr)
 
 from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
-from soc.debug.dmi import DMIInterface, DBGCore
-from soc.debug.test.dmi_sim import dmi_sim
-from soc.debug.test.jtagremote import JTAGServer, JTAGClient
+#from soc.debug.dmi import DMIInterface, DBGCore
+#from soc.debug.test.dmi_sim import dmi_sim
+#from soc.debug.test.jtagremote import JTAGServer, JTAGClient
 from nmigen.build.res import ResourceError
 
 # Was thinking of using these functions, but skipped for simplicity for now
@@ -146,14 +146,14 @@ def I2CResource(*args, scl, sda):
 class Blinker(Elaboratable):
     def __init__(self, pinset, resources):
         self.jtag = JTAG({}, "sync", resources=resources)
-        memory = Memory(width=32, depth=16)
-        self.sram = SRAM(memory=memory, bus=self.jtag.wb)
+        #memory = Memory(width=32, depth=16)
+        #self.sram = SRAM(memory=memory, bus=self.jtag.wb)
 
     def elaborate(self, platform):
         jtag_resources = self.jtag.pad_mgr.resources
         m = Module()
         m.submodules.jtag = self.jtag
-        m.submodules.sram = self.sram
+        #m.submodules.sram = self.sram
 
         count = Signal(5)
         m.d.sync += count.eq(count+1)
@@ -335,29 +335,7 @@ with open("test_jtag_blinker.il", "w") as f:
 if True:
     # XXX these modules are all being added *AFTER* the build process links
     # everything together.  the expectation that this would work is...
-    # unrealistic.  ordering, clearly, is important.
-
-    # dut = JTAG(test_pinset(), wb_data_wid=64, domain="sync")
-    top.jtag.stop = False
-    # rather than the client access the JTAG bus directly
-    # create an alternative that the client sets
-    class Dummy: pass
-    cdut = Dummy()
-    cdut.cbus = JTAGInterface()
-
-    # set up client-server on port 44843-something
-    top.jtag.s = JTAGServer()
-    cdut.c = JTAGClient()
-    top.jtag.s.get_connection()
-    #else:
-    #    print ("running server only as requested, use openocd remote to test")
-    #    sys.stdout.flush()
-    #    top.jtag.s.get_connection(None) # block waiting for connection
-
-    # take copy of ir_width and scan_len
-    cdut._ir_width = top.jtag._ir_width
-    cdut.scan_len = top.jtag.scan_len
-
+    # unrealistic.  ordering, clearly, is important. 
     p = ASICPlatform (resources, top.jtag)
     p.build(top)
     # this is what needs to gets treated as "top", after "main module" top
@@ -371,13 +349,16 @@ if True:
 # particularly when modules have been added *after* the platform build()
 # function has been called.
 
+def test_case0():
+    print("Starting sanity test case!")
+    yield top.gpio_0__gpio_0__i__io.eq(0)
+    yield 
+
+
 sim = Simulator(top)
 sim.add_clock(1e-6, domain="sync")      # standard clock
 
-sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
-#if len(sys.argv) != 2 or sys.argv[1] != 'server':
-sim.add_sync_process(wrap(jtag_sim(cdut, top.jtag))) # actual jtag tester
-sim.add_sync_process(wrap(dmi_sim(top.jtag)))  # handles (pretends to be) DMI
+sim.add_sync_process(test_case0())
 
-with sim.write_vcd("dmi2jtag_test_srv.vcd"):
+with sim.write_vcd("blinker_test.vcd"):
     sim.run()
