@@ -144,7 +144,8 @@ def I2CResource(*args, scl, sda):
 
 # top-level demo module.
 class Blinker(Elaboratable):
-    def __init__(self, pinset, resources):
+    def __init__(self, pinset, resources, no_jtag_connect=False):
+        self.no_jtag_connect = no_jtag_connect
         self.jtag = JTAG({}, "sync", resources=resources)
         #memory = Memory(width=32, depth=16)
         #self.sram = SRAM(memory=memory, bus=self.jtag.wb)
@@ -167,7 +168,7 @@ class Blinker(Elaboratable):
         m.d.sync += count[0].eq(gpio.gpio1.i)
         # get the UART resource, mess with the output tx
         uart = self.jtag.request('uart')
-        print (uart, uart.fields)
+        print ("uart fields", uart, uart.fields)
         self.intermediary = Signal()
         m.d.comb += uart.tx.eq(self.intermediary)
         m.d.comb += self.intermediary.eq(uart.rx)
@@ -177,6 +178,10 @@ class Blinker(Elaboratable):
         self.gpio = gpio
         self.uart = uart
 
+        # sigh these wire up to the pads so you cannot set Signals
+        # that are already wired
+        if self.no_jtag_connect: # bypass jtag pad connect for testing purposes
+            return m
         return self.jtag.boundary_elaborate(m, platform)
 
     def ports(self):
@@ -379,7 +384,7 @@ if False:
 def test_case0():
     print("Starting sanity test case!")
     print("printing out list of stuff in top")
-    print(dir(top))
+    print (top.jtag.ios)
     # ok top now has a variable named "gpio", let's enumerate that too
     print("printing out list of stuff in top.gpio and its type")
     print(top.gpio.__class__.__name__, dir(top.gpio))
@@ -407,12 +412,13 @@ def test_case0():
     #yield top.jtag.gpio.gpio2.i.eq(1)
     yield Delay(delayVal)
     yield Settle()
+    gpio_o2 = 0
     for _ in range(20):
         # get a value first (as an integer).  you were trying to set
-        # it to the actual Signal
-        gpio_o2 = yield top.gpio.gpio2.o
-        # then set it
-        yield top.gpio.gpio2.o.eq(~gpio_o2)
+        # it to the actual Signal.  this is not going to work.  or if
+        # it does, it's very scary.
+        gpio_o2 = not gpio_o2
+        yield top.gpio.gpio2.o.eq(gpio_o2)
 
         # ditto: here you are trying to set to an AST expression
         # which is inadviseable (likely to fail)
@@ -422,9 +428,13 @@ def test_case0():
         # again you are trying to set something equal to the Signal
         # rather than to a value.  this is attempting to change the
         # actual HDL which is completely inappropriate
-        yield top.uart.rx.eq(~top.intermediary)
+        yield top.intermediary.eq(gpio_o2)
+        yield top.uart.rx.i.eq(gpio_o2)
         yield Delay(delayVal)
         yield Settle()
+        yield # one clock cycle
+        tx_val = yield top.uart.tx.o
+        print ("xmit uart", tx_val, gpio_o2)
     
     yield top.gpio.gpio2.oe.eq(0)
     yield top.gpio.gpio3.oe.eq(0)
