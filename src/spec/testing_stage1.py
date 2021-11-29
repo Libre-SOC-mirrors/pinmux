@@ -168,13 +168,14 @@ class Blinker(Elaboratable):
         # get the UART resource, mess with the output tx
         uart = self.jtag.request('uart')
         print (uart, uart.fields)
-        intermediary = Signal()
-        m.d.comb += uart.tx.eq(intermediary)
-        m.d.comb += intermediary.eq(uart.rx)
+        self.intermediary = Signal()
+        m.d.comb += uart.tx.eq(self.intermediary)
+        m.d.comb += self.intermediary.eq(uart.rx)
 
         # to even be able to get at objects, you first have to make them
         # available - i.e. not as local variables
         self.gpio = gpio
+        self.uart = uart
 
         return self.jtag.boundary_elaborate(m, platform)
 
@@ -387,11 +388,27 @@ def test_case0():
     print("top.gpio is a Record therefore has fields and a layout")
     print("    layout:", top.gpio.layout)
     print("    fields:", top.gpio.fields)
+    print("Fun never ends...")
+    print("    layout, gpio2:", top.gpio.layout['gpio2'])
+    print("    fields, gpio2:", top.gpio.fields['gpio2'])
     # etc etc. you get the general idea
-    yield top.gpio_0__gpio0__o__o.eq(0)
-    yield top.gpio_0__gpio0__o__core__o.eq(0)
-    yield top.gpio_0__gpio1__o.eq(0)
-    yield 
+    delayVal = 0.2e-6
+    yield top.uart.rx.eq(0)
+    yield Delay(delayVal)
+    yield Settle()
+    yield top.gpio.gpio2.o.eq(0)
+    yield Delay(delayVal)
+    yield Settle()
+    yield top.gpio.gpio2.oe.eq(1)
+    yield Delay(delayVal)
+    yield Settle()
+    for _ in range(21):
+        yield top.gpio.gpio2.o.eq(~top.gpio.gpio0.o)
+        yield Delay(delayVal)
+        yield Settle()
+        yield top.uart.rx.eq(~top.intermediary)
+        yield Delay(delayVal)
+        yield Settle()
 
 # Code borrowed from cesar, runs, but shouldn't actually work because of
 # self. statements and non-existent signal names.
@@ -432,7 +449,7 @@ sim.add_clock(1e-6, domain="sync")      # standard clock
 #sim.add_sync_process(wrap(jtag_sim(cdut, top.jtag))) # actual jtag tester
 #sim.add_sync_process(wrap(dmi_sim(top.jtag)))  # handles (pretends to be) DMI
 
-sim.add_sync_process(wrap(test_case1()))
+#sim.add_sync_process(wrap(test_case1()))
 sim.add_sync_process(wrap(test_case0()))
 
 with sim.write_vcd("blinker_test.vcd"):
