@@ -408,10 +408,20 @@ def test_case0():
     yield Delay(delayVal)
     yield Settle()
     for _ in range(20):
-        yield top.gpio.gpio2.o.eq(~top.gpio.gpio2.o)
+        # get a value first (as an integer).  you were trying to set
+        # it to the actual Signal
+        gpio_o2 = yield top.gpio.gpio2.o
+        # then set it
+        yield top.gpio.gpio2.o.eq(~gpio_o2)
+
+        # ditto: here you are trying to set to an AST expression
+        # which is inadviseable (likely to fail)
         yield top.gpio.gpio3.o.eq(~top.gpio.gpio3.o)
         yield Delay(delayVal)
         yield Settle()
+        # again you are trying to set something equal to the Signal
+        # rather than to a value.  this is attempting to change the
+        # actual HDL which is completely inappropriate
         yield top.uart.rx.eq(~top.intermediary)
         yield Delay(delayVal)
         yield Settle()
