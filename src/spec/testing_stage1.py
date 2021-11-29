@@ -17,7 +17,7 @@ import sys
 #from soc.bus.sram import SRAM
 
 #from nmigen import Memory
-from nmigen.sim import Simulator, Delay, Settle, Tick
+from nmigen.sim import Simulator, Delay, Settle, Tick, Passive
 
 from nmutil.util import wrap
 
@@ -332,10 +332,32 @@ vl = rtlil.convert(top, ports=top.ports())
 with open("test_jtag_blinker.il", "w") as f:
     f.write(vl)
 
-if True:
+if False:
     # XXX these modules are all being added *AFTER* the build process links
     # everything together.  the expectation that this would work is...
-    # unrealistic.  ordering, clearly, is important. 
+    # unrealistic.  ordering, clearly, is important.
+
+    # dut = JTAG(test_pinset(), wb_data_wid=64, domain="sync")
+    top.jtag.stop = False
+    # rather than the client access the JTAG bus directly
+    # create an alternative that the client sets
+    class Dummy: pass
+    cdut = Dummy()
+    cdut.cbus = JTAGInterface()
+
+    # set up client-server on port 44843-something
+    top.jtag.s = JTAGServer()
+    cdut.c = JTAGClient()
+    top.jtag.s.get_connection()
+    #else:
+    #    print ("running server only as requested, use openocd remote to test")
+    #    sys.stdout.flush()
+    #    top.jtag.s.get_connection(None) # block waiting for connection
+
+    # take copy of ir_width and scan_len
+    cdut._ir_width = top.jtag._ir_width
+    cdut.scan_len = top.jtag.scan_len
+
     p = ASICPlatform (resources, top.jtag)
     p.build(top)
     # this is what needs to gets treated as "top", after "main module" top
@@ -351,14 +373,52 @@ if True:
 
 def test_case0():
     print("Starting sanity test case!")
-    yield top.gpio_0__gpio_0__i__io.eq(0)
+    yield top.gpio_0__gpio0__o__o.eq(0)
+    yield top.gpio_0__gpio0__o__core__o.eq(0)
+    yield top.gpio_0__gpio1__o.eq(0)
     yield 
 
+# Code borrowed from cesar, runs, but shouldn't actually work because of
+# self. statements and non-existent signal names.
+def test_case1():
+    print("Example test case")
+    yield Passive()
+    while True:
+        # Settle() is needed to give a quick response to
+        # the zero delay case
+        yield Settle()
+        # wait for rel_o to become active
+        while not (yield self.rel_o):
+            yield
+            yield Settle()
+        # read the transaction parameters
+        assert self.expecting, "an unexpected result was produced"
+        delay = (yield self.delay)
+        expected = (yield self.expected)
+        # wait for `delay` cycles
+        for _ in range(delay):
+            yield
+        # activate go_i for one cycle
+        yield self.go_i.eq(1)
+        yield self.count.eq(self.count + 1)
+        yield
+        # check received data against the expected value
+        result = (yield self.port)
+        assert result == expected,\
+            f"expected {expected}, received {result}"
+        yield self.go_i.eq(0)
+        yield self.port.eq(0)
 
 sim = Simulator(top)
 sim.add_clock(1e-6, domain="sync")      # standard clock
 
-sim.add_sync_process(test_case0())
+#sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
+#if len(sys.argv) != 2 or sys.argv[1] != 'server':
+#sim.add_sync_process(wrap(jtag_sim(cdut, top.jtag))) # actual jtag tester
+#sim.add_sync_process(wrap(dmi_sim(top.jtag)))  # handles (pretends to be) DMI
+
+sim.add_sync_process(wrap(test_case1()))
+sim.add_sync_process(wrap(test_case0()))
 
 with sim.write_vcd("blinker_test.vcd"):
     sim.run()
