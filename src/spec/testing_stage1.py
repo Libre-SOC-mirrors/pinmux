@@ -391,24 +391,36 @@ def test_case0():
     print("Fun never ends...")
     print("    layout, gpio2:", top.gpio.layout['gpio2'])
     print("    fields, gpio2:", top.gpio.fields['gpio2'])
+    print(top.jtag.__class__.__name__, dir(top.jtag))
+
     # etc etc. you get the general idea
     delayVal = 0.2e-6
     yield top.uart.rx.eq(0)
     yield Delay(delayVal)
     yield Settle()
     yield top.gpio.gpio2.o.eq(0)
+    yield top.gpio.gpio3.o.eq(1)
     yield Delay(delayVal)
     yield Settle()
     yield top.gpio.gpio2.oe.eq(1)
+    yield top.gpio.gpio3.oe.eq(1)
+    #yield top.jtag.gpio.gpio2.i.eq(1)
     yield Delay(delayVal)
     yield Settle()
-    for _ in range(21):
-        yield top.gpio.gpio2.o.eq(~top.gpio.gpio0.o)
+    for _ in range(20):
+        yield top.gpio.gpio2.o.eq(~top.gpio.gpio2.o)
+        yield top.gpio.gpio3.o.eq(~top.gpio.gpio3.o)
         yield Delay(delayVal)
         yield Settle()
         yield top.uart.rx.eq(~top.intermediary)
         yield Delay(delayVal)
         yield Settle()
+    
+    yield top.gpio.gpio2.oe.eq(0)
+    yield top.gpio.gpio3.oe.eq(0)
+    #yield top.jtag.gpio.gpio2.i.eq(0)
+    yield Delay(delayVal)
+    yield Settle()
 
 # Code borrowed from cesar, runs, but shouldn't actually work because of
 # self. statements and non-existent signal names.
