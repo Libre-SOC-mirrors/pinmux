@@ -1,6 +1,8 @@
 """JTAG interface
 
 using Staf Verhaegen (Chips4Makers) wishbone TAP
+
+Pinmux documented here https://libre-soc.org/docs/pinmux/
 """
 
 from nmigen.build.res import ResourceManager

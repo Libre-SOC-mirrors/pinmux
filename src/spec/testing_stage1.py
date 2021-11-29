@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+pinmux documented here https://libre-soc.org/docs/pinmux/
+"""
 from nmigen.build.dsl import Resource, Subsignal, Pins
 from nmigen.build.plat import TemplatedPlatform
 from nmigen.build.res import ResourceManager, ResourceError
