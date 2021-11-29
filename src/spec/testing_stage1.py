@@ -384,7 +384,7 @@ if False:
 def test_case0():
     print("Starting sanity test case!")
     print("printing out list of stuff in top")
-    print (top.jtag.ios)
+    print ("JTAG IOs", top.jtag.ios)
     # ok top now has a variable named "gpio", let's enumerate that too
     print("printing out list of stuff in top.gpio and its type")
     print(top.gpio.__class__.__name__, dir(top.gpio))
@@ -425,17 +425,21 @@ def test_case0():
         yield top.gpio.gpio3.o.eq(~top.gpio.gpio3.o)
         yield Delay(delayVal)
         yield Settle()
-        # again you are trying to set something equal to the Signal
-        # rather than to a value.  this is attempting to change the
-        # actual HDL which is completely inappropriate
-        yield top.intermediary.eq(gpio_o2)
-        yield top.uart.rx.i.eq(gpio_o2)
+        # grab the JTAG resource pad
+        uart_pad = top.jtag.resource_table_pads[('uart', 0)]
+        yield uart_pad.rx.i.eq(gpio_o2)
         yield Delay(delayVal)
         yield Settle()
         yield # one clock cycle
-        tx_val = yield top.uart.tx.o
+        tx_val = yield uart_pad.tx.o
         print ("xmit uart", tx_val, gpio_o2)
     
+    print ("jtag pad table keys")
+    print (top.jtag.resource_table_pads.keys())
+    uart_pad = top.jtag.resource_table_pads[('uart', 0)]
+    print ("uart pad", uart_pad)
+    print ("uart pad", uart_pad.layout)
+
     yield top.gpio.gpio2.oe.eq(0)
     yield top.gpio.gpio3.oe.eq(0)
     #yield top.jtag.gpio.gpio2.i.eq(0)
