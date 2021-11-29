@@ -172,6 +172,10 @@ class Blinker(Elaboratable):
         m.d.comb += uart.tx.eq(intermediary)
         m.d.comb += intermediary.eq(uart.rx)
 
+        # to even be able to get at objects, you first have to make them
+        # available - i.e. not as local variables
+        self.gpio = gpio
+
         return self.jtag.boundary_elaborate(m, platform)
 
     def ports(self):
@@ -373,6 +377,17 @@ if False:
 
 def test_case0():
     print("Starting sanity test case!")
+    print("printing out list of stuff in top")
+    print(dir(top))
+    # ok top now has a variable named "gpio", let's enumerate that too
+    print("printing out list of stuff in top.gpio and its type")
+    print(top.gpio.__class__.__name__, dir(top.gpio))
+    # ok, it's a nmigen Record, therefore it has a layout.  let's print
+    # that too
+    print("top.gpio is a Record therefore has fields and a layout")
+    print("    layout:", top.gpio.layout)
+    print("    fields:", top.gpio.fields)
+    # etc etc. you get the general idea
     yield top.gpio_0__gpio0__o__o.eq(0)
     yield top.gpio_0__gpio0__o__core__o.eq(0)
     yield top.gpio_0__gpio1__o.eq(0)
