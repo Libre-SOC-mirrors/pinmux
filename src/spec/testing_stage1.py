@@ -336,7 +336,7 @@ something random
 pinset = dummy_pinset()
 print(pinset)
 resources = create_resources(pinset)
-top = Blinker(pinset, resources)
+top = Blinker(pinset, resources, no_jtag_connect=False)#True)
 
 vl = rtlil.convert(top, ports=top.ports())
 with open("test_jtag_blinker.il", "w") as f:
@@ -397,6 +397,8 @@ def test_case0():
     print("    layout, gpio2:", top.gpio.layout['gpio2'])
     print("    fields, gpio2:", top.gpio.fields['gpio2'])
     print(top.jtag.__class__.__name__, dir(top.jtag))
+    print("Pads:")
+    print(top.jtag.resource_table_pads[('gpio', 0)])
 
     # etc etc. you get the general idea
     delayVal = 0.2e-6
@@ -405,10 +407,14 @@ def test_case0():
     yield Settle()
     yield top.gpio.gpio2.o.eq(0)
     yield top.gpio.gpio3.o.eq(1)
+    # grab the JTAG resource pad
+    gpios_pad = top.jtag.resource_table_pads[('gpio', 0)]
+    yield gpios_pad.gpio3.i.eq(1)
     yield Delay(delayVal)
     yield Settle()
     yield top.gpio.gpio2.oe.eq(1)
     yield top.gpio.gpio3.oe.eq(1)
+    yield gpios_pad.gpio3.i.eq(0)
     #yield top.jtag.gpio.gpio2.i.eq(1)
     yield Delay(delayVal)
     yield Settle()
@@ -422,7 +428,8 @@ def test_case0():
 
         # ditto: here you are trying to set to an AST expression
         # which is inadviseable (likely to fail)
-        yield top.gpio.gpio3.o.eq(~top.gpio.gpio3.o)
+        gpio_o3 = not gpio_o2
+        yield top.gpio.gpio3.o.eq(gpio_o3)
         yield Delay(delayVal)
         yield Settle()
         # grab the JTAG resource pad
