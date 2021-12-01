@@ -155,17 +155,45 @@ class Blinker(Elaboratable):
         m = Module()
         m.submodules.jtag = self.jtag
         #m.submodules.sram = self.sram
-
-        count = Signal(5)
-        m.d.sync += count.eq(count+1)
+        
+        #count = Signal(5)
+        #m.d.sync += count.eq(count+1)
         print ("resources", platform, jtag_resources.items())
         gpio = self.jtag.request('gpio')
         print (gpio, gpio.layout, gpio.fields)
         # get the GPIO bank, mess about with some of the pins
-        m.d.comb += gpio.gpio0.o.eq(1)
-        m.d.comb += gpio.gpio1.o.eq(gpio.gpio2.i)
-        m.d.comb += gpio.gpio1.oe.eq(count[4])
-        m.d.sync += count[0].eq(gpio.gpio1.i)
+        #m.d.comb += gpio.gpio0.o.eq(1)
+        #m.d.comb += gpio.gpio1.o.eq(gpio.gpio2.i)
+        #m.d.comb += gpio.gpio1.oe.eq(count[4])
+        #m.d.sync += count[0].eq(gpio.gpio1.i)
+       
+        num_gpios = 4
+        gpio_o_test = Signal(num_gpios)
+        gpio_oe_test = Signal(num_gpios)
+        # Wire up the output signal of each gpio by XOR'ing each bit of gpio_o_test with gpio's input
+        # Wire up each bit of gpio_oe_test signal to oe signal of each gpio. 
+        comb += gpio0.o.eq(gpio_o_test[0] ^ gpio0.i)
+        comb += gpio1.o.eq(gpio_o_test[1] ^ gpio1.i)
+        comb += gpio2.o.eq(gpio_o_test[2] ^ gpio2.i)
+        comb += gpio3.o.eq(gpio_o_test[3] ^ gpio3.i)
+
+        comb += gpio0.oe.eq(gpio_oe_test[0])
+        comb += gpio1.oe.eq(gpio_oe_test[1])
+        comb += gpio2.oe.eq(gpio_oe_test[2])
+        comb += gpio3.oe.eq(gpio_oe_test[3])
+        """
+
+-Have the sim run through a for-loop where the gpio_o_test is incremented like a counter (0000, 0001...)
+-At each iteration of the for-loop, assert:
++ output set at core matches output seen at pad
++ input set at pad matches input seen at core
++ if gpio_o_test bit is cleared, output seen at pad matches input seen at pad
+
+-Another for loop to run through gpio_oe_test. Assert:
++ oe set at core matches oe seen at pad.
+
+        """
+
         # get the UART resource, mess with the output tx
         uart = self.jtag.request('uart')
         print ("uart fields", uart, uart.fields)
@@ -407,6 +435,10 @@ def test_case0():
     yield Settle()
     yield top.gpio.gpio2.o.eq(0)
     yield top.gpio.gpio3.o.eq(1)
+    yield 
+    yield top.gpio.gpio3.oe.eq(1)
+    yield
+    yield top.gpio.gpio3.oe.eq(0)
     # grab the JTAG resource pad
     gpios_pad = top.jtag.resource_table_pads[('gpio', 0)]
     yield gpios_pad.gpio3.i.eq(1)
