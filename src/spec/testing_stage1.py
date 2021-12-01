@@ -172,27 +172,17 @@ class Blinker(Elaboratable):
         gpio_oe_test = Signal(num_gpios)
         # Wire up the output signal of each gpio by XOR'ing each bit of gpio_o_test with gpio's input
         # Wire up each bit of gpio_oe_test signal to oe signal of each gpio. 
-        comb += gpio0.o.eq(gpio_o_test[0] ^ gpio0.i)
-        comb += gpio1.o.eq(gpio_o_test[1] ^ gpio1.i)
-        comb += gpio2.o.eq(gpio_o_test[2] ^ gpio2.i)
-        comb += gpio3.o.eq(gpio_o_test[3] ^ gpio3.i)
+        # Turn into a loop at some point, probably a way without
+        # using get_attr()
+        m.d.comb += gpio.gpio0.o.eq(gpio_o_test[0] ^ gpio.gpio0.i)
+        m.d.comb += gpio.gpio1.o.eq(gpio_o_test[1] ^ gpio.gpio1.i)
+        m.d.comb += gpio.gpio2.o.eq(gpio_o_test[2] ^ gpio.gpio2.i)
+        m.d.comb += gpio.gpio3.o.eq(gpio_o_test[3] ^ gpio.gpio3.i)
 
-        comb += gpio0.oe.eq(gpio_oe_test[0])
-        comb += gpio1.oe.eq(gpio_oe_test[1])
-        comb += gpio2.oe.eq(gpio_oe_test[2])
-        comb += gpio3.oe.eq(gpio_oe_test[3])
-        """
-
--Have the sim run through a for-loop where the gpio_o_test is incremented like a counter (0000, 0001...)
--At each iteration of the for-loop, assert:
-+ output set at core matches output seen at pad
-+ input set at pad matches input seen at core
-+ if gpio_o_test bit is cleared, output seen at pad matches input seen at pad
-
--Another for loop to run through gpio_oe_test. Assert:
-+ oe set at core matches oe seen at pad.
-
-        """
+        m.d.comb += gpio.gpio0.oe.eq(gpio_oe_test[0])
+        m.d.comb += gpio.gpio1.oe.eq(gpio_oe_test[1])
+        m.d.comb += gpio.gpio2.oe.eq(gpio_oe_test[2])
+        m.d.comb += gpio.gpio3.oe.eq(gpio_oe_test[3]) 
 
         # get the UART resource, mess with the output tx
         uart = self.jtag.request('uart')
@@ -205,6 +195,8 @@ class Blinker(Elaboratable):
         # available - i.e. not as local variables
         self.gpio = gpio
         self.uart = uart
+        self.gpio_o_test = gpio_o_test
+        self.gpio_oe_test = gpio_oe_test
 
         # sigh these wire up to the pads so you cannot set Signals
         # that are already wired
@@ -447,7 +439,7 @@ def test_case0():
     yield top.gpio.gpio2.oe.eq(1)
     yield top.gpio.gpio3.oe.eq(1)
     yield gpios_pad.gpio3.i.eq(0)
-    #yield top.jtag.gpio.gpio2.i.eq(1)
+    yield top.jtag.gpio.gpio2.i.eq(1)
     yield Delay(delayVal)
     yield Settle()
     gpio_o2 = 0
@@ -481,9 +473,9 @@ def test_case0():
 
     yield top.gpio.gpio2.oe.eq(0)
     yield top.gpio.gpio3.oe.eq(0)
-    #yield top.jtag.gpio.gpio2.i.eq(0)
+    yield top.jtag.gpio.gpio2.i.eq(0)
     yield Delay(delayVal)
-    yield Settle()
+    yield Settle()   
 
 # Code borrowed from cesar, runs, but shouldn't actually work because of
 # self. statements and non-existent signal names.
@@ -516,6 +508,36 @@ def test_case1():
         yield self.go_i.eq(0)
         yield self.port.eq(0)
 
+def test_gpios():
+    print("Starting GPIO test case!")
+    # Grab GPIO pad resource from JTAG BS
+    gpios_pad = top.jtag.resource_table_pads[('gpio', 0)]
+    
+    # Have the sim run through a for-loop where the gpio_o_test is 
+    # incremented like a counter (0000, 0001...)
+    # At each iteration of the for-loop, assert:
+    # + output set at core matches output seen at pad
+    # TODO + input set at pad matches input seen at core
+    # TODO + if gpio_o_test bit is cleared, output seen at pad matches 
+    # input seen at pad
+    num_gpio_o_states = top.gpio_o_test.width**2
+    print("Num of permutations of gpio_o_test record: ", num_gpio_o_states)
+    for gpio_o_val in range(0, num_gpio_o_states):
+        yield top.gpio_o_test.eq(gpio_o_val) 
+        yield Settle()
+        yield # Move to the next clk cycle
+
+        print(type(top.gpio.gpio0.o), type(gpios_pad.gpio0.o))
+        print(top.gpio.gpio0.o, gpios_pad.gpio0.o)
+        core_out = yield top.gpio.gpio0.o
+        pad_out = yield gpios_pad.gpio0.o
+        assert core_out == pad_out
+
+
+    # Another for loop to run through gpio_oe_test. Assert:
+    # + oe set at core matches oe seen at pad.
+    # TODO
+
 sim = Simulator(top)
 sim.add_clock(1e-6, domain="sync")      # standard clock
 
@@ -525,7 +547,8 @@ sim.add_clock(1e-6, domain="sync")      # standard clock
 #sim.add_sync_process(wrap(dmi_sim(top.jtag)))  # handles (pretends to be) DMI
 
 #sim.add_sync_process(wrap(test_case1()))
-sim.add_sync_process(wrap(test_case0()))
+#sim.add_sync_process(wrap(test_case0()))
+sim.add_sync_process(wrap(test_gpios()))
 
 with sim.write_vcd("blinker_test.vcd"):
     sim.run()
