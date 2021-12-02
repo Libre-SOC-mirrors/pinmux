@@ -170,7 +170,8 @@ class Blinker(Elaboratable):
         num_gpios = 4
         gpio_o_test = Signal(num_gpios)
         gpio_oe_test = Signal(num_gpios)
-        # Wire up the output signal of each gpio by XOR'ing each bit of gpio_o_test with gpio's input
+        # Wire up the output signal of each gpio by XOR'ing each bit of 
+        # gpio_o_test with gpio's input
         # Wire up each bit of gpio_oe_test signal to oe signal of each gpio. 
         # Turn into a loop at some point, probably a way without
         # using get_attr()
@@ -529,10 +530,9 @@ def test_gpios():
 
         print(type(top.gpio.gpio0.o), type(gpios_pad.gpio0.o))
         print(top.gpio.gpio0.o, gpios_pad.gpio0.o)
-        core_out = yield top.gpio.gpio0.o
         pad_out = yield gpios_pad.gpio0.o
-        assert core_out == pad_out
-
+        print (gpio_o_val, pad_out)
+        assert (gpio_o_val & 0b0001) == pad_out
 
     # Another for loop to run through gpio_oe_test. Assert:
     # + oe set at core matches oe seen at pad.
