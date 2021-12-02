@@ -512,7 +512,9 @@ def test_case1():
 def test_gpios():
     print("Starting GPIO test case!")
     # Grab GPIO pad resource from JTAG BS
-    gpios_pad = top.jtag.resource_table_pads[('gpio', 0)]
+    print (top.jtag.boundary_scan_pads.keys())
+    gpio0_o = top.jtag.boundary_scan_pads['gpio_0__gpio0__o']['o']
+    gpio1_o = top.jtag.boundary_scan_pads['gpio_0__gpio1__o']['o']
     
     # Have the sim run through a for-loop where the gpio_o_test is 
     # incremented like a counter (0000, 0001...)
@@ -528,11 +530,13 @@ def test_gpios():
         yield Settle()
         yield # Move to the next clk cycle
 
-        print(type(top.gpio.gpio0.o), type(gpios_pad.gpio0.o))
-        print(top.gpio.gpio0.o, gpios_pad.gpio0.o)
-        pad_out = yield gpios_pad.gpio0.o
-        print (gpio_o_val, pad_out)
-        assert (gpio_o_val & 0b0001) == pad_out
+        # yield the pad output
+        pad0_out = yield gpio0_o
+        pad1_out = yield gpio1_o
+        print("gpio0", gpio0_o, bin(gpio_o_val), pad0_out, pad1_out)
+        # gpio_o_val is a 4-bit binary number setting each pad (single-bit)
+        assert ((gpio_o_val & 0b0001) != 0) == pad0_out
+        assert ((gpio_o_val & 0b0010) != 0) == pad1_out
 
     # Another for loop to run through gpio_oe_test. Assert:
     # + oe set at core matches oe seen at pad.

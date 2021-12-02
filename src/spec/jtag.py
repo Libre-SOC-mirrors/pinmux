@@ -7,7 +7,7 @@ Pinmux documented here https://libre-soc.org/docs/pinmux/
 
 from nmigen.build.res import ResourceManager
 from nmigen.hdl.rec import Layout
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from nmigen.cli import rtlil
 
 from nmigen import (Module, Signal, Elaboratable, Cat)
@@ -156,7 +156,7 @@ class JTAG(TAP, Pins):
         # record resource lookup between core IO names and pads
         self.padlookup = {}
         self.requests_made = []
-        self.boundary_scan_pads = []
+        self.boundary_scan_pads = defaultdict(dict)
         self.resource_table = {}
         self.resource_table_pads = {}
         self.eqs = []                 # list of BS to core/pad connections
@@ -203,12 +203,14 @@ class JTAG(TAP, Pins):
     def boundary_elaborate(self, m, platform):
         jtag_resources = self.pad_mgr.resources
         core_resources = self.core_mgr.resources
+        self.asic_resources = {}
 
         # platform requested: make the exact same requests,
         # then add JTAG afterwards
         if platform is not None:
             for (name, number, dir, xdr) in self.requests_made:
                 asicpad = platform.request(name, number, dir=dir, xdr=xdr)
+                self.asic_resources[(name, number)] = asicpad
                 jtagpad = self.resource_table_pads[(name, number)]
                 print ("jtagpad", jtagpad, jtagpad.layout)
                 m.d.comb += recurse_down(asicpad, jtagpad)
@@ -242,7 +244,8 @@ class JTAG(TAP, Pins):
         yield self.bus.tdo
         yield self.bus.tck
         yield self.bus.tms
-        yield from self.boundary_scan_pads
+        for pad in self.boundary_scan_pads.values():
+            yield from pad.values()
 
     def request(self, name, number=0, *, dir=None, xdr=None):
         """looks like ResourceManager.request but can be called multiple times.
@@ -324,7 +327,7 @@ class JTAG(TAP, Pins):
                 self.eqs += [corepin.i.eq(io.core.i)]
                 # and padpin to JTAG pad
                 self.eqs += [io.pad.i.eq(padpin.i)]
-                self.boundary_scan_pads.append(padpin.i)
+                self.boundary_scan_pads[padpin.name]['i'] = padpin.i
             elif padpin.dir == 'o':
                 print ("jtag_request add output pin", padpin)
                 print ("                    corepin", corepin)
@@ -334,7 +337,7 @@ class JTAG(TAP, Pins):
                 self.eqs += [io.core.o.eq(corepin.o)]
                 # and JTAG pad to padpin
                 self.eqs += [padpin.o.eq(io.pad.o)]
-                self.boundary_scan_pads.append(padpin.o)
+                self.boundary_scan_pads[padpin.name]['o'] = padpin.o
             elif padpin.dir == 'io':
                 print ("jtag_request add io    pin", padpin)
                 print ("                   corepin", corepin)
@@ -353,9 +356,9 @@ class JTAG(TAP, Pins):
                 # and JTAG pad to padpin
                 self.eqs += [padpin.oe.eq(io.pad.oe)]
 
-                self.boundary_scan_pads.append(padpin.i)
-                self.boundary_scan_pads.append(padpin.o)
-                self.boundary_scan_pads.append(padpin.oe)
+                self.boundary_scan_pads[padpin.name]['i'] = padpin.i
+                self.boundary_scan_pads[padpin.name]['o'] = padpin.o
+                self.boundary_scan_pads[padpin.name]['oe'] = padpin.oe
 
         # finally record the *CORE* value just like ResourceManager.request()
         # so that the module using this can connect to *CORE* i/o to the
