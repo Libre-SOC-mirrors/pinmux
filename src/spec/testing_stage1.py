@@ -346,61 +346,7 @@ class ASICPlatform(TemplatedPlatform):
         self.fragment = fragment
         return super().toolchain_prepare(fragment, name, **kwargs)
 
-"""
-and to create a Platform instance with that list, and build
-something random
 
-   p=Platform()
-   p.resources=listofstuff
-   p.build(Blinker())
-"""
-pinset = dummy_pinset()
-print(pinset)
-resources = create_resources(pinset)
-top = Blinker(pinset, resources, no_jtag_connect=False)#True)
-
-vl = rtlil.convert(top, ports=top.ports())
-with open("test_jtag_blinker.il", "w") as f:
-    f.write(vl)
-
-if False:
-    # XXX these modules are all being added *AFTER* the build process links
-    # everything together.  the expectation that this would work is...
-    # unrealistic.  ordering, clearly, is important.
-
-    # dut = JTAG(test_pinset(), wb_data_wid=64, domain="sync")
-    top.jtag.stop = False
-    # rather than the client access the JTAG bus directly
-    # create an alternative that the client sets
-    class Dummy: pass
-    cdut = Dummy()
-    cdut.cbus = JTAGInterface()
-
-    # set up client-server on port 44843-something
-    top.jtag.s = JTAGServer()
-    cdut.c = JTAGClient()
-    top.jtag.s.get_connection()
-    #else:
-    #    print ("running server only as requested, use openocd remote to test")
-    #    sys.stdout.flush()
-    #    top.jtag.s.get_connection(None) # block waiting for connection
-
-    # take copy of ir_width and scan_len
-    cdut._ir_width = top.jtag._ir_width
-    cdut.scan_len = top.jtag.scan_len
-
-    p = ASICPlatform (resources, top.jtag)
-    p.build(top)
-    # this is what needs to gets treated as "top", after "main module" top
-    # is augmented with IO pads with JTAG tacked on.  the expectation that
-    # the get_input() etc functions will be called magically by some other
-    # function is unrealistic.
-    top_fragment = p.fragment
-
-# XXX simulating top (the module that does not itself contain IO pads
-# because that's covered by build) cannot possibly be expected to work
-# particularly when modules have been added *after* the platform build()
-# function has been called.
 
 def test_case0():
     print("Starting sanity test case!")
@@ -542,17 +488,77 @@ def test_gpios():
     # + oe set at core matches oe seen at pad.
     # TODO
 
-sim = Simulator(top)
-sim.add_clock(1e-6, domain="sync")      # standard clock
+if __name__ == '__main__':
+    """
+    and to create a Platform instance with that list, and build
+    something random
 
-#sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
-#if len(sys.argv) != 2 or sys.argv[1] != 'server':
-#sim.add_sync_process(wrap(jtag_sim(cdut, top.jtag))) # actual jtag tester
-#sim.add_sync_process(wrap(dmi_sim(top.jtag)))  # handles (pretends to be) DMI
+       p=Platform()
+       p.resources=listofstuff
+       p.build(Blinker())
+    """
+    pinset = dummy_pinset()
+    print(pinset)
+    resources = create_resources(pinset)
+    top = Blinker(pinset, resources, no_jtag_connect=False)#True)
 
-#sim.add_sync_process(wrap(test_case1()))
-#sim.add_sync_process(wrap(test_case0()))
-sim.add_sync_process(wrap(test_gpios()))
+    vl = rtlil.convert(top, ports=top.ports())
+    with open("test_jtag_blinker.il", "w") as f:
+        f.write(vl)
 
-with sim.write_vcd("blinker_test.vcd"):
-    sim.run()
+    if False:
+        # XXX these modules are all being added *AFTER* the build process links
+        # everything together.  the expectation that this would work is...
+        # unrealistic.  ordering, clearly, is important.
+
+        # dut = JTAG(test_pinset(), wb_data_wid=64, domain="sync")
+        top.jtag.stop = False
+        # rather than the client access the JTAG bus directly
+        # create an alternative that the client sets
+        class Dummy: pass
+        cdut = Dummy()
+        cdut.cbus = JTAGInterface()
+
+        # set up client-server on port 44843-something
+        top.jtag.s = JTAGServer()
+        cdut.c = JTAGClient()
+        top.jtag.s.get_connection()
+        #else:
+        #    print ("running server only as requested, 
+        #           use openocd remote to test")
+        #    sys.stdout.flush()
+        #    top.jtag.s.get_connection(None) # block waiting for connection
+
+        # take copy of ir_width and scan_len
+        cdut._ir_width = top.jtag._ir_width
+        cdut.scan_len = top.jtag.scan_len
+
+        p = ASICPlatform (resources, top.jtag)
+        p.build(top)
+        # this is what needs to gets treated as "top", after "main module" top
+        # is augmented with IO pads with JTAG tacked on.  the expectation that
+        # the get_input() etc functions will be called magically by some other
+        # function is unrealistic.
+        top_fragment = p.fragment
+
+    # XXX simulating top (the module that does not itself contain IO pads
+    # because that's covered by build) cannot possibly be expected to work
+    # particularly when modules have been added *after* the platform build()
+    # function has been called.
+
+    sim = Simulator(top)
+    sim.add_clock(1e-6, domain="sync")      # standard clock
+
+    #sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
+    #if len(sys.argv) != 2 or sys.argv[1] != 'server':
+    # actual jtag tester
+    #sim.add_sync_process(wrap(jtag_sim(cdut, top.jtag)))
+    # handles (pretends to be) DMI
+    #sim.add_sync_process(wrap(dmi_sim(top.jtag)))
+    
+    #sim.add_sync_process(wrap(test_case1()))
+    #sim.add_sync_process(wrap(test_case0()))
+    sim.add_sync_process(wrap(test_gpios()))
+
+    with sim.write_vcd("blinker_test.vcd"):
+        sim.run()
