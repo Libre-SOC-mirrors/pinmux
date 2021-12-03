@@ -474,8 +474,13 @@ def test_gpios():
     #pad_in = [gpio0_pad_in gpio1_pad_in gpio2_pad_in gpio3_pad_in]
     
     # temp test
-    gpio0_core_in = yield top.gpio['gpio0']['i']
-    print("Test gpio0 core in: ", gpio0_core_in)
+    # no: already told you, these are never going to work
+    print ("printing out info about the resource gpio0")
+    print (top.gpio['gpio0']['i'])
+    print ("this is a PIN resource", type(top.gpio['gpio0']['i']))
+    # yield can only be done on SIGNALS or RECORDS,
+    # NOT Pins/Resources gpio0_core_in = yield top.gpio['gpio0']['i']
+    #print("Test gpio0 core in: ", gpio0_core_in)
     
     #print("JTAG")
     #print(top.jtag.__class__.__name__, dir(top.jtag))
@@ -516,16 +521,29 @@ def test_gpios():
         # Test with input asserted
         test_in = 1
         yield gpio0_pad_in.eq(test_in)
-        yield Settle()
+        # don't need this *and* a yield of 1 clock cycle yield Settle()
         yield
+
+        # after changing the gpio0 input, the output is also going to
+        # change.  *therefore it must be read again* to get the
+        # snapshot (as a python value)
+        pad0_out = yield gpio0_o
+        pad1_out = yield gpio1_o
+        pad2_out = yield gpio2_o
+        pad3_out = yield gpio3_o
+        print("Applied test_in=1 with values:", bin(gpio_o_val), "Seeing",
+              pad3_out, pad2_out, pad1_out, pad0_out)
         # Trying to read input from core side, looks like might be a pin...
-        temp_in = yield top.gpio.gpio0.i
+        # XXX don't "look like" - don't guess - *print it out*
+        print ("don't guess, CHECK", type(top.gpio.gpio0.i))
+        #temp_in = yield top.gpio.gpio0.i
         #print("Core input ", temp_in, temp_in==test_in) 
         #print((gpio_o_val & 0b0001) == 1) 
         #print(((gpio_o_val & 0b0001) == 1) ^ test_in) 
-        #assert (((gpio_o_val & 0b0001) != 0) ^ test_in) == pad0_out
+        assert (((gpio_o_val & 0b0001) != 0) ^ test_in) == pad0_out
         test_in = 0
         yield gpio0_pad_in.eq(test_in)
+        print () # extra print to divide the output
 
     # Another for loop to run through gpio_oe_test. Assert:
     # + oe set at core matches oe seen at pad.
