@@ -477,6 +477,13 @@ def test_gpios():
     gpio3_o = top.jtag.boundary_scan_pads['gpio_0__gpio3__o']['o']
     gpio_pad_out = [ gpio0_o, gpio1_o, gpio2_o, gpio3_o]
 
+    # Grab GPIO output enable pad resource from JTAG BS - end of chain
+    gpio0_oe = top.jtag.boundary_scan_pads['gpio_0__gpio0__oe']['o']
+    gpio1_oe = top.jtag.boundary_scan_pads['gpio_0__gpio1__oe']['o']
+    gpio2_oe = top.jtag.boundary_scan_pads['gpio_0__gpio2__oe']['o']
+    gpio3_oe = top.jtag.boundary_scan_pads['gpio_0__gpio3__oe']['o']
+    gpio_pad_oe = [gpio0_oe, gpio1_oe, gpio2_oe, gpio3_oe]
+
     # Grab GPIO input pad resource from JTAG BS - start of chain
     gpio0_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
     gpio1_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
@@ -484,24 +491,6 @@ def test_gpios():
     gpio3_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
     gpio_pad_in = [gpio0_pad_in, gpio1_pad_in, gpio2_pad_in, gpio3_pad_in]
     
-    # temp test
-    # no: already told you, these are never going to work
-    print ("printing out info about the resource gpio0")
-    print (top.gpio['gpio0']['i'])
-    print ("this is a PIN resource", type(top.gpio['gpio0']['i']))
-    # yield can only be done on SIGNALS or RECORDS,
-    # NOT Pins/Resources gpio0_core_in = yield top.gpio['gpio0']['i']
-    #print("Test gpio0 core in: ", gpio0_core_in)
-    
-    #print("JTAG")
-    #print(top.jtag.__class__.__name__, dir(top.jtag))
-    #print("TOP")
-    #print(top.__class__.__name__, dir(top))
-    #print("PORT")
-    #print(top.ports.__class__.__name__, dir(top.ports))
-    #print("GPIO")
-    #print(top.gpio.__class__.__name__, dir(top.gpio))
-
     # Have the sim run through a for-loop where the gpio_o_test is 
     # incremented like a counter (0000, 0001...)
     # At each iteration of the for-loop, assert:
@@ -511,6 +500,7 @@ def test_gpios():
     # input seen at pad
     num_gpio_o_states = num_gpios**2
     pad_out = [0] * num_gpios
+    pad_oe = [0] * num_gpios
     #print("Num of permutations of gpio_o_test record: ", num_gpio_o_states)
     for gpio_o_val in range(0, num_gpio_o_states):
         yield top.gpio_o_test.eq(gpio_o_val) 
@@ -523,16 +513,22 @@ def test_gpios():
             for gpio_bit in range(0, num_gpios):
                 yield gpio_pad_in[gpio_bit].eq((gpio_i_val >> gpio_bit) & 0x1)
             yield
-            # Read the values of the output at pad
+            # After changing the gpio0/1/2/3 inputs,
+            # the output is also going to change.
+            # *therefore it must be read again* to get the
+            # snapshot (as a python value)
             for gpio_bit in range(0, num_gpios):
                 pad_out[gpio_bit] = yield gpio_pad_out[gpio_bit]
             yield
-            # Test that the output at pad matches:
-            # Pad output == given test output XOR test input
-            # TODO add input at core as well
             for gpio_bit in range(0, num_gpios):
+                # check core and pad in
+                gpio_i_ro = yield top.gpio_i_ro[gpio_bit]
                 out_test_bit = ((gpio_o_val & (1 << gpio_bit)) != 0)
                 in_bit = ((gpio_i_val & (1 << gpio_bit)) != 0)
+                # Check that the core end input matches pad 
+                assert in_bit == gpio_i_ro
+                # Test that the output at pad matches:
+                # Pad output == given test output XOR test input
                 assert (out_test_bit ^ in_bit) == pad_out[gpio_bit]
             
             # For debugging - VERY verbose
@@ -540,42 +536,56 @@ def test_gpios():
             #print("Test Out: ", bin(gpio_o_val))
             #print("Test Input: ", bin(gpio_i_val)) 
             # Print MSB first
-            #print("Pad Output: ", pad_out[3], pad_out[2], 
-            #                      pad_out[1], pad_out[0],)
+            #print("Pad Output: ", list(reversed(pad_out)))
             #print("---------------------")
-        # Test without asserting input
-        # gpio_o_val is a 4-bit binary number setting each pad (single-bit)
-        # Test with input asserted
-        #test_in = 1
-        #yield gpio0_pad_in.eq(test_in)
-        # don't need this *and* a yield of 1 clock cycle yield Settle()
-        #yield
-
-        #temp = yield top.gpio_i_ro[0]
-        #print("temp: ", temp)
-        # after changing the gpio0 input, the output is also going to
-        # change.  *therefore it must be read again* to get the
-        # snapshot (as a python value)
-        #pad0_out = yield gpio0_o
-        #pad1_out = yield gpio1_o
-        #pad2_out = yield gpio2_o
-        #pad3_out = yield gpio3_o
-        #print("Applied test_in=1 with values:", bin(gpio_o_val), "Seeing",
-        #      pad3_out, pad2_out, pad1_out, pad0_out)
-        # Trying to read input from core side, looks like might be a pin...
-        # XXX don't "look like" - don't guess - *print it out*
-        #print ("don't guess, CHECK", type(top.gpio.gpio0.i))
-        #temp_in = yield top.gpio.gpio0.i
-        #print("Core input ", temp_in, temp_in==test_in) 
-        #print((gpio_o_val & 0b0001) == 1) 
-        #print(((gpio_o_val & 0b0001) == 1) ^ test_in) 
-        #assert (((gpio_o_val & 0b0001) != 0) ^ test_in) == pad0_out
         
-        #print () # extra print to divide the output
+    # For-loop for testing output enable signals
+    for gpio_o_val in range(0, num_gpio_o_states):
+        yield top.gpio_oe_test.eq(gpio_o_val) 
+        yield # Move to the next clk cycle
+        
+        for gpio_bit in range(0, num_gpios):
+            pad_oe[gpio_bit] = yield gpio_pad_oe[gpio_bit]
+        yield 
 
-    # Another for loop to run through gpio_oe_test. Assert:
-    # + oe set at core matches oe seen at pad.
-    # TODO
+        for gpio_bit in range(0, num_gpios):
+            oe_test_bit = ((gpio_o_val & (1 << gpio_bit)) != 0)
+            # oe set at core matches oe seen at pad:
+            assert oe_test_bit == pad_oe[gpio_bit]
+        # For debugging - VERY verbose
+        #print("---------------------")
+        #print("Test Output Enable: ", bin(gpio_o_val))
+        # Print MSB first
+        #print("Pad Output Enable: ", list(reversed(pad_oe)))
+        #print("---------------------") 
+    print("GPIO Test PASSED!")
+
+     
+def test_debug_print():
+    print("Test used for getting object methods/information")
+    print("Moved here to clear clutter of gpio test")
+    
+    print ("printing out info about the resource gpio0")
+    print (top.gpio['gpio0']['i'])
+    print ("this is a PIN resource", type(top.gpio['gpio0']['i']))
+    # yield can only be done on SIGNALS or RECORDS,
+    # NOT Pins/Resources gpio0_core_in = yield top.gpio['gpio0']['i']
+    print("Test gpio0 core in: ", gpio0_core_in)
+    
+    print("JTAG")
+    print(top.jtag.__class__.__name__, dir(top.jtag))
+    print("TOP")
+    print(top.__class__.__name__, dir(top))
+    print("PORT")
+    print(top.ports.__class__.__name__, dir(top.ports))
+    print("GPIO")
+    print(top.gpio.__class__.__name__, dir(top.gpio))
+    
+    # Trying to read input from core side, looks like might be a pin...
+    # XXX don't "look like" - don't guess - *print it out*
+    #print ("don't guess, CHECK", type(top.gpio.gpio0.i))
+    
+    print () # extra print to divide the output
 
 if __name__ == '__main__':
     """
