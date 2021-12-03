@@ -560,6 +560,43 @@ def test_gpios():
         #print("---------------------") 
     print("GPIO Test PASSED!")
 
+def test_uart():
+    # write a zero
+    # read rx
+    # match rx==tx
+    # write a one
+    # read rx
+    # match rx==tx
+
+    # grab the JTAG resource pad
+    uart_pad = top.jtag.resource_table_pads[('uart', 0)]
+    yield uart_pad.rx.i.eq(1)
+    yield Settle()
+    yield # one clock cycle
+
+    tx_val = yield uart_pad.tx.o
+    print ("xmit uart", tx_val, 1)
+    # check core matches pad
+    assert tx_val == 1
+
+    print ("jtag pad table keys")
+    print (top.jtag.resource_table_pads.keys())
+    uart_pad = top.jtag.resource_table_pads[('uart', 0)]
+    print ("uart pad", uart_pad)
+    print ("uart pad", uart_pad.layout)
+
+
+    #uart_pad_rx = yield top.jtag.boundary_scan_pads['uart_0__tx__pad__i']['i']
+    #yield uart_pad_rx.eq(0)
+    #yield Settle()
+    #yield
+    print(top.jtag.boundary_scan_pads['uart_0__tx__pad__o'])
+    #uart_pad_tx = yield top.jtag.boundary_scan_pads['uart_0__tx__pad__o']['o']
+    #assert uart_pad_tx == 0
+    #yield top.intermediary.eq(1)
+    #yield Settle()
+    #yield
+    
      
 def test_debug_print():
     print("Test used for getting object methods/information")
@@ -570,7 +607,7 @@ def test_debug_print():
     print ("this is a PIN resource", type(top.gpio['gpio0']['i']))
     # yield can only be done on SIGNALS or RECORDS,
     # NOT Pins/Resources gpio0_core_in = yield top.gpio['gpio0']['i']
-    print("Test gpio0 core in: ", gpio0_core_in)
+    #print("Test gpio0 core in: ", gpio0_core_in)
     
     print("JTAG")
     print(top.jtag.__class__.__name__, dir(top.jtag))
@@ -580,12 +617,18 @@ def test_debug_print():
     print(top.ports.__class__.__name__, dir(top.ports))
     print("GPIO")
     print(top.gpio.__class__.__name__, dir(top.gpio))
-    
+   
+    print("UART")
+    print(dir(top.jtag.boundary_scan_pads['uart_0__rx__pad__i']))
+    print(top.jtag.boundary_scan_pads['uart_0__rx__pad__i'].keys())
+    #print(type(top.jtag.boundary_scan_pads['uart_0__rx__pad__i']['rx']))
+
     # Trying to read input from core side, looks like might be a pin...
     # XXX don't "look like" - don't guess - *print it out*
     #print ("don't guess, CHECK", type(top.gpio.gpio0.i))
     
     print () # extra print to divide the output
+    yield
 
 if __name__ == '__main__':
     """
@@ -657,7 +700,10 @@ if __name__ == '__main__':
     
     #sim.add_sync_process(wrap(test_case1()))
     #sim.add_sync_process(wrap(test_case0()))
+    
     sim.add_sync_process(wrap(test_gpios()))
+    sim.add_sync_process(wrap(test_uart()))
+    #sim.add_sync_process(wrap(test_debug_print()))
 
     with sim.write_vcd("blinker_test.vcd"):
         sim.run()
