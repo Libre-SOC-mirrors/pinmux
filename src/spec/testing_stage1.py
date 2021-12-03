@@ -473,6 +473,19 @@ def test_gpios():
     gpio3_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
     #pad_in = [gpio0_pad_in gpio1_pad_in gpio2_pad_in gpio3_pad_in]
     
+    # temp test
+    gpio0_core_in = yield top.gpio['gpio0']['i']
+    print("Test gpio0 core in: ", gpio0_core_in)
+    
+    #print("JTAG")
+    #print(top.jtag.__class__.__name__, dir(top.jtag))
+    #print("TOP")
+    #print(top.__class__.__name__, dir(top))
+    #print("PORT")
+    #print(top.ports.__class__.__name__, dir(top.ports))
+    #print("GPIO")
+    #print(top.gpio.__class__.__name__, dir(top.gpio))
+
     # Have the sim run through a for-loop where the gpio_o_test is 
     # incremented like a counter (0000, 0001...)
     # At each iteration of the for-loop, assert:
@@ -505,9 +518,10 @@ def test_gpios():
         yield gpio0_pad_in.eq(test_in)
         yield Settle()
         yield
+        # Trying to read input from core side, looks like might be a pin...
         temp_in = yield top.gpio.gpio0.i
-        print("Core input ", temp_in, temp_in==test_in) 
-        print((gpio_o_val & 0b0001) == 1) 
+        #print("Core input ", temp_in, temp_in==test_in) 
+        #print((gpio_o_val & 0b0001) == 1) 
         #print(((gpio_o_val & 0b0001) == 1) ^ test_in) 
         #assert (((gpio_o_val & 0b0001) != 0) ^ test_in) == pad0_out
         test_in = 0
