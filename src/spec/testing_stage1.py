@@ -168,8 +168,17 @@ class Blinker(Elaboratable):
         #m.d.sync += count[0].eq(gpio.gpio1.i)
        
         num_gpios = 4
+        gpio_i_ro = Signal(num_gpios)
         gpio_o_test = Signal(num_gpios)
         gpio_oe_test = Signal(num_gpios)
+
+        # Create a read-only copy of core-side GPIO input signals 
+        # for Simulation asserts
+        m.d.comb += gpio_i_ro[0].eq(gpio.gpio0.i)
+        m.d.comb += gpio_i_ro[1].eq(gpio.gpio1.i)
+        m.d.comb += gpio_i_ro[2].eq(gpio.gpio2.i)
+        m.d.comb += gpio_i_ro[3].eq(gpio.gpio3.i)
+
         # Wire up the output signal of each gpio by XOR'ing each bit of 
         # gpio_o_test with gpio's input
         # Wire up each bit of gpio_oe_test signal to oe signal of each gpio. 
@@ -196,6 +205,7 @@ class Blinker(Elaboratable):
         # available - i.e. not as local variables
         self.gpio = gpio
         self.uart = uart
+        self.gpio_i_ro = gpio_i_ro
         self.gpio_o_test = gpio_o_test
         self.gpio_oe_test = gpio_oe_test
 
@@ -465,13 +475,14 @@ def test_gpios():
     gpio1_o = top.jtag.boundary_scan_pads['gpio_0__gpio1__o']['o']
     gpio2_o = top.jtag.boundary_scan_pads['gpio_0__gpio2__o']['o']
     gpio3_o = top.jtag.boundary_scan_pads['gpio_0__gpio3__o']['o']
+    gpio_pad_out = [ gpio0_o, gpio1_o, gpio2_o, gpio3_o]
 
     # Grab GPIO input pad resource from JTAG BS - start of chain
     gpio0_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
     gpio1_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
     gpio2_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
     gpio3_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
-    #pad_in = [gpio0_pad_in gpio1_pad_in gpio2_pad_in gpio3_pad_in]
+    gpio_pad_in = [gpio0_pad_in, gpio1_pad_in, gpio2_pad_in, gpio3_pad_in]
     
     # temp test
     # no: already told you, these are never going to work
@@ -499,51 +510,68 @@ def test_gpios():
     # TODO + if gpio_o_test bit is cleared, output seen at pad matches 
     # input seen at pad
     num_gpio_o_states = num_gpios**2
-    print("Num of permutations of gpio_o_test record: ", num_gpio_o_states)
+    pad_out = [0] * num_gpios
+    #print("Num of permutations of gpio_o_test record: ", num_gpio_o_states)
     for gpio_o_val in range(0, num_gpio_o_states):
         yield top.gpio_o_test.eq(gpio_o_val) 
-        yield Settle()
+        #yield Settle()
         yield # Move to the next clk cycle
-
-        # yield the pad output
-        pad0_out = yield gpio0_o
-        pad1_out = yield gpio1_o
-        pad2_out = yield gpio2_o
-        pad3_out = yield gpio3_o
-        print("Applied values:", bin(gpio_o_val), "Seeing", 
-              pad3_out, pad2_out, pad1_out, pad0_out)
+        
+        # Cycle through all input combinations
+        for gpio_i_val in range(0, num_gpio_o_states):
+            # Set each gpio input at pad to test value
+            for gpio_bit in range(0, num_gpios):
+                yield gpio_pad_in[gpio_bit].eq((gpio_i_val >> gpio_bit) & 0x1)
+            yield
+            # Read the values of the output at pad
+            for gpio_bit in range(0, num_gpios):
+                pad_out[gpio_bit] = yield gpio_pad_out[gpio_bit]
+            yield
+            # Test that the output at pad matches:
+            # Pad output == given test output XOR test input
+            # TODO add input at core as well
+            for gpio_bit in range(0, num_gpios):
+                out_test_bit = ((gpio_o_val & (1 << gpio_bit)) != 0)
+                in_bit = ((gpio_i_val & (1 << gpio_bit)) != 0)
+                assert (out_test_bit ^ in_bit) == pad_out[gpio_bit]
+            
+            # For debugging - VERY verbose
+            #print("---------------------")
+            #print("Test Out: ", bin(gpio_o_val))
+            #print("Test Input: ", bin(gpio_i_val)) 
+            # Print MSB first
+            #print("Pad Output: ", pad_out[3], pad_out[2], 
+            #                      pad_out[1], pad_out[0],)
+            #print("---------------------")
         # Test without asserting input
         # gpio_o_val is a 4-bit binary number setting each pad (single-bit)
-        assert ((gpio_o_val & 0b0001) != 0) == pad0_out
-        assert ((gpio_o_val & 0b0010) != 0) == pad1_out
-        assert ((gpio_o_val & 0b0100) != 0) == pad2_out
-        assert ((gpio_o_val & 0b1000) != 0) == pad3_out
         # Test with input asserted
-        test_in = 1
-        yield gpio0_pad_in.eq(test_in)
+        #test_in = 1
+        #yield gpio0_pad_in.eq(test_in)
         # don't need this *and* a yield of 1 clock cycle yield Settle()
-        yield
+        #yield
 
+        #temp = yield top.gpio_i_ro[0]
+        #print("temp: ", temp)
         # after changing the gpio0 input, the output is also going to
         # change.  *therefore it must be read again* to get the
         # snapshot (as a python value)
-        pad0_out = yield gpio0_o
-        pad1_out = yield gpio1_o
-        pad2_out = yield gpio2_o
-        pad3_out = yield gpio3_o
-        print("Applied test_in=1 with values:", bin(gpio_o_val), "Seeing",
-              pad3_out, pad2_out, pad1_out, pad0_out)
+        #pad0_out = yield gpio0_o
+        #pad1_out = yield gpio1_o
+        #pad2_out = yield gpio2_o
+        #pad3_out = yield gpio3_o
+        #print("Applied test_in=1 with values:", bin(gpio_o_val), "Seeing",
+        #      pad3_out, pad2_out, pad1_out, pad0_out)
         # Trying to read input from core side, looks like might be a pin...
         # XXX don't "look like" - don't guess - *print it out*
-        print ("don't guess, CHECK", type(top.gpio.gpio0.i))
+        #print ("don't guess, CHECK", type(top.gpio.gpio0.i))
         #temp_in = yield top.gpio.gpio0.i
         #print("Core input ", temp_in, temp_in==test_in) 
         #print((gpio_o_val & 0b0001) == 1) 
         #print(((gpio_o_val & 0b0001) == 1) ^ test_in) 
-        assert (((gpio_o_val & 0b0001) != 0) ^ test_in) == pad0_out
-        test_in = 0
-        yield gpio0_pad_in.eq(test_in)
-        print () # extra print to divide the output
+        #assert (((gpio_o_val & 0b0001) != 0) ^ test_in) == pad0_out
+        
+        #print () # extra print to divide the output
 
     # Another for loop to run through gpio_oe_test. Assert:
     # + oe set at core matches oe seen at pad.
