@@ -579,21 +579,24 @@ def test_gpios():
 
 def test_uart():
     # grab the JTAG resource pad
-    uart_pad = top.jtag.resource_table_pads[('uart', 0)]
-    #uart_rx_pad = top.jtag.boundary_scan_pads['uart_0__rx__i']['i']
+    print ()
+    print ("bs pad keys", top.jtag.boundary_scan_pads.keys())
+    print ()
+    uart_rx_pad = top.jtag.boundary_scan_pads['uart_0__rx']['i']
+    uart_tx_pad = top.jtag.boundary_scan_pads['uart_0__tx']['o']
 
-    print ("uart pad", uart_pad)
-    print ("uart pad", uart_pad.layout)
+    print ("uart rx pad", uart_rx_pad)
+    print ("uart tx pad", uart_tx_pad)
 
     # Test UART by writing 0 and 1 to RX
     # Internally TX connected to RX,
     # so match pad TX with RX
     for i in range(0, 2):
-        yield uart_pad.rx.i.eq(i)
+        yield uart_rx_pad.eq(i)
         #yield uart_rx_pad.eq(i)
         yield Settle()
         yield # one clock cycle
-        tx_val = yield uart_pad.tx.o
+        tx_val = yield uart_tx_pad
         print ("xmit uart", tx_val, 1)
         assert tx_val == i
 
