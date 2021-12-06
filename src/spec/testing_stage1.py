@@ -21,9 +21,9 @@ from nmigen.sim import Simulator, Delay, Settle, Tick, Passive
 
 from nmutil.util import wrap
 
-#from soc.debug.jtagutils import (jtag_read_write_reg,
-#                                 jtag_srv, jtag_set_reset,
-#                                 jtag_set_ir, jtag_set_get_dr)
+from soc.debug.jtagutils import (jtag_read_write_reg,
+                                 jtag_srv, jtag_set_reset,
+                                 jtag_set_ir, jtag_set_get_dr)
 
 from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
@@ -635,6 +635,26 @@ def test_i2c():
 
     print("I2C Test PASSED!")
 
+def test_jtag_bs_chain():
+    print ()
+    print ("bs pad keys", top.jtag.boundary_scan_pads.keys())
+    print ()
+    uart_rx_pad = top.jtag.boundary_scan_pads['uart_0__rx']['i']
+    uart_tx_pad = top.jtag.boundary_scan_pads['uart_0__tx']['o']
+
+    jtag_set_reset(top.jtag)
+
+    print(top.jtag.ios.keys())
+    yield Settle()
+
+    top.jtag.ios['uart_0__rx'].core.i.eq(1)
+    top.jtag.ios['uart_0__rx'].pad.i.eq(0)
+    yield
+    top.jtag.ios['uart_0__rx'].core.i.eq(0)
+    top.jtag.ios['uart_0__rx'].pad.i.eq(1)
+
+    print("JTAG Boundary Scan Chain Test PASSED!")
+    yield
 
 
 def test_debug_print():
@@ -754,8 +774,9 @@ if __name__ == '__main__':
     #sim.add_sync_process(wrap(test_case0()))
     
     #sim.add_sync_process(wrap(test_gpios()))
-    sim.add_sync_process(wrap(test_uart()))
-    sim.add_sync_process(wrap(test_i2c()))
+    #sim.add_sync_process(wrap(test_uart()))
+    #sim.add_sync_process(wrap(test_i2c()))
+    sim.add_sync_process(wrap(test_jtag_bs_chain()))
     #sim.add_sync_process(wrap(test_debug_print()))
 
     with sim.write_vcd("blinker_test.vcd"):
