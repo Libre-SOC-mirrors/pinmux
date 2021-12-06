@@ -570,34 +570,24 @@ def test_uart():
 
     # grab the JTAG resource pad
     uart_pad = top.jtag.resource_table_pads[('uart', 0)]
-    yield uart_pad.rx.i.eq(1)
-    yield Settle()
-    yield # one clock cycle
-
-    tx_val = yield uart_pad.tx.o
-    print ("xmit uart", tx_val, 1)
-    # check core matches pad
-    assert tx_val == 1
-
-    print ("jtag pad table keys")
-    print (top.jtag.resource_table_pads.keys())
-    uart_pad = top.jtag.resource_table_pads[('uart', 0)]
+    
     print ("uart pad", uart_pad)
     print ("uart pad", uart_pad.layout)
 
+    # Test UART by writing 0 and 1 to RX
+    # Internally TX connected to RX,
+    # so match pad TX with RX
+    for i in range(0, 2):
+        yield uart_pad.rx.i.eq(i)
+        yield Settle()
+        yield # one clock cycle
+        tx_val = yield uart_pad.tx.o
+        print ("xmit uart", tx_val, 1)
+        assert tx_val == i
 
-    #uart_pad_rx = yield top.jtag.boundary_scan_pads['uart_0__tx__pad__i']['i']
-    #yield uart_pad_rx.eq(0)
-    #yield Settle()
-    #yield
-    print(top.jtag.boundary_scan_pads['uart_0__tx__pad__o'])
-    #uart_pad_tx = yield top.jtag.boundary_scan_pads['uart_0__tx__pad__o']['o']
-    #assert uart_pad_tx == 0
-    #yield top.intermediary.eq(1)
-    #yield Settle()
-    #yield
-    
-     
+    print("UART Test PASSED!")
+
+ 
 def test_debug_print():
     print("Test used for getting object methods/information")
     print("Moved here to clear clutter of gpio test")
@@ -621,7 +611,15 @@ def test_debug_print():
     print("UART")
     print(dir(top.jtag.boundary_scan_pads['uart_0__rx__pad__i']))
     print(top.jtag.boundary_scan_pads['uart_0__rx__pad__i'].keys())
+    print(top.jtag.boundary_scan_pads['uart_0__tx__pad__o'])
     #print(type(top.jtag.boundary_scan_pads['uart_0__rx__pad__i']['rx']))
+    print ("jtag pad table keys")
+    print (top.jtag.resource_table_pads.keys())
+
+
+    print(top.jtag.resource_table_pads)
+    print(top.jtag.boundary_scan_pads)
+
 
     # Trying to read input from core side, looks like might be a pin...
     # XXX don't "look like" - don't guess - *print it out*
@@ -701,7 +699,7 @@ if __name__ == '__main__':
     #sim.add_sync_process(wrap(test_case1()))
     #sim.add_sync_process(wrap(test_case0()))
     
-    sim.add_sync_process(wrap(test_gpios()))
+    #sim.add_sync_process(wrap(test_gpios()))
     sim.add_sync_process(wrap(test_uart()))
     #sim.add_sync_process(wrap(test_debug_print()))
 
