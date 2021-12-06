@@ -580,7 +580,8 @@ def test_gpios():
 def test_uart():
     # grab the JTAG resource pad
     uart_pad = top.jtag.resource_table_pads[('uart', 0)]
-    
+    #uart_rx_pad = top.jtag.boundary_scan_pads['uart_0__rx__i']['i']
+
     print ("uart pad", uart_pad)
     print ("uart pad", uart_pad.layout)
 
@@ -589,6 +590,7 @@ def test_uart():
     # so match pad TX with RX
     for i in range(0, 2):
         yield uart_pad.rx.i.eq(i)
+        #yield uart_rx_pad.eq(i)
         yield Settle()
         yield # one clock cycle
         tx_val = yield uart_pad.tx.o
@@ -659,7 +661,12 @@ def test_debug_print():
     #print(type(top.jtag.boundary_scan_pads['uart_0__rx__pad__i']['rx']))
     print ("jtag pad table keys")
     print (top.jtag.resource_table_pads.keys())
+    print(type(top.jtag.resource_table_pads[('uart', 0)].rx.i))
+    print(top.jtag.boundary_scan_pads['uart_0__rx__i'])
 
+    print("I2C")
+    print(top.jtag.boundary_scan_pads['i2c_0__sda__i'])
+    print(type(top.jtag.boundary_scan_pads['i2c_0__sda__i']['i']))
 
     print(top.jtag.resource_table_pads)
     print(top.jtag.boundary_scan_pads)
