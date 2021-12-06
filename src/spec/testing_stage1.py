@@ -201,10 +201,27 @@ class Blinker(Elaboratable):
         m.d.comb += uart.tx.eq(self.intermediary)
         m.d.comb += self.intermediary.eq(uart.rx)
 
+        # I2C
+        num_i2c = 1
+        i2c_sda_oe_test = Signal(num_i2c)
+        i2c_scl_oe_test = Signal(num_i2c)
+        i2c = self.jtag.request('i2c')
+        print ("i2c fields", i2c, i2c.fields)
+        # Connect in loopback
+        m.d.comb += i2c.scl.o.eq(i2c.scl.i)
+        m.d.comb += i2c.sda.o.eq(i2c.sda.i)
+        # Connect output enable to test port for sim
+        m.d.comb += i2c.sda.oe.eq(i2c_sda_oe_test)
+        m.d.comb += i2c.scl.oe.eq(i2c_scl_oe_test)
+
         # to even be able to get at objects, you first have to make them
         # available - i.e. not as local variables
+        # Public attributes are equivalent to input/output ports in hdl's
         self.gpio = gpio
         self.uart = uart
+        self.i2c = i2c
+        self.i2c_sda_oe_test = i2c_sda_oe_test
+        self.i2c_scl_oe_test = i2c_scl_oe_test
         self.gpio_i_ro = gpio_i_ro
         self.gpio_o_test = gpio_o_test
         self.gpio_oe_test = gpio_oe_test
@@ -561,13 +578,6 @@ def test_gpios():
     print("GPIO Test PASSED!")
 
 def test_uart():
-    # write a zero
-    # read rx
-    # match rx==tx
-    # write a one
-    # read rx
-    # match rx==tx
-
     # grab the JTAG resource pad
     uart_pad = top.jtag.resource_table_pads[('uart', 0)]
     
@@ -587,7 +597,41 @@ def test_uart():
 
     print("UART Test PASSED!")
 
- 
+def test_i2c():
+    i2c_sda_i_pad = top.jtag.boundary_scan_pads['i2c_0__sda__i']['i']
+    i2c_sda_o_pad = top.jtag.boundary_scan_pads['i2c_0__sda__o']['o']
+    i2c_sda_oe_pad = top.jtag.boundary_scan_pads['i2c_0__sda__oe']['o']
+
+    i2c_scl_i_pad = top.jtag.boundary_scan_pads['i2c_0__scl__i']['i']
+    i2c_scl_o_pad = top.jtag.boundary_scan_pads['i2c_0__scl__o']['o']
+    i2c_scl_oe_pad = top.jtag.boundary_scan_pads['i2c_0__scl__oe']['o']
+
+    #i2c_pad = top.jtag.resource_table_pads[('i2c', 0)]
+    #print ("i2c pad", i2c_pad)
+    #print ("i2c pad", i2c_pad.layout)
+
+    for i in range(0, 2):
+        yield i2c_sda_i_pad.eq(i) #i2c_pad.sda.i.eq(i)
+        yield i2c_scl_i_pad.eq(i) #i2c_pad.scl.i.eq(i)
+        yield top.i2c_sda_oe_test.eq(i)
+        yield top.i2c_scl_oe_test.eq(i)
+        yield Settle()
+        yield # one clock cycle
+        sda_o_val = yield i2c_sda_o_pad
+        scl_o_val = yield i2c_scl_o_pad
+        sda_oe_val = yield i2c_sda_oe_pad
+        scl_oe_val = yield i2c_scl_oe_pad
+        print ("Test input: ", i, " SDA/SCL out: ", sda_o_val, scl_o_val,
+               " SDA/SCL oe: ", sda_oe_val, scl_oe_val)
+        assert sda_o_val == i
+        assert scl_o_val == i
+        assert sda_oe_val == i
+        assert scl_oe_val == i
+
+    print("I2C Test PASSED!")
+
+
+
 def test_debug_print():
     print("Test used for getting object methods/information")
     print("Moved here to clear clutter of gpio test")
@@ -701,6 +745,7 @@ if __name__ == '__main__':
     
     #sim.add_sync_process(wrap(test_gpios()))
     sim.add_sync_process(wrap(test_uart()))
+    sim.add_sync_process(wrap(test_i2c()))
     #sim.add_sync_process(wrap(test_debug_print()))
 
     with sim.write_vcd("blinker_test.vcd"):
