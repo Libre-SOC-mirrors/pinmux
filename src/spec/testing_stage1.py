@@ -636,16 +636,11 @@ def test_i2c():
     print("I2C Test PASSED!")
 
 def test_jtag_bs_chain():
-    print ()
-    print ("bs pad keys", top.jtag.boundary_scan_pads.keys())
-    print ()
-    uart_rx_pad = top.jtag.boundary_scan_pads['uart_0__rx']['i']
-    uart_tx_pad = top.jtag.boundary_scan_pads['uart_0__tx']['o']
-
+    print("JTAG BS Reset")
     jtag_set_reset(top.jtag)
 
+    print("JTAG I/O dictionary of core/pad signals:")
     print(top.jtag.ios.keys())
-    yield Settle()
 
     top.jtag.ios['uart_0__rx'].core.i.eq(1)
     top.jtag.ios['uart_0__rx'].pad.i.eq(0)
@@ -653,9 +648,24 @@ def test_jtag_bs_chain():
     top.jtag.ios['uart_0__rx'].core.i.eq(0)
     top.jtag.ios['uart_0__rx'].pad.i.eq(1)
 
-    print("JTAG Boundary Scan Chain Test PASSED!")
+    # Testing GPIO access
+    #'gpio_0__gpio0__i', 'gpio_0__gpio0__o', 'gpio_0__gpio0__oe',
+    top.jtag.ios['gpio_0__gpio0__i'].core.i.eq(1)
+    top.jtag.ios['gpio_0__gpio0__i'].pad.i.eq(0)
+    top.jtag.ios['gpio_0__gpio0__o'].core.o.eq(1)
+    top.jtag.ios['gpio_0__gpio0__o'].pad.o.eq(0)
+    top.jtag.ios['gpio_0__gpio0__oe'].core.o.eq(1)
+    top.jtag.ios['gpio_0__gpio0__oe'].pad.o.eq(0)
+    yield
+    top.jtag.ios['gpio_0__gpio0__i'].core.i.eq(0)
+    top.jtag.ios['gpio_0__gpio0__i'].pad.i.eq(1)
+    top.jtag.ios['gpio_0__gpio0__o'].core.o.eq(0)
+    top.jtag.ios['gpio_0__gpio0__o'].pad.o.eq(1)
+    top.jtag.ios['gpio_0__gpio0__oe'].core.o.eq(0)
+    top.jtag.ios['gpio_0__gpio0__oe'].pad.o.eq(1)
     yield
 
+    print("JTAG Boundary Scan Chain Test PASSED!")
 
 def test_debug_print():
     print("Test used for getting object methods/information")
