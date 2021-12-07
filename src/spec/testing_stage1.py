@@ -21,9 +21,12 @@ from nmigen.sim import Simulator, Delay, Settle, Tick, Passive
 
 from nmutil.util import wrap
 
-from soc.debug.jtagutils import (jtag_read_write_reg,
-                                 jtag_srv, jtag_set_reset,
-                                 jtag_set_ir, jtag_set_get_dr)
+#from soc.debug.jtagutils import (jtag_read_write_reg,
+#                                 jtag_srv, jtag_set_reset,
+#                                 jtag_set_ir, jtag_set_get_dr)
+
+from soc.debug.test.test_jtag_tap import (jtag_read_write_reg,
+                                          jtag_set_reset)
 
 from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
@@ -644,11 +647,13 @@ def test_jtag_bs_chain():
     print("JTAG I/O dictionary of core/pad signals:")
     print(top.jtag.ios.keys())
 
-    top.jtag.ios['uart_0__rx'].core.i.eq(1)
-    top.jtag.ios['uart_0__rx'].pad.i.eq(0)
-    yield
-    top.jtag.ios['uart_0__rx'].core.i.eq(0)
-    top.jtag.ios['uart_0__rx'].pad.i.eq(1)
+    for i in range(0, 10):
+        top.jtag.ios['uart_0__rx'].core.i.eq(1)
+        top.jtag.ios['uart_0__rx'].pad.i.eq(0)
+        yield
+        top.jtag.ios['uart_0__rx'].core.i.eq(0)
+        top.jtag.ios['uart_0__rx'].pad.i.eq(1)
+        yield
 
     # Testing GPIO access
     #'gpio_0__gpio0__i', 'gpio_0__gpio0__o', 'gpio_0__gpio0__oe',
