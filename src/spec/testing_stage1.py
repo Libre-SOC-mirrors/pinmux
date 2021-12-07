@@ -636,8 +636,10 @@ def test_i2c():
     print("I2C Test PASSED!")
 
 def test_jtag_bs_chain():
+    print(dir(top.jtag))
+    print(dir(top))
     print("JTAG BS Reset")
-    jtag_set_reset(top.jtag)
+    yield from jtag_set_reset(top.jtag)
 
     print("JTAG I/O dictionary of core/pad signals:")
     print(top.jtag.ios.keys())
