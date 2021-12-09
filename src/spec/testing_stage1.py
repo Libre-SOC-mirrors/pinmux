@@ -26,7 +26,11 @@ from nmutil.util import wrap
 #                                 jtag_set_ir, jtag_set_get_dr)
 
 from soc.debug.test.test_jtag_tap import (jtag_read_write_reg,
-                                          jtag_set_reset)
+                                          jtag_set_reset,
+                                          jtag_set_shift_ir,
+                                          jtag_set_shift_dr,
+                                          jtag_set_run,
+                                          jtag_set_idle)
 
 from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
@@ -720,11 +724,25 @@ def test_jtag_bs_chain():
 
     top.jtag.stop = True
 
-
-
     #-----------------------------------------
     # Start of my basic test, toggling not working
     #-----------------------------------------
+    print("JTAG BS Reset")
+    yield from jtag_set_reset(top.jtag)
+
+    # Trying to fill the shift register with 1's (to at least see propagation)
+    top.jtag.bus.tdi.eq(1)
+    yield
+
+    #yield from jtag_set_run(top.jtag)
+    #yield from jtag_set_shift_dr(top.jtag)
+    yield from jtag_set_shift_ir(top.jtag)
+    for _ in range(0, 10):
+        yield from jtag_set_shift_ir(top.jtag)
+        #yield
+    #yield from jtag_set_idle(top.jtag)
+
+    # Doesn't work
     for i in range(0, 10):
         top.jtag.ios['uart_0__rx'].core.i.eq(1)
         top.jtag.ios['uart_0__rx'].pad.i.eq(0)
