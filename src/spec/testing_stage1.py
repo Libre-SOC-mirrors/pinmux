@@ -30,7 +30,7 @@ from soc.debug.test.test_jtag_tap import (jtag_read_write_reg,
 
 from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
-#from soc.debug.dmi import DMIInterface, DBGCore
+from soc.debug.dmi import DMIInterface, DBGCore
 #from soc.debug.test.dmi_sim import dmi_sim
 #from soc.debug.test.jtagremote import JTAGServer, JTAGClient
 from nmigen.build.res import ResourceError
@@ -638,6 +638,16 @@ def test_i2c():
 
     print("I2C Test PASSED!")
 
+# JTAG-ircodes for accessing DMI
+DMI_ADDR = 5
+DMI_READ = 6
+DMI_WRRD = 7
+
+# JTAG-ircodes for accessing Wishbone
+WB_ADDR = 8
+WB_READ = 9
+WB_WRRD = 10
+
 def test_jtag_bs_chain():
     print(dir(top.jtag))
     print(dir(top))
@@ -647,6 +657,74 @@ def test_jtag_bs_chain():
     print("JTAG I/O dictionary of core/pad signals:")
     print(top.jtag.ios.keys())
 
+    # Copied from test_jtag_tap
+    # Don't know if the ID is the same for all JTAG instances
+    ####### JTAGy stuff (IDCODE) ######
+
+    # read idcode
+    idcode = yield from jtag_read_write_reg(top.jtag, 0b1, 32)
+    print ("idcode", hex(idcode))
+    assert idcode == 0x18ff
+
+    ####### JTAG to DMI ######
+
+    # write DMI address
+    yield from jtag_read_write_reg(top.jtag, DMI_ADDR, 8, DBGCore.CTRL)
+
+    # read DMI CTRL register
+    status = yield from jtag_read_write_reg(top.jtag, DMI_READ, 64)
+    print ("dmi ctrl status", hex(status))
+    #assert status == 4
+
+    # write DMI address
+    yield from jtag_read_write_reg(top.jtag, DMI_ADDR, 8, 0)
+
+    # write DMI CTRL register
+    status = yield from jtag_read_write_reg(top.jtag, DMI_WRRD, 64, 0b101)
+    print ("dmi ctrl status", hex(status))
+    #assert status == 4 # returned old value (nice! cool feature!)
+
+    # write DMI address
+    yield from jtag_read_write_reg(top.jtag, DMI_ADDR, 8, DBGCore.CTRL)
+
+    # read DMI CTRL register
+    status = yield from jtag_read_write_reg(top.jtag, DMI_READ, 64)
+    print ("dmi ctrl status", hex(status))
+    #assert status == 6
+
+    # write DMI MSR address
+    yield from jtag_read_write_reg(top.jtag, DMI_ADDR, 8, DBGCore.MSR)
+
+    # read DMI MSR register
+    msr = yield from jtag_read_write_reg(top.jtag, DMI_READ, 64)
+    print ("dmi msr", hex(msr))
+    #assert msr == 0xdeadbeef
+
+    ####### JTAG to Wishbone ######
+
+    # write Wishbone address
+    yield from jtag_read_write_reg(top.jtag, WB_ADDR, 16, 0x18)
+
+    # write/read wishbone data
+    data = yield from jtag_read_write_reg(top.jtag, WB_WRRD, 16, 0xfeef)
+    print ("wb write", hex(data))
+
+    # write Wishbone address
+    yield from jtag_read_write_reg(top.jtag, WB_ADDR, 16, 0x18)
+
+    # write/read wishbone data
+    data = yield from jtag_read_write_reg(top.jtag, WB_READ, 16, 0)
+    print ("wb read", hex(data))
+
+    ####### done - tell dmi_sim to stop (otherwise it won't) ########
+
+    top.jtag.stop = True
+
+
+
+    #-----------------------------------------
+    # Start of my basic test, toggling not working
+    #-----------------------------------------
     for i in range(0, 10):
         top.jtag.ios['uart_0__rx'].core.i.eq(1)
         top.jtag.ios['uart_0__rx'].pad.i.eq(0)
