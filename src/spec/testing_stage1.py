@@ -642,6 +642,49 @@ def test_i2c():
 
     print("I2C Test PASSED!")
 
+def test_jtag_bs_chain():
+    #print(dir(top.jtag))
+    #print(dir(top))
+    print("JTAG BS Reset")
+    yield from jtag_set_reset(top.jtag)
+
+    print("JTAG I/O dictionary of core/pad signals:")
+    print(top.jtag.ios.keys())
+    # Based on number of ios entries, produce a test shift reg pattern - TODO
+    bs_data = 0xFFFFF # hard coded for now
+    len_bs_data = len(bin(bs_data)) - 2
+    print("TDI BS Data: {0:b}, Data Length (bits): {1}"
+          .format(bs_data, len_bs_data))
+
+    # TODO: make into a loop for future expansion
+    # All pad input signals to drive and output via TDO
+    i2c_sda_i_pad = top.jtag.boundary_scan_pads['i2c_0__sda__i']['i']
+    i2c_scl_i_pad = top.jtag.boundary_scan_pads['i2c_0__scl__i']['i']
+    uart_rx_pad = top.jtag.boundary_scan_pads['uart_0__rx']['i']
+    gpio0_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
+    gpio1_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
+    gpio2_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
+    gpio3_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
+
+    # Assert all for now 
+    yield i2c_sda_i_pad.eq(1)
+    yield i2c_scl_i_pad.eq(1)
+    yield uart_rx_pad.eq(1)
+    yield gpio0_pad_in.eq(1)
+    yield gpio1_pad_in.eq(1)
+    yield gpio2_pad_in.eq(1)
+    yield gpio3_pad_in.eq(1)
+    yield # leave a space to see more easily
+
+    result = yield from jtag_read_write_reg(top.jtag, 0x0, len_bs_data, bs_data)
+    print("TDO BS Data: {0:b}".format(result))
+
+    # Implement a decode which uses ios keys to determine if correct bits in 
+    # the TDO stream are set (using asserts) - TODO
+
+    print("JTAG Boundary Scan Chain Test PASSED!")
+
+# Copied from test_jtag_tap.py
 # JTAG-ircodes for accessing DMI
 DMI_ADDR = 5
 DMI_READ = 6
@@ -652,7 +695,7 @@ WB_ADDR = 8
 WB_READ = 9
 WB_WRRD = 10
 
-def test_jtag_bs_chain():
+def test_jtag_dmi_wb():
     print(dir(top.jtag))
     print(dir(top))
     print("JTAG BS Reset")
@@ -723,52 +766,6 @@ def test_jtag_bs_chain():
     ####### done - tell dmi_sim to stop (otherwise it won't) ########
 
     top.jtag.stop = True
-
-    #-----------------------------------------
-    # Start of my basic test, toggling not working
-    #-----------------------------------------
-    print("JTAG BS Reset")
-    yield from jtag_set_reset(top.jtag)
-
-    # Trying to fill the shift register with 1's (to at least see propagation)
-    top.jtag.bus.tdi.eq(1)
-    yield
-
-    #yield from jtag_set_run(top.jtag)
-    #yield from jtag_set_shift_dr(top.jtag)
-    yield from jtag_set_shift_ir(top.jtag)
-    for _ in range(0, 10):
-        yield from jtag_set_shift_ir(top.jtag)
-        #yield
-    #yield from jtag_set_idle(top.jtag)
-
-    # Doesn't work
-    for i in range(0, 10):
-        top.jtag.ios['uart_0__rx'].core.i.eq(1)
-        top.jtag.ios['uart_0__rx'].pad.i.eq(0)
-        yield
-        top.jtag.ios['uart_0__rx'].core.i.eq(0)
-        top.jtag.ios['uart_0__rx'].pad.i.eq(1)
-        yield
-
-    # Testing GPIO access
-    #'gpio_0__gpio0__i', 'gpio_0__gpio0__o', 'gpio_0__gpio0__oe',
-    top.jtag.ios['gpio_0__gpio0__i'].core.i.eq(1)
-    top.jtag.ios['gpio_0__gpio0__i'].pad.i.eq(0)
-    top.jtag.ios['gpio_0__gpio0__o'].core.o.eq(1)
-    top.jtag.ios['gpio_0__gpio0__o'].pad.o.eq(0)
-    top.jtag.ios['gpio_0__gpio0__oe'].core.o.eq(1)
-    top.jtag.ios['gpio_0__gpio0__oe'].pad.o.eq(0)
-    yield
-    top.jtag.ios['gpio_0__gpio0__i'].core.i.eq(0)
-    top.jtag.ios['gpio_0__gpio0__i'].pad.i.eq(1)
-    top.jtag.ios['gpio_0__gpio0__o'].core.o.eq(0)
-    top.jtag.ios['gpio_0__gpio0__o'].pad.o.eq(1)
-    top.jtag.ios['gpio_0__gpio0__oe'].core.o.eq(0)
-    top.jtag.ios['gpio_0__gpio0__oe'].pad.o.eq(1)
-    yield
-
-    print("JTAG Boundary Scan Chain Test PASSED!")
 
 def test_debug_print():
     print("Test used for getting object methods/information")
