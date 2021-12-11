@@ -642,19 +642,25 @@ def test_i2c():
 
     print("I2C Test PASSED!")
 
+# JTAG boundary scan reg addresses - See c4m/nmigen/jtag/tap.py line #357
+BS_EXTEST = 0
+BS_INTEST = 0
+BS_SAMPLE = 2
+BS_PRELOAD = 2
 def test_jtag_bs_chain():
     #print(dir(top.jtag))
     #print(dir(top))
     print("JTAG BS Reset")
     yield from jtag_set_reset(top.jtag)
 
-    print("JTAG I/O dictionary of core/pad signals:")
-    print(top.jtag.ios.keys())
+    #print("JTAG I/O dictionary of core/pad signals:")
+    #print(top.jtag.ios.keys())
     # Based on number of ios entries, produce a test shift reg pattern - TODO
-    bs_data = 0xFFFFF # hard coded for now
-    len_bs_data = len(bin(bs_data)) - 2
+    bslen = len(top.jtag.ios)
+    bsdata = 2**bslen - 1 # Fill with all 1s for now
+    empty_data = 0 # for testing
     print("TDI BS Data: {0:b}, Data Length (bits): {1}"
-          .format(bs_data, len_bs_data))
+          .format(bsdata, bslen))
 
     # TODO: make into a loop for future expansion
     # All pad input signals to drive and output via TDO
@@ -667,20 +673,26 @@ def test_jtag_bs_chain():
     gpio3_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
 
     # Assert all for now 
-    yield i2c_sda_i_pad.eq(1)
-    yield i2c_scl_i_pad.eq(1)
+    #yield i2c_sda_i_pad.eq(1)
+    #yield i2c_scl_i_pad.eq(1)
     yield uart_rx_pad.eq(1)
-    yield gpio0_pad_in.eq(1)
-    yield gpio1_pad_in.eq(1)
-    yield gpio2_pad_in.eq(1)
-    yield gpio3_pad_in.eq(1)
-    yield # leave a space to see more easily
+    #yield gpio0_pad_in.eq(1)
+    #yield gpio1_pad_in.eq(1)
+    #yield gpio2_pad_in.eq(1)
+    #yield gpio3_pad_in.eq(1)
 
-    result = yield from jtag_read_write_reg(top.jtag, 0x0, len_bs_data, bs_data)
+    # Run through GPIO, UART, and I2C tests so that all signals are asserted
+    #yield from test....
+
+    result = yield from jtag_read_write_reg(top.jtag, BS_EXTEST, bslen,
+                                            bsdata)
     print("TDO BS Data: {0:b}".format(result))
 
     # Implement a decode which uses ios keys to determine if correct bits in 
     # the TDO stream are set (using asserts) - TODO
+    #ios_keys = list(top.jtag.ios.keys())
+    #for i in range(0, bslen):
+    #    print(ios_keys[i])
 
     print("JTAG Boundary Scan Chain Test PASSED!")
 
