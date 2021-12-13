@@ -489,30 +489,30 @@ def test_case1():
         yield self.go_i.eq(0)
         yield self.port.eq(0)
 
-def test_gpios():
+def test_gpios(dut):
     print("Starting GPIO test case!")
     
-    num_gpios = top.gpio_o_test.width
+    num_gpios = dut.gpio_o_test.width
     # Grab GPIO outpud pad resource from JTAG BS - end of chain
-    print (top.jtag.boundary_scan_pads.keys())
-    gpio0_o = top.jtag.boundary_scan_pads['gpio_0__gpio0__o']['o']
-    gpio1_o = top.jtag.boundary_scan_pads['gpio_0__gpio1__o']['o']
-    gpio2_o = top.jtag.boundary_scan_pads['gpio_0__gpio2__o']['o']
-    gpio3_o = top.jtag.boundary_scan_pads['gpio_0__gpio3__o']['o']
+    print (dut.jtag.boundary_scan_pads.keys())
+    gpio0_o = dut.jtag.boundary_scan_pads['gpio_0__gpio0__o']['o']
+    gpio1_o = dut.jtag.boundary_scan_pads['gpio_0__gpio1__o']['o']
+    gpio2_o = dut.jtag.boundary_scan_pads['gpio_0__gpio2__o']['o']
+    gpio3_o = dut.jtag.boundary_scan_pads['gpio_0__gpio3__o']['o']
     gpio_pad_out = [ gpio0_o, gpio1_o, gpio2_o, gpio3_o]
 
     # Grab GPIO output enable pad resource from JTAG BS - end of chain
-    gpio0_oe = top.jtag.boundary_scan_pads['gpio_0__gpio0__oe']['o']
-    gpio1_oe = top.jtag.boundary_scan_pads['gpio_0__gpio1__oe']['o']
-    gpio2_oe = top.jtag.boundary_scan_pads['gpio_0__gpio2__oe']['o']
-    gpio3_oe = top.jtag.boundary_scan_pads['gpio_0__gpio3__oe']['o']
+    gpio0_oe = dut.jtag.boundary_scan_pads['gpio_0__gpio0__oe']['o']
+    gpio1_oe = dut.jtag.boundary_scan_pads['gpio_0__gpio1__oe']['o']
+    gpio2_oe = dut.jtag.boundary_scan_pads['gpio_0__gpio2__oe']['o']
+    gpio3_oe = dut.jtag.boundary_scan_pads['gpio_0__gpio3__oe']['o']
     gpio_pad_oe = [gpio0_oe, gpio1_oe, gpio2_oe, gpio3_oe]
 
     # Grab GPIO input pad resource from JTAG BS - start of chain
-    gpio0_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
-    gpio1_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
-    gpio2_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
-    gpio3_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
+    gpio0_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
+    gpio1_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
+    gpio2_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
+    gpio3_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
     gpio_pad_in = [gpio0_pad_in, gpio1_pad_in, gpio2_pad_in, gpio3_pad_in]
     
     # Have the sim run through a for-loop where the gpio_o_test is 
@@ -527,7 +527,7 @@ def test_gpios():
     pad_oe = [0] * num_gpios
     #print("Num of permutations of gpio_o_test record: ", num_gpio_o_states)
     for gpio_o_val in range(0, num_gpio_o_states):
-        yield top.gpio_o_test.eq(gpio_o_val) 
+        yield dut.gpio_o_test.eq(gpio_o_val)
         #yield Settle()
         yield # Move to the next clk cycle
         
@@ -546,7 +546,7 @@ def test_gpios():
             yield
             for gpio_bit in range(0, num_gpios):
                 # check core and pad in
-                gpio_i_ro = yield top.gpio_i_ro[gpio_bit]
+                gpio_i_ro = yield dut.gpio_i_ro[gpio_bit]
                 out_test_bit = ((gpio_o_val & (1 << gpio_bit)) != 0)
                 in_bit = ((gpio_i_val & (1 << gpio_bit)) != 0)
                 # Check that the core end input matches pad 
@@ -565,7 +565,7 @@ def test_gpios():
         
     # For-loop for testing output enable signals
     for gpio_o_val in range(0, num_gpio_o_states):
-        yield top.gpio_oe_test.eq(gpio_o_val) 
+        yield dut.gpio_oe_test.eq(gpio_o_val)
         yield # Move to the next clk cycle
         
         for gpio_bit in range(0, num_gpios):
@@ -582,15 +582,18 @@ def test_gpios():
         # Print MSB first
         #print("Pad Output Enable: ", list(reversed(pad_oe)))
         #print("---------------------") 
+
+    # Reset test ouput register
+    yield dut.gpio_o_test.eq(0)
     print("GPIO Test PASSED!")
 
-def test_uart():
+def test_uart(dut):
     # grab the JTAG resource pad
     print ()
-    print ("bs pad keys", top.jtag.boundary_scan_pads.keys())
+    print ("bs pad keys", dut.jtag.boundary_scan_pads.keys())
     print ()
-    uart_rx_pad = top.jtag.boundary_scan_pads['uart_0__rx']['i']
-    uart_tx_pad = top.jtag.boundary_scan_pads['uart_0__tx']['o']
+    uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
+    uart_tx_pad = dut.jtag.boundary_scan_pads['uart_0__tx']['o']
 
     print ("uart rx pad", uart_rx_pad)
     print ("uart tx pad", uart_tx_pad)
@@ -609,24 +612,24 @@ def test_uart():
 
     print("UART Test PASSED!")
 
-def test_i2c():
-    i2c_sda_i_pad = top.jtag.boundary_scan_pads['i2c_0__sda__i']['i']
-    i2c_sda_o_pad = top.jtag.boundary_scan_pads['i2c_0__sda__o']['o']
-    i2c_sda_oe_pad = top.jtag.boundary_scan_pads['i2c_0__sda__oe']['o']
+def test_i2c(dut):
+    i2c_sda_i_pad = dut.jtag.boundary_scan_pads['i2c_0__sda__i']['i']
+    i2c_sda_o_pad = dut.jtag.boundary_scan_pads['i2c_0__sda__o']['o']
+    i2c_sda_oe_pad = dut.jtag.boundary_scan_pads['i2c_0__sda__oe']['o']
 
-    i2c_scl_i_pad = top.jtag.boundary_scan_pads['i2c_0__scl__i']['i']
-    i2c_scl_o_pad = top.jtag.boundary_scan_pads['i2c_0__scl__o']['o']
-    i2c_scl_oe_pad = top.jtag.boundary_scan_pads['i2c_0__scl__oe']['o']
+    i2c_scl_i_pad = dut.jtag.boundary_scan_pads['i2c_0__scl__i']['i']
+    i2c_scl_o_pad = dut.jtag.boundary_scan_pads['i2c_0__scl__o']['o']
+    i2c_scl_oe_pad = dut.jtag.boundary_scan_pads['i2c_0__scl__oe']['o']
 
-    #i2c_pad = top.jtag.resource_table_pads[('i2c', 0)]
+    #i2c_pad = dut.jtag.resource_table_pads[('i2c', 0)]
     #print ("i2c pad", i2c_pad)
     #print ("i2c pad", i2c_pad.layout)
 
     for i in range(0, 2):
         yield i2c_sda_i_pad.eq(i) #i2c_pad.sda.i.eq(i)
         yield i2c_scl_i_pad.eq(i) #i2c_pad.scl.i.eq(i)
-        yield top.i2c_sda_oe_test.eq(i)
-        yield top.i2c_scl_oe_test.eq(i)
+        yield dut.i2c_sda_oe_test.eq(i)
+        yield dut.i2c_scl_oe_test.eq(i)
         yield Settle()
         yield # one clock cycle
         sda_o_val = yield i2c_sda_o_pad
@@ -647,52 +650,92 @@ BS_EXTEST = 0
 BS_INTEST = 0
 BS_SAMPLE = 2
 BS_PRELOAD = 2
-def test_jtag_bs_chain():
-    #print(dir(top.jtag))
-    #print(dir(top))
+def test_jtag_bs_chain(dut):
+    #print(dir(dut.jtag))
+    #print(dir(dut))
     print("JTAG BS Reset")
-    yield from jtag_set_reset(top.jtag)
+    yield from jtag_set_reset(dut.jtag)
 
     #print("JTAG I/O dictionary of core/pad signals:")
-    #print(top.jtag.ios.keys())
+    #print(dut.jtag.ios.keys())
     # Based on number of ios entries, produce a test shift reg pattern - TODO
-    bslen = len(top.jtag.ios)
+    bslen = len(dut.jtag.ios)
     bsdata = 2**bslen - 1 # Fill with all 1s for now
     empty_data = 0 # for testing
-    print("TDI BS Data: {0:b}, Data Length (bits): {1}"
-          .format(bsdata, bslen))
 
     # TODO: make into a loop for future expansion
     # All pad input signals to drive and output via TDO
-    i2c_sda_i_pad = top.jtag.boundary_scan_pads['i2c_0__sda__i']['i']
-    i2c_scl_i_pad = top.jtag.boundary_scan_pads['i2c_0__scl__i']['i']
-    uart_rx_pad = top.jtag.boundary_scan_pads['uart_0__rx']['i']
-    gpio0_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
-    gpio1_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
-    gpio2_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
-    gpio3_pad_in = top.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
+    i2c_sda_i_pad = dut.jtag.boundary_scan_pads['i2c_0__sda__i']['i']
+    i2c_scl_i_pad = dut.jtag.boundary_scan_pads['i2c_0__scl__i']['i']
+    uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
+    gpio0_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
+    gpio1_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
+    gpio2_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
+    gpio3_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
 
     # Assert all for now 
     #yield i2c_sda_i_pad.eq(1)
     #yield i2c_scl_i_pad.eq(1)
-    yield uart_rx_pad.eq(1)
+    #yield uart_rx_pad.eq(1)
     #yield gpio0_pad_in.eq(1)
     #yield gpio1_pad_in.eq(1)
     #yield gpio2_pad_in.eq(1)
     #yield gpio3_pad_in.eq(1)
 
-    # Run through GPIO, UART, and I2C tests so that all signals are asserted
-    #yield from test....
-
-    result = yield from jtag_read_write_reg(top.jtag, BS_EXTEST, bslen,
+    print("All pad inputs/core outputs reset, bs data all set")
+    print("Sending TDI data with core/pads disconnected")
+    yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen, bsdata)
+    result = yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen,
                                             bsdata)
+    print("TDI BS Data: {0:b}, Data Length (bits): {1}"
+          .format(bsdata, bslen))
     print("TDO BS Data: {0:b}".format(result))
+
+    print("Sending TDI data with core/pads connected")
+    yield from jtag_read_write_reg(dut.jtag, BS_SAMPLE, bslen, bsdata)
+    result = yield from jtag_read_write_reg(dut.jtag, BS_SAMPLE, bslen,
+                                            bsdata)
+    print("TDI BS Data: {0:b}, Data Length (bits): {1}"
+          .format(bsdata, bslen))
+    print("TDO BS Data: {0:b}".format(result))
+
+
+    print("All pad inputs/core outputs set, bs data clear")
+    bsdata = 0 # clear, as all input already asserted
+    # Run through GPIO, UART, and I2C tests so that all signals are asserted
+    yield from test_gpios(dut)
+    yield from test_uart(dut)
+    yield from test_i2c(dut)
+
+    print("Sending TDI data with core/pads disconnected")
+    yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen, bsdata)
+    result = yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen,
+                                            bsdata)
+    print("TDI BS Data: {0:b}, Data Length (bits): {1}"
+          .format(bsdata, bslen))
+    print("TDO BS Data: {0:b}".format(result))
+
+    print("Sending TDI data with core/pads connected")
+    yield from jtag_read_write_reg(dut.jtag, BS_SAMPLE, bslen, bsdata)
+    result = yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen,
+                                            bsdata)
+    print("TDI BS Data: {0:b}, Data Length (bits): {1}"
+          .format(bsdata, bslen))
+    print("TDO BS Data: {0:b}".format(result))
+
 
     # Implement a decode which uses ios keys to determine if correct bits in 
     # the TDO stream are set (using asserts) - TODO
-    #ios_keys = list(top.jtag.ios.keys())
+    #ios_keys = list(dut.jtag.ios.keys())
     #for i in range(0, bslen):
-    #    print(ios_keys[i])
+    #    # Check if outputs are asserted
+    #    if '__o' in ios_keys[i]:
+    #        signal = ios_keys[i]
+    #        print(type(signal))
+    #        temp_result = yield from dut.jtag.boundary_scan_pads[signal]['o']
+    #        print(signal, " : ", temp_result)
+    #    else:
+    #        print(ios_keys[i])
 
     print("JTAG Boundary Scan Chain Test PASSED!")
 
@@ -779,42 +822,42 @@ def test_jtag_dmi_wb():
 
     top.jtag.stop = True
 
-def test_debug_print():
+def test_debug_print(dut):
     print("Test used for getting object methods/information")
     print("Moved here to clear clutter of gpio test")
     
     print ("printing out info about the resource gpio0")
-    print (top.gpio['gpio0']['i'])
-    print ("this is a PIN resource", type(top.gpio['gpio0']['i']))
+    print (dut.gpio['gpio0']['i'])
+    print ("this is a PIN resource", type(dut.gpio['gpio0']['i']))
     # yield can only be done on SIGNALS or RECORDS,
     # NOT Pins/Resources gpio0_core_in = yield top.gpio['gpio0']['i']
     #print("Test gpio0 core in: ", gpio0_core_in)
     
     print("JTAG")
-    print(top.jtag.__class__.__name__, dir(top.jtag))
+    print(dut.jtag.__class__.__name__, dir(dut.jtag))
     print("TOP")
-    print(top.__class__.__name__, dir(top))
+    print(dut.__class__.__name__, dir(dut))
     print("PORT")
-    print(top.ports.__class__.__name__, dir(top.ports))
+    print(dut.ports.__class__.__name__, dir(dut.ports))
     print("GPIO")
-    print(top.gpio.__class__.__name__, dir(top.gpio))
+    print(dut.gpio.__class__.__name__, dir(dut.gpio))
    
     print("UART")
-    print(dir(top.jtag.boundary_scan_pads['uart_0__rx__pad__i']))
-    print(top.jtag.boundary_scan_pads['uart_0__rx__pad__i'].keys())
-    print(top.jtag.boundary_scan_pads['uart_0__tx__pad__o'])
-    #print(type(top.jtag.boundary_scan_pads['uart_0__rx__pad__i']['rx']))
+    print(dir(dut.jtag.boundary_scan_pads['uart_0__rx__pad__i']))
+    print(dut.jtag.boundary_scan_pads['uart_0__rx__pad__i'].keys())
+    print(dut.jtag.boundary_scan_pads['uart_0__tx__pad__o'])
+    #print(type(dut.jtag.boundary_scan_pads['uart_0__rx__pad__i']['rx']))
     print ("jtag pad table keys")
-    print (top.jtag.resource_table_pads.keys())
-    print(type(top.jtag.resource_table_pads[('uart', 0)].rx.i))
-    print(top.jtag.boundary_scan_pads['uart_0__rx__i'])
+    print (dut.jtag.resource_table_pads.keys())
+    print(type(dut.jtag.resource_table_pads[('uart', 0)].rx.i))
+    print(dut.jtag.boundary_scan_pads['uart_0__rx__i'])
 
     print("I2C")
-    print(top.jtag.boundary_scan_pads['i2c_0__sda__i'])
-    print(type(top.jtag.boundary_scan_pads['i2c_0__sda__i']['i']))
+    print(dut.jtag.boundary_scan_pads['i2c_0__sda__i'])
+    print(type(dut.jtag.boundary_scan_pads['i2c_0__sda__i']['i']))
 
-    print(top.jtag.resource_table_pads)
-    print(top.jtag.boundary_scan_pads)
+    print(dut.jtag.resource_table_pads)
+    print(dut.jtag.boundary_scan_pads)
 
 
     # Trying to read input from core side, looks like might be a pin...
@@ -824,7 +867,7 @@ def test_debug_print():
     print () # extra print to divide the output
     yield
 
-if __name__ == '__main__':
+def setup_blinker(build_blinker=False):
     """
     and to create a Platform instance with that list, and build
     something random
@@ -833,6 +876,7 @@ if __name__ == '__main__':
        p.resources=listofstuff
        p.build(Blinker())
     """
+
     pinset = dummy_pinset()
     print(pinset)
     resources = create_resources(pinset)
@@ -842,11 +886,12 @@ if __name__ == '__main__':
     with open("test_jtag_blinker.il", "w") as f:
         f.write(vl)
 
-    if False:
+    if build_blinker:
         # XXX these modules are all being added *AFTER* the build process links
         # everything together.  the expectation that this would work is...
         # unrealistic.  ordering, clearly, is important.
 
+        # This JTAG code copied from test, probably not needed
         # dut = JTAG(test_pinset(), wb_data_wid=64, domain="sync")
         top.jtag.stop = False
         # rather than the client access the JTAG bus directly
@@ -877,12 +922,17 @@ if __name__ == '__main__':
         # function is unrealistic.
         top_fragment = p.fragment
 
+    return top
+
+def test_jtag():
+    dut = setup_blinker(build_blinker=False)
+
     # XXX simulating top (the module that does not itself contain IO pads
     # because that's covered by build) cannot possibly be expected to work
     # particularly when modules have been added *after* the platform build()
     # function has been called.
 
-    sim = Simulator(top)
+    sim = Simulator(dut)
     sim.add_clock(1e-6, domain="sync")      # standard clock
 
     #sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
@@ -892,14 +942,15 @@ if __name__ == '__main__':
     # handles (pretends to be) DMI
     #sim.add_sync_process(wrap(dmi_sim(top.jtag)))
     
-    #sim.add_sync_process(wrap(test_case1()))
-    #sim.add_sync_process(wrap(test_case0()))
-    
-    #sim.add_sync_process(wrap(test_gpios()))
-    #sim.add_sync_process(wrap(test_uart()))
-    #sim.add_sync_process(wrap(test_i2c()))
-    sim.add_sync_process(wrap(test_jtag_bs_chain()))
+    #sim.add_sync_process(wrap(test_gpios(top)))
+    #sim.add_sync_process(wrap(test_uart(top)))
+    #sim.add_sync_process(wrap(test_i2c(top)))
     #sim.add_sync_process(wrap(test_debug_print()))
+
+    sim.add_sync_process(wrap(test_jtag_bs_chain(dut)))
 
     with sim.write_vcd("blinker_test.vcd"):
         sim.run()
+
+if __name__ == '__main__':
+    test_jtag()
