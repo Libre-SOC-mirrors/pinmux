@@ -684,7 +684,6 @@ def test_jtag_bs_chain(dut):
 
     print("All pad inputs/core outputs reset, bs data all set")
     print("Sending TDI data with core/pads disconnected")
-    yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen, bsdata)
     result = yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen,
                                             bsdata)
     print("TDI BS Data: {0:b}, Data Length (bits): {1}"
@@ -692,7 +691,6 @@ def test_jtag_bs_chain(dut):
     print("TDO BS Data: {0:b}".format(result))
 
     print("Sending TDI data with core/pads connected")
-    yield from jtag_read_write_reg(dut.jtag, BS_SAMPLE, bslen, bsdata)
     result = yield from jtag_read_write_reg(dut.jtag, BS_SAMPLE, bslen,
                                             bsdata)
     print("TDI BS Data: {0:b}, Data Length (bits): {1}"
@@ -708,7 +706,6 @@ def test_jtag_bs_chain(dut):
     yield from test_i2c(dut)
 
     print("Sending TDI data with core/pads disconnected")
-    yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen, bsdata)
     result = yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen,
                                             bsdata)
     print("TDI BS Data: {0:b}, Data Length (bits): {1}"
@@ -716,8 +713,7 @@ def test_jtag_bs_chain(dut):
     print("TDO BS Data: {0:b}".format(result))
 
     print("Sending TDI data with core/pads connected")
-    yield from jtag_read_write_reg(dut.jtag, BS_SAMPLE, bslen, bsdata)
-    result = yield from jtag_read_write_reg(dut.jtag, BS_EXTEST, bslen,
+    result = yield from jtag_read_write_reg(dut.jtag, BS_SAMPLE, bslen,
                                             bsdata)
     print("TDI BS Data: {0:b}, Data Length (bits): {1}"
           .format(bsdata, bslen))
