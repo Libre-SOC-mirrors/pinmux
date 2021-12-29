@@ -722,16 +722,19 @@ def test_jtag_bs_chain(dut):
 
     # Implement a decode which uses ios keys to determine if correct bits in 
     # the TDO stream are set (using asserts) - TODO
-    #ios_keys = list(dut.jtag.ios.keys())
-    #for i in range(0, bslen):
-    #    # Check if outputs are asserted
-    #    if '__o' in ios_keys[i]:
-    #        signal = ios_keys[i]
-    #        print(type(signal))
-    #        temp_result = yield from dut.jtag.boundary_scan_pads[signal]['o']
-    #        print(signal, " : ", temp_result)
-    #    else:
-    #        print(ios_keys[i])
+    print("Starting test with ios keys")
+    ios_keys = list(dut.jtag.ios.keys())
+    for i in range(0, bslen):
+        # Check if outputs are asserted
+        if ('__o' in ios_keys[i]) or ('__tx' in ios_keys[i]):
+            signal = ios_keys[i]
+            print("Output | Name: ", signal)
+            temp_result = yield dut.jtag.boundary_scan_pads[signal]['o']
+            print(signal, " : ", temp_result)
+            assert temp_result == 1
+        else:
+            signal = ios_keys[i]
+            print("Input | Name: ", signal)
 
     print("JTAG Boundary Scan Chain Test PASSED!")
 
