@@ -701,7 +701,7 @@ def test_jtag_bs_chain(dut):
     yield from test_i2c(dut)
 
     yield from jtag_unit_test(dut, BS_EXTEST, True, emptydata, mask_inputs)
-    yield from jtag_unit_test(dut, BS_SAMPLE, True, emptydata, mask_high) 
+    yield from jtag_unit_test(dut, BS_SAMPLE, True, emptydata, mask_high)
 
     print("JTAG Boundary Scan Chain Test PASSED!")
 
@@ -712,7 +712,7 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
     elif bs_type == BS_SAMPLE:
         print("Sending TDI data with core/pads connected")
     else:
-        print("ERROR! Unsupported BS chain mode!")
+        raise Exception("Unsupported BS chain mode!")
 
     if is_io_set:
         print("All pad inputs/core outputs set, bs data: {0:b}"
@@ -720,15 +720,16 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
     else:
         print("All pad inputs/core outputs reset, bs data: {0:b}"
               .format(bsdata))
-    result = yield from jtag_read_write_reg(dut.jtag, bs_type, bslen,
-                                            bsdata)
+
+    result = yield from jtag_read_write_reg(dut.jtag, bs_type, bslen, bsdata)
+
+    # TODO: TDO data does not always match the signal states, maybe JTAG reset?
     print("TDI BS Data: {0:b}, Data Length (bits): {1}".format(bsdata, bslen))
     print("TDO BS Data: {0:b}".format(result))
     yield from check_ios_keys(dut, expected)
 
     # Reset shift register between tests
     yield from jtag_set_reset(dut.jtag)
-
 
 def check_ios_keys(dut, test_vector):
     print("Checking ios signals with given test vector")
@@ -737,14 +738,32 @@ def check_ios_keys(dut, test_vector):
     for i in range(0, bslen):
         signal = ios_keys[i]
         test_value = (test_vector >> i) & 0b1
-        # Check if outputs are asserted
-        if ('__o' in ios_keys[i]) or ('__tx' in ios_keys[i]):
+        # Only observed signals so far are outputs...
+        if check_if_signal_output(ios_keys[i]):
             temp_result = yield dut.jtag.boundary_scan_pads[signal]['o']
             print("Core Output | Name: ", signal, " Value: ", temp_result)
-        else:
+        # ...or inputs
+        elif check_if_signal_input(ios_keys[i]):
             temp_result = yield dut.jtag.boundary_scan_pads[signal]['i']
             print("Pad  Input  | Name: ", signal, " Value: ", temp_result)
+        else:
+            raise Exception("Signal in JTAG ios dict: " + signal
+                            + " cannot be determined as input or output!")
         assert temp_result == test_value
+
+# TODO: may need to expand to support further signals contained in the
+# JTAG module ios dictionary!
+def check_if_signal_output(signal_str):
+    if ('__o' in signal_str) or ('__tx' in signal_str):
+        return True
+    else:
+        return False
+
+def check_if_signal_input(signal_str):
+    if ('__i' in signal_str) or ('__rx' in signal_str):
+        return True
+    else:
+        return False
 
 def produce_ios_io_mask(dut, is_input=False):
     if is_input:
