@@ -21,7 +21,7 @@ from nmigen.sim import Simulator, Delay, Settle, Tick, Passive
 
 from nmutil.util import wrap
 
-#from soc.debug.jtagutils import (jtag_read_write_reg,
+# from soc.debug.jtagutils import (jtag_read_write_reg,
 #                                 jtag_srv, jtag_set_reset,
 #                                 jtag_set_ir, jtag_set_get_dr)
 
@@ -41,7 +41,7 @@ from nmigen.build.res import ResourceError
 
 # Was thinking of using these functions, but skipped for simplicity for now
 # XXX nope.  the output from JSON file.
-#from pinfunctions import (i2s, lpc, emmc, sdmmc, mspi, mquadspi, spi,
+# from pinfunctions import (i2s, lpc, emmc, sdmmc, mspi, mquadspi, spi,
 # quadspi, i2c, mi2c, jtag, uart, uartfull, rgbttl, ulpi, rgmii, flexbus1,
 # flexbus2, sdram1, sdram2, sdram3, vss, vdd, sys, eint, pwm, gpio)
 
@@ -56,8 +56,9 @@ def dummy_pinset():
         gpios.append("%d*" % i)
     return {'uart': ['tx+', 'rx-'],
             'gpio': gpios,
-            #'jtag': ['tms-', 'tdi-', 'tdo+', 'tck+'],
+            # 'jtag': ['tms-', 'tdi-', 'tdo+', 'tck+'],
             'i2c': ['sda*', 'scl+']}
+
 
 """
 a function is needed which turns the results of dummy_pinset()
@@ -84,10 +85,10 @@ def create_resources(pinset):
             resources.append(UARTResource('uart', 0, tx='tx', rx='rx'))
         elif periph == 'gpio':
             #print("GPIO required!")
-            print ("GPIO is defined as '*' type, meaning i, o and oe needed")
+            print("GPIO is defined as '*' type, meaning i, o and oe needed")
             ios = []
             for pin in pins:
-                pname = "gpio"+pin[:-1] # strip "*" on end
+                pname = "gpio"+pin[:-1]  # strip "*" on end
                 # urrrr... tristsate and io assume a single pin which is
                 # of course exactly what we don't want in an ASIC: we want
                 # *all three* pins but the damn port is not outputted
@@ -95,7 +96,7 @@ def create_resources(pinset):
                 # therefore the only way to get a triplet of i/o/oe
                 # is to *actually* create explicit triple pins
                 # XXX ARRRGH, doesn't work
-                #pad = Subsignal("io",
+                # pad = Subsignal("io",
                 #            Pins("%s_i %s_o %s_oe" % (pname, pname, pname),
                 #                 dir="io", assert_width=3))
                 #ios.append(Resource(pname, 0, pad))
@@ -107,7 +108,7 @@ def create_resources(pinset):
                 pads.append(Subsignal("oe",
                             Pins(pname+"_oe", dir="o", assert_width=1)))
                 ios.append(Resource.family(pname, 0, default_name=pname,
-                                                 ios=pads))
+                                           ios=pads))
             resources.append(Resource.family(periph, 0, default_name="gpio",
                                              ios=ios))
 
@@ -126,6 +127,7 @@ def JTAGResource(*args):
     io.append(Subsignal("tck", Pins("tck", dir="i", assert_width=1)))
     io.append(Subsignal("tdo", Pins("tdo", dir="o", assert_width=1)))
     return Resource.family(*args, default_name="jtag", ios=io)
+
 
 def UARTResource(*args, rx, tx):
     io = []
@@ -162,33 +164,33 @@ class Blinker(Elaboratable):
         m = Module()
         m.submodules.jtag = self.jtag
         #m.submodules.sram = self.sram
-        
+
         #count = Signal(5)
         #m.d.sync += count.eq(count+1)
-        print ("resources", platform, jtag_resources.items())
+        print("resources", platform, jtag_resources.items())
         gpio = self.jtag.request('gpio')
-        print (gpio, gpio.layout, gpio.fields)
+        print(gpio, gpio.layout, gpio.fields)
         # get the GPIO bank, mess about with some of the pins
         #m.d.comb += gpio.gpio0.o.eq(1)
         #m.d.comb += gpio.gpio1.o.eq(gpio.gpio2.i)
         #m.d.comb += gpio.gpio1.oe.eq(count[4])
         #m.d.sync += count[0].eq(gpio.gpio1.i)
-       
+
         num_gpios = 4
         gpio_i_ro = Signal(num_gpios)
         gpio_o_test = Signal(num_gpios)
         gpio_oe_test = Signal(num_gpios)
 
-        # Create a read-only copy of core-side GPIO input signals 
+        # Create a read-only copy of core-side GPIO input signals
         # for Simulation asserts
         m.d.comb += gpio_i_ro[0].eq(gpio.gpio0.i)
         m.d.comb += gpio_i_ro[1].eq(gpio.gpio1.i)
         m.d.comb += gpio_i_ro[2].eq(gpio.gpio2.i)
         m.d.comb += gpio_i_ro[3].eq(gpio.gpio3.i)
 
-        # Wire up the output signal of each gpio by XOR'ing each bit of 
+        # Wire up the output signal of each gpio by XOR'ing each bit of
         # gpio_o_test with gpio's input
-        # Wire up each bit of gpio_oe_test signal to oe signal of each gpio. 
+        # Wire up each bit of gpio_oe_test signal to oe signal of each gpio.
         # Turn into a loop at some point, probably a way without
         # using get_attr()
         m.d.comb += gpio.gpio0.o.eq(gpio_o_test[0] ^ gpio.gpio0.i)
@@ -199,11 +201,11 @@ class Blinker(Elaboratable):
         m.d.comb += gpio.gpio0.oe.eq(gpio_oe_test[0])
         m.d.comb += gpio.gpio1.oe.eq(gpio_oe_test[1])
         m.d.comb += gpio.gpio2.oe.eq(gpio_oe_test[2])
-        m.d.comb += gpio.gpio3.oe.eq(gpio_oe_test[3]) 
+        m.d.comb += gpio.gpio3.oe.eq(gpio_oe_test[3])
 
         # get the UART resource, mess with the output tx
         uart = self.jtag.request('uart')
-        print ("uart fields", uart, uart.fields)
+        print("uart fields", uart, uart.fields)
         self.intermediary = Signal()
         m.d.comb += uart.tx.eq(self.intermediary)
         m.d.comb += self.intermediary.eq(uart.rx)
@@ -213,7 +215,7 @@ class Blinker(Elaboratable):
         i2c_sda_oe_test = Signal(num_i2c)
         i2c_scl_oe_test = Signal(num_i2c)
         i2c = self.jtag.request('i2c')
-        print ("i2c fields", i2c, i2c.fields)
+        print("i2c fields", i2c, i2c.fields)
         # Connect in loopback
         m.d.comb += i2c.scl.o.eq(i2c.scl.i)
         m.d.comb += i2c.sda.o.eq(i2c.sda.i)
@@ -235,7 +237,7 @@ class Blinker(Elaboratable):
 
         # sigh these wire up to the pads so you cannot set Signals
         # that are already wired
-        if self.no_jtag_connect: # bypass jtag pad connect for testing purposes
+        if self.no_jtag_connect:  # bypass jtag pad connect for testing purposes
             return m
         return self.jtag.boundary_elaborate(m, platform)
 
@@ -244,6 +246,7 @@ class Blinker(Elaboratable):
 
     def __iter__(self):
         yield from self.jtag.iter_ports()
+
 
 '''
     _trellis_command_templates = [
@@ -260,11 +263,13 @@ class Blinker(Elaboratable):
 # sigh, have to create a dummy platform for now.
 # TODO: investigate how the heck to get it to output ilang. or verilog.
 # or, anything, really.  but at least it doesn't barf
+
+
 class ASICPlatform(TemplatedPlatform):
     connectors = []
     resources = OrderedDict()
     required_tools = []
-    command_templates = ['/bin/true'] # no command needed: stops barfing
+    command_templates = ['/bin/true']  # no command needed: stops barfing
     file_templates = {
         **TemplatedPlatform.build_script_templates,
         "{{name}}.il": r"""
@@ -277,8 +282,8 @@ class ASICPlatform(TemplatedPlatform):
         """,
     }
     toolchain = None
-    default_clk = "clk" # should be picked up / overridden by platform sys.clk
-    default_rst = "rst" # should be picked up / overridden by platform sys.rst
+    default_clk = "clk"  # should be picked up / overridden by platform sys.clk
+    default_rst = "rst"  # should be picked up / overridden by platform sys.rst
 
     def __init__(self, resources, jtag):
         self.jtag = jtag
@@ -292,10 +297,10 @@ class ASICPlatform(TemplatedPlatform):
         self.add_resources([JTAGResource('jtag', 0)], no_boundary_scan=True)
 
     def add_resources(self, resources, no_boundary_scan=False):
-        print ("ASICPlatform add_resources", resources)
+        print("ASICPlatform add_resources", resources)
         return super().add_resources(resources)
 
-    #def iter_ports(self):
+    # def iter_ports(self):
     #    yield from super().iter_ports()
     #    for io in self.jtag.ios.values():
     #        print ("iter ports", io.layout, io)
@@ -312,7 +317,7 @@ class ASICPlatform(TemplatedPlatform):
                             valid_xdrs=(0,), valid_attrs=None)
 
         m = Module()
-        print ("    get_input", pin, "port", port, port.layout)
+        print("    get_input", pin, "port", port, port.layout)
         m.d.comb += pin.i.eq(self._invert_if(invert, port))
         return m
 
@@ -321,7 +326,7 @@ class ASICPlatform(TemplatedPlatform):
                             valid_xdrs=(0,), valid_attrs=None)
 
         m = Module()
-        print ("    get_output", pin, "port", port, port.layout)
+        print("    get_output", pin, "port", port, port.layout)
         m.d.comb += port.eq(self._invert_if(invert, pin.o))
         return m
 
@@ -329,10 +334,10 @@ class ASICPlatform(TemplatedPlatform):
         self._check_feature("single-ended tristate", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
-        print ("    get_tristate", pin, "port", port, port.layout)
+        print("    get_tristate", pin, "port", port, port.layout)
         m = Module()
-        print ("       pad", pin, port, attrs)
-        print ("       pin", pin.layout)
+        print("       pad", pin, port, attrs)
+        print("       pin", pin.layout)
         return m
         #    m.submodules += Instance("$tribuf",
         #        p_WIDTH=pin.width,
@@ -352,17 +357,17 @@ class ASICPlatform(TemplatedPlatform):
         self._check_feature("single-ended input/output", pin, attrs,
                             valid_xdrs=(0,), valid_attrs=None)
 
-        print ("    get_input_output", pin, "port", port, port.layout)
+        print("    get_input_output", pin, "port", port, port.layout)
         m = Module()
-        print ("       port layout", port.layout)
-        print ("       pin", pin)
-        print ("            layout", pin.layout)
-        #m.submodules += Instance("$tribuf",
+        print("       port layout", port.layout)
+        print("       pin", pin)
+        print("            layout", pin.layout)
+        # m.submodules += Instance("$tribuf",
         #    p_WIDTH=pin.width,
         #    i_EN=io.pad.oe,
         #    i_A=self._invert_if(invert, io.pad.o),
         #    o_Y=port,
-        #)
+        # )
         # Create aliases for the port sub-signals
         port_i = port.io[0]
         port_o = port.io[1]
@@ -381,11 +386,10 @@ class ASICPlatform(TemplatedPlatform):
         return super().toolchain_prepare(fragment, name, **kwargs)
 
 
-
 def test_case0():
     print("Starting sanity test case!")
     print("printing out list of stuff in top")
-    print ("JTAG IOs", top.jtag.ios)
+    print("JTAG IOs", top.jtag.ios)
     # ok top now has a variable named "gpio", let's enumerate that too
     print("printing out list of stuff in top.gpio and its type")
     print(top.gpio.__class__.__name__, dir(top.gpio))
@@ -408,7 +412,7 @@ def test_case0():
     yield Settle()
     yield top.gpio.gpio2.o.eq(0)
     yield top.gpio.gpio3.o.eq(1)
-    yield 
+    yield
     yield top.gpio.gpio3.oe.eq(1)
     yield
     yield top.gpio.gpio3.oe.eq(0)
@@ -442,33 +446,34 @@ def test_case0():
         yield uart_pad.rx.i.eq(gpio_o2)
         yield Delay(delayVal)
         yield Settle()
-        yield # one clock cycle
+        yield  # one clock cycle
         tx_val = yield uart_pad.tx.o
-        print ("xmit uart", tx_val, gpio_o2)
-    
-    print ("jtag pad table keys")
-    print (top.jtag.resource_table_pads.keys())
+        print("xmit uart", tx_val, gpio_o2)
+
+    print("jtag pad table keys")
+    print(top.jtag.resource_table_pads.keys())
     uart_pad = top.jtag.resource_table_pads[('uart', 0)]
-    print ("uart pad", uart_pad)
-    print ("uart pad", uart_pad.layout)
+    print("uart pad", uart_pad)
+    print("uart pad", uart_pad.layout)
 
     yield top.gpio.gpio2.oe.eq(0)
     yield top.gpio.gpio3.oe.eq(0)
     yield top.jtag.gpio.gpio2.i.eq(0)
     yield Delay(delayVal)
-    yield Settle()   
+    yield Settle()
+
 
 def test_gpios(dut):
     print("Starting GPIO test case!")
     # TODO: make pad access parametrisable to cope with more than 4 GPIOs
     num_gpios = dut.gpio_o_test.width
     # Grab GPIO outpud pad resource from JTAG BS - end of chain
-    print (dut.jtag.boundary_scan_pads.keys())
+    print(dut.jtag.boundary_scan_pads.keys())
     gpio0_o = dut.jtag.boundary_scan_pads['gpio_0__gpio0__o']['o']
     gpio1_o = dut.jtag.boundary_scan_pads['gpio_0__gpio1__o']['o']
     gpio2_o = dut.jtag.boundary_scan_pads['gpio_0__gpio2__o']['o']
     gpio3_o = dut.jtag.boundary_scan_pads['gpio_0__gpio3__o']['o']
-    gpio_pad_out = [ gpio0_o, gpio1_o, gpio2_o, gpio3_o]
+    gpio_pad_out = [gpio0_o, gpio1_o, gpio2_o, gpio3_o]
 
     # Grab GPIO output enable pad resource from JTAG BS - end of chain
     gpio0_oe = dut.jtag.boundary_scan_pads['gpio_0__gpio0__oe']['o']
@@ -483,13 +488,13 @@ def test_gpios(dut):
     gpio2_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
     gpio3_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
     gpio_pad_in = [gpio0_pad_in, gpio1_pad_in, gpio2_pad_in, gpio3_pad_in]
-    
-    # Have the sim run through a for-loop where the gpio_o_test is 
+
+    # Have the sim run through a for-loop where the gpio_o_test is
     # incremented like a counter (0000, 0001...)
     # At each iteration of the for-loop, assert:
     # + output set at core matches output seen at pad
     # TODO + input set at pad matches input seen at core
-    # TODO + if gpio_o_test bit is cleared, output seen at pad matches 
+    # TODO + if gpio_o_test bit is cleared, output seen at pad matches
     # input seen at pad
     num_gpio_o_states = num_gpios**2
     pad_out = [0] * num_gpios
@@ -497,9 +502,9 @@ def test_gpios(dut):
     #print("Num of permutations of gpio_o_test record: ", num_gpio_o_states)
     for gpio_o_val in range(0, num_gpio_o_states):
         yield dut.gpio_o_test.eq(gpio_o_val)
-        #yield Settle()
-        yield # Move to the next clk cycle
-        
+        # yield Settle()
+        yield  # Move to the next clk cycle
+
         # Cycle through all input combinations
         for gpio_i_val in range(0, num_gpio_o_states):
             # Set each gpio input at pad to test value
@@ -518,68 +523,70 @@ def test_gpios(dut):
                 gpio_i_ro = yield dut.gpio_i_ro[gpio_bit]
                 out_test_bit = ((gpio_o_val & (1 << gpio_bit)) != 0)
                 in_bit = ((gpio_i_val & (1 << gpio_bit)) != 0)
-                # Check that the core end input matches pad 
+                # Check that the core end input matches pad
                 assert in_bit == gpio_i_ro
                 # Test that the output at pad matches:
                 # Pad output == given test output XOR test input
                 assert (out_test_bit ^ in_bit) == pad_out[gpio_bit]
-            
+
             # For debugging - VERY verbose
-            #print("---------------------")
+            # print("---------------------")
             #print("Test Out: ", bin(gpio_o_val))
-            #print("Test Input: ", bin(gpio_i_val)) 
+            #print("Test Input: ", bin(gpio_i_val))
             # Print MSB first
             #print("Pad Output: ", list(reversed(pad_out)))
-            #print("---------------------")
-        
+            # print("---------------------")
+
     # For-loop for testing output enable signals
     for gpio_o_val in range(0, num_gpio_o_states):
         yield dut.gpio_oe_test.eq(gpio_o_val)
-        yield # Move to the next clk cycle
-        
+        yield  # Move to the next clk cycle
+
         for gpio_bit in range(0, num_gpios):
             pad_oe[gpio_bit] = yield gpio_pad_oe[gpio_bit]
-        yield 
+        yield
 
         for gpio_bit in range(0, num_gpios):
             oe_test_bit = ((gpio_o_val & (1 << gpio_bit)) != 0)
             # oe set at core matches oe seen at pad:
             assert oe_test_bit == pad_oe[gpio_bit]
         # For debugging - VERY verbose
-        #print("---------------------")
+        # print("---------------------")
         #print("Test Output Enable: ", bin(gpio_o_val))
         # Print MSB first
         #print("Pad Output Enable: ", list(reversed(pad_oe)))
-        #print("---------------------") 
+        # print("---------------------")
 
     # Reset test ouput register
     yield dut.gpio_o_test.eq(0)
     print("GPIO Test PASSED!")
 
+
 def test_uart(dut):
     # grab the JTAG resource pad
-    print ()
-    print ("bs pad keys", dut.jtag.boundary_scan_pads.keys())
-    print ()
+    print()
+    print("bs pad keys", dut.jtag.boundary_scan_pads.keys())
+    print()
     uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
     uart_tx_pad = dut.jtag.boundary_scan_pads['uart_0__tx']['o']
 
-    print ("uart rx pad", uart_rx_pad)
-    print ("uart tx pad", uart_tx_pad)
+    print("uart rx pad", uart_rx_pad)
+    print("uart tx pad", uart_tx_pad)
 
     # Test UART by writing 0 and 1 to RX
     # Internally TX connected to RX,
     # so match pad TX with RX
     for i in range(0, 2):
         yield uart_rx_pad.eq(i)
-        #yield uart_rx_pad.eq(i)
+        # yield uart_rx_pad.eq(i)
         yield Settle()
-        yield # one clock cycle
+        yield  # one clock cycle
         tx_val = yield uart_tx_pad
-        print ("xmit uart", tx_val, 1)
+        print("xmit uart", tx_val, 1)
         assert tx_val == i
 
     print("UART Test PASSED!")
+
 
 def test_i2c(dut):
     i2c_sda_i_pad = dut.jtag.boundary_scan_pads['i2c_0__sda__i']['i']
@@ -595,18 +602,18 @@ def test_i2c(dut):
     #print ("i2c pad", i2c_pad.layout)
 
     for i in range(0, 2):
-        yield i2c_sda_i_pad.eq(i) #i2c_pad.sda.i.eq(i)
-        yield i2c_scl_i_pad.eq(i) #i2c_pad.scl.i.eq(i)
+        yield i2c_sda_i_pad.eq(i)  # i2c_pad.sda.i.eq(i)
+        yield i2c_scl_i_pad.eq(i)  # i2c_pad.scl.i.eq(i)
         yield dut.i2c_sda_oe_test.eq(i)
         yield dut.i2c_scl_oe_test.eq(i)
         yield Settle()
-        yield # one clock cycle
+        yield  # one clock cycle
         sda_o_val = yield i2c_sda_o_pad
         scl_o_val = yield i2c_scl_o_pad
         sda_oe_val = yield i2c_sda_oe_pad
         scl_oe_val = yield i2c_scl_oe_pad
-        print ("Test input: ", i, " SDA/SCL out: ", sda_o_val, scl_o_val,
-               " SDA/SCL oe: ", sda_oe_val, scl_oe_val)
+        print("Test input: ", i, " SDA/SCL out: ", sda_o_val, scl_o_val,
+              " SDA/SCL oe: ", sda_oe_val, scl_oe_val)
         assert sda_o_val == i
         assert scl_o_val == i
         assert sda_oe_val == i
@@ -614,26 +621,29 @@ def test_i2c(dut):
 
     print("I2C Test PASSED!")
 
+
 # JTAG boundary scan reg addresses - See c4m/nmigen/jtag/tap.py line #357
 BS_EXTEST = 0
 BS_INTEST = 0
 BS_SAMPLE = 2
 BS_PRELOAD = 2
+
+
 def test_jtag_bs_chain(dut):
-    #print(dir(dut.jtag))
-    #print(dir(dut))
-    
+    # print(dir(dut.jtag))
+    # print(dir(dut))
+
     print("JTAG BS Reset")
     yield from jtag_set_reset(dut.jtag)
 
     #print("JTAG I/O dictionary of core/pad signals:")
-    #print(dut.jtag.ios.keys())
-    
+    # print(dut.jtag.ios.keys())
+
     # Based on number of ios entries, produce a test shift reg pattern
     bslen = len(dut.jtag.ios)
-    bsdata = 2**bslen - 1 # Fill with all 1s for now
-    fulldata = bsdata # for testing
-    emptydata = 0 # for testing
+    bsdata = 2**bslen - 1  # Fill with all 1s for now
+    fulldata = bsdata  # for testing
+    emptydata = 0  # for testing
 
     mask_inputs = produce_ios_io_mask(dut, is_input=True)
     mask_outputs = produce_ios_io_mask(dut, is_input=False)
@@ -656,6 +666,7 @@ def test_jtag_bs_chain(dut):
     yield from jtag_unit_test(dut, BS_SAMPLE, True, emptydata, mask_high)
 
     print("JTAG Boundary Scan Chain Test PASSED!")
+
 
 def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
     bslen = len(dut.jtag.ios)
@@ -683,6 +694,7 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
     # Reset shift register between tests
     yield from jtag_set_reset(dut.jtag)
 
+
 def check_ios_keys(dut, test_vector):
     print("Checking ios signals with given test vector")
     bslen = len(dut.jtag.ios)
@@ -705,17 +717,21 @@ def check_ios_keys(dut, test_vector):
 
 # TODO: may need to expand to support further signals contained in the
 # JTAG module ios dictionary!
+
+
 def check_if_signal_output(signal_str):
     if ('__o' in signal_str) or ('__tx' in signal_str):
         return True
     else:
         return False
 
+
 def check_if_signal_input(signal_str):
     if ('__i' in signal_str) or ('__rx' in signal_str):
         return True
     else:
         return False
+
 
 def produce_ios_io_mask(dut, is_input=False):
     if is_input:
@@ -736,6 +752,7 @@ def produce_ios_io_mask(dut, is_input=False):
                 mask += (1 << i)
     return mask
 
+
 def print_all_ios_keys(dut):
     print("Print all ios keys")
     bslen = len(dut.jtag.ios)
@@ -749,7 +766,6 @@ def print_all_ios_keys(dut):
             print("Pad  Input  | Name: ", signal)
 
 
-
 # Copied from test_jtag_tap.py
 # JTAG-ircodes for accessing DMI
 DMI_ADDR = 5
@@ -760,6 +776,7 @@ DMI_WRRD = 7
 WB_ADDR = 8
 WB_READ = 9
 WB_WRRD = 10
+
 
 def test_jtag_dmi_wb():
     print(dir(top.jtag))
@@ -776,7 +793,7 @@ def test_jtag_dmi_wb():
 
     # read idcode
     idcode = yield from jtag_read_write_reg(top.jtag, 0b1, 32)
-    print ("idcode", hex(idcode))
+    print("idcode", hex(idcode))
     assert idcode == 0x18ff
 
     ####### JTAG to DMI ######
@@ -786,7 +803,7 @@ def test_jtag_dmi_wb():
 
     # read DMI CTRL register
     status = yield from jtag_read_write_reg(top.jtag, DMI_READ, 64)
-    print ("dmi ctrl status", hex(status))
+    print("dmi ctrl status", hex(status))
     #assert status == 4
 
     # write DMI address
@@ -794,15 +811,15 @@ def test_jtag_dmi_wb():
 
     # write DMI CTRL register
     status = yield from jtag_read_write_reg(top.jtag, DMI_WRRD, 64, 0b101)
-    print ("dmi ctrl status", hex(status))
-    #assert status == 4 # returned old value (nice! cool feature!)
+    print("dmi ctrl status", hex(status))
+    # assert status == 4 # returned old value (nice! cool feature!)
 
     # write DMI address
     yield from jtag_read_write_reg(top.jtag, DMI_ADDR, 8, DBGCore.CTRL)
 
     # read DMI CTRL register
     status = yield from jtag_read_write_reg(top.jtag, DMI_READ, 64)
-    print ("dmi ctrl status", hex(status))
+    print("dmi ctrl status", hex(status))
     #assert status == 6
 
     # write DMI MSR address
@@ -810,7 +827,7 @@ def test_jtag_dmi_wb():
 
     # read DMI MSR register
     msr = yield from jtag_read_write_reg(top.jtag, DMI_READ, 64)
-    print ("dmi msr", hex(msr))
+    print("dmi msr", hex(msr))
     #assert msr == 0xdeadbeef
 
     ####### JTAG to Wishbone ######
@@ -820,30 +837,31 @@ def test_jtag_dmi_wb():
 
     # write/read wishbone data
     data = yield from jtag_read_write_reg(top.jtag, WB_WRRD, 16, 0xfeef)
-    print ("wb write", hex(data))
+    print("wb write", hex(data))
 
     # write Wishbone address
     yield from jtag_read_write_reg(top.jtag, WB_ADDR, 16, 0x18)
 
     # write/read wishbone data
     data = yield from jtag_read_write_reg(top.jtag, WB_READ, 16, 0)
-    print ("wb read", hex(data))
+    print("wb read", hex(data))
 
     ####### done - tell dmi_sim to stop (otherwise it won't) ########
 
     top.jtag.stop = True
 
+
 def test_debug_print(dut):
     print("Test used for getting object methods/information")
     print("Moved here to clear clutter of gpio test")
-    
-    print ("printing out info about the resource gpio0")
-    print (dut.gpio['gpio0']['i'])
-    print ("this is a PIN resource", type(dut.gpio['gpio0']['i']))
+
+    print("printing out info about the resource gpio0")
+    print(dut.gpio['gpio0']['i'])
+    print("this is a PIN resource", type(dut.gpio['gpio0']['i']))
     # yield can only be done on SIGNALS or RECORDS,
     # NOT Pins/Resources gpio0_core_in = yield top.gpio['gpio0']['i']
     #print("Test gpio0 core in: ", gpio0_core_in)
-    
+
     print("JTAG")
     print(dut.jtag.__class__.__name__, dir(dut.jtag))
     print("TOP")
@@ -852,14 +870,14 @@ def test_debug_print(dut):
     print(dut.ports.__class__.__name__, dir(dut.ports))
     print("GPIO")
     print(dut.gpio.__class__.__name__, dir(dut.gpio))
-   
+
     print("UART")
     print(dir(dut.jtag.boundary_scan_pads['uart_0__rx__pad__i']))
     print(dut.jtag.boundary_scan_pads['uart_0__rx__pad__i'].keys())
     print(dut.jtag.boundary_scan_pads['uart_0__tx__pad__o'])
-    #print(type(dut.jtag.boundary_scan_pads['uart_0__rx__pad__i']['rx']))
-    print ("jtag pad table keys")
-    print (dut.jtag.resource_table_pads.keys())
+    # print(type(dut.jtag.boundary_scan_pads['uart_0__rx__pad__i']['rx']))
+    print("jtag pad table keys")
+    print(dut.jtag.resource_table_pads.keys())
     print(type(dut.jtag.resource_table_pads[('uart', 0)].rx.i))
     print(dut.jtag.boundary_scan_pads['uart_0__rx__i'])
 
@@ -870,13 +888,13 @@ def test_debug_print(dut):
     print(dut.jtag.resource_table_pads)
     print(dut.jtag.boundary_scan_pads)
 
-
     # Trying to read input from core side, looks like might be a pin...
     # XXX don't "look like" - don't guess - *print it out*
     #print ("don't guess, CHECK", type(top.gpio.gpio0.i))
-    
-    print () # extra print to divide the output
+
+    print()  # extra print to divide the output
     yield
+
 
 def setup_blinker(build_blinker=False):
     """
@@ -891,7 +909,7 @@ def setup_blinker(build_blinker=False):
     pinset = dummy_pinset()
     print(pinset)
     resources = create_resources(pinset)
-    top = Blinker(pinset, resources, no_jtag_connect=False)#True)
+    top = Blinker(pinset, resources, no_jtag_connect=False)  # True)
 
     vl = rtlil.convert(top, ports=top.ports())
     with open("test_jtag_blinker.il", "w") as f:
@@ -907,7 +925,9 @@ def setup_blinker(build_blinker=False):
         top.jtag.stop = False
         # rather than the client access the JTAG bus directly
         # create an alternative that the client sets
-        class Dummy: pass
+
+        class Dummy:
+            pass
         cdut = Dummy()
         cdut.cbus = JTAGInterface()
 
@@ -915,8 +935,8 @@ def setup_blinker(build_blinker=False):
         top.jtag.s = JTAGServer()
         cdut.c = JTAGClient()
         top.jtag.s.get_connection()
-        #else:
-        #    print ("running server only as requested, 
+        # else:
+        #    print ("running server only as requested,
         #           use openocd remote to test")
         #    sys.stdout.flush()
         #    top.jtag.s.get_connection(None) # block waiting for connection
@@ -925,7 +945,7 @@ def setup_blinker(build_blinker=False):
         cdut._ir_width = top.jtag._ir_width
         cdut.scan_len = top.jtag.scan_len
 
-        p = ASICPlatform (resources, top.jtag)
+        p = ASICPlatform(resources, top.jtag)
         p.build(top)
         # this is what needs to gets treated as "top", after "main module" top
         # is augmented with IO pads with JTAG tacked on.  the expectation that
@@ -934,6 +954,7 @@ def setup_blinker(build_blinker=False):
         top_fragment = p.fragment
 
     return top
+
 
 def test_jtag():
     dut = setup_blinker(build_blinker=False)
@@ -946,22 +967,23 @@ def test_jtag():
     sim = Simulator(dut)
     sim.add_clock(1e-6, domain="sync")      # standard clock
 
-    #sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
-    #if len(sys.argv) != 2 or sys.argv[1] != 'server':
+    # sim.add_sync_process(wrap(jtag_srv(top))) #? jtag server
+    # if len(sys.argv) != 2 or sys.argv[1] != 'server':
     # actual jtag tester
     #sim.add_sync_process(wrap(jtag_sim(cdut, top.jtag)))
     # handles (pretends to be) DMI
-    #sim.add_sync_process(wrap(dmi_sim(top.jtag)))
-    
-    #sim.add_sync_process(wrap(test_gpios(top)))
-    #sim.add_sync_process(wrap(test_uart(top)))
-    #sim.add_sync_process(wrap(test_i2c(top)))
-    #sim.add_sync_process(wrap(test_debug_print()))
+    # sim.add_sync_process(wrap(dmi_sim(top.jtag)))
+
+    # sim.add_sync_process(wrap(test_gpios(top)))
+    # sim.add_sync_process(wrap(test_uart(top)))
+    # sim.add_sync_process(wrap(test_i2c(top)))
+    # sim.add_sync_process(wrap(test_debug_print()))
 
     sim.add_sync_process(wrap(test_jtag_bs_chain(dut)))
 
     with sim.write_vcd("blinker_test.vcd"):
         sim.run()
+
 
 if __name__ == '__main__':
     test_jtag()
