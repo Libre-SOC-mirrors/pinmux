@@ -458,40 +458,9 @@ def test_case0():
     yield Delay(delayVal)
     yield Settle()   
 
-# Code borrowed from cesar, runs, but shouldn't actually work because of
-# self. statements and non-existent signal names.
-def test_case1():
-    print("Example test case")
-    yield Passive()
-    while True:
-        # Settle() is needed to give a quick response to
-        # the zero delay case
-        yield Settle()
-        # wait for rel_o to become active
-        while not (yield self.rel_o):
-            yield
-            yield Settle()
-        # read the transaction parameters
-        assert self.expecting, "an unexpected result was produced"
-        delay = (yield self.delay)
-        expected = (yield self.expected)
-        # wait for `delay` cycles
-        for _ in range(delay):
-            yield
-        # activate go_i for one cycle
-        yield self.go_i.eq(1)
-        yield self.count.eq(self.count + 1)
-        yield
-        # check received data against the expected value
-        result = (yield self.port)
-        assert result == expected,\
-            f"expected {expected}, received {result}"
-        yield self.go_i.eq(0)
-        yield self.port.eq(0)
-
 def test_gpios(dut):
     print("Starting GPIO test case!")
-    
+    # TODO: make pad access parametrisable to cope with more than 4 GPIOs
     num_gpios = dut.gpio_o_test.width
     # Grab GPIO outpud pad resource from JTAG BS - end of chain
     print (dut.jtag.boundary_scan_pads.keys())
@@ -653,31 +622,14 @@ BS_PRELOAD = 2
 def test_jtag_bs_chain(dut):
     #print(dir(dut.jtag))
     #print(dir(dut))
-    # TODO: make into a loop for future expansion
-    # All pad input signals to drive and output via TDO
-    i2c_sda_i_pad = dut.jtag.boundary_scan_pads['i2c_0__sda__i']['i']
-    i2c_scl_i_pad = dut.jtag.boundary_scan_pads['i2c_0__scl__i']['i']
-    uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
-    gpio0_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
-    gpio1_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
-    gpio2_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
-    gpio3_pad_in = dut.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
-
-    # Assert all for now 
-    #yield i2c_sda_i_pad.eq(1)
-    #yield i2c_scl_i_pad.eq(1)
-    #yield uart_rx_pad.eq(1)
-    #yield gpio0_pad_in.eq(1)
-    #yield gpio1_pad_in.eq(1)
-    #yield gpio2_pad_in.eq(1)
-    #yield gpio3_pad_in.eq(1)
     
     print("JTAG BS Reset")
     yield from jtag_set_reset(dut.jtag)
 
     #print("JTAG I/O dictionary of core/pad signals:")
     #print(dut.jtag.ios.keys())
-    # Based on number of ios entries, produce a test shift reg pattern - TODO
+    
+    # Based on number of ios entries, produce a test shift reg pattern
     bslen = len(dut.jtag.ios)
     bsdata = 2**bslen - 1 # Fill with all 1s for now
     fulldata = bsdata # for testing
