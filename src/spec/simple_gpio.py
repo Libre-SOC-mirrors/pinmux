@@ -118,6 +118,7 @@ def gpio_configure(dut, gpio, oe, output=0, bank_sel=0):
     print("Configuring CSR to {0:x}".format(csr_val))
     yield from wb_write(dut.bus, gpio, csr_val)
 
+# TODO: Return the configuration states
 def gpio_rd_csr(dut, gpio):
     csr_val = yield from wb_read(dut.bus, gpio)
     print("GPIO{0} | CSR: {1:x}".format(gpio, csr_val))
@@ -132,6 +133,7 @@ def gpio_rd_input(dut, gpio):
 def gpio_set_out(dut, gpio, output):
     yield from wb_write(dut.bus, gpio | (OADDR<<ADDROFFSET), (output<<OSHIFT))
 
+# TODO: There's probably a cleaner way to clear the bit...
 def gpio_set_in_pad(dut, gpio, in_val):
     old_in_val = yield dut.gpio_i
     if in_val:
