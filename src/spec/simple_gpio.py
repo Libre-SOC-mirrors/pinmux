@@ -5,7 +5,7 @@ testing, however it could also be used as an actual GPIO peripheral
 
 Modified for use with pinmux, will probably change the class name later.
 """
-
+from random import randint
 from nmigen import Elaboratable, Module, Signal, Record, Array
 from nmigen.utils import log2_int
 from nmigen.cli import rtlil
@@ -20,7 +20,10 @@ else:
     from nmigen.sim import Simulator, Settle
 
 # Bit shift position for CSR word used in WB transactions
-IADDRSHIFT = 8 # offset needed to tell WB to return input ONLY
+ADDROFFSET = 8 # offset where CSR/output/input addr are specified
+CSRADDR = 0 # addr to access CSR
+OADDR = 1 # addr needed to write/read output
+IADDR = 2 # addr to read GPIO inputs
 # Layout of 16-bit configuration word (? is unused):
 # ? ? ? i | bank_select[3:0] |? pden puen opendrain |? ien oe o
 ISHIFT = 12
@@ -72,15 +75,21 @@ class SimpleGPIO(Elaboratable):
         # Address second byte, bit 0 indicates input read 
         with m.If(bus.cyc & bus.stb):
             comb += wb_ack.eq(1) # always ack
-            comb += gpio_addr.eq(bus.adr[0:8])
+            comb += gpio_addr.eq(bus.adr[0:ADDROFFSET])
             with m.If(bus.we): # write
-                # Write to CSR
-                sync += gpio_o_list[gpio_addr].eq(wb_wr_data[OSHIFT])
-                sync += gpio_oe_list[gpio_addr].eq(wb_wr_data[OESHIFT])
-                sync += bank_sel.eq(wb_wr_data[BANKSHIFT:BANKSHIFT+4])
+                # Write/set output
+                with m.If(bus.adr[ADDROFFSET:] == OADDR):
+                    sync += gpio_o_list[gpio_addr].eq(wb_wr_data[OSHIFT])
+                # Write/set CSR
+                with m.Else():
+                    sync += gpio_o_list[gpio_addr].eq(wb_wr_data[OSHIFT])
+                    sync += gpio_oe_list[gpio_addr].eq(wb_wr_data[OESHIFT])
+                    sync += bank_sel.eq(wb_wr_data[BANKSHIFT:BANKSHIFT+4])
             with m.Else(): # read
                 # Read the value of the input
-                with m.If(bus.adr[8]):
+                with m.If(bus.adr[ADDROFFSET:] == OADDR):
+                    comb += wb_rd_data.eq(gpio_o_list[gpio_addr])
+                with m.If(bus.adr[ADDROFFSET:] == IADDR):
                     comb += wb_rd_data.eq(gpio_i_list[gpio_addr])
                 # Read the state of CSR bits
                 with m.Else():
@@ -116,18 +125,29 @@ def gpio_rd_csr(dut, gpio):
     return data
 
 def gpio_rd_input(dut, gpio):
-    in_val = yield from wb_read(dut.bus, gpio | (1<<IADDRSHIFT))
+    in_val = yield from wb_read(dut.bus, gpio | (IADDR<<ADDROFFSET))
     print("GPIO{0} | Input: {1:b}".format(gpio, in_val))
     return data
 
 def gpio_set_out(dut, gpio, output):
-    yield from wb_write(dut.bus, gpio, (output << OSHIFT))
+    yield from wb_write(dut.bus, gpio | (OADDR<<ADDROFFSET), (output<<OSHIFT))
 
 def gpio_set_in_pad(dut, gpio, in_val):
-    yield dut.gpio_i.eq(in_val)
+    old_in_val = yield dut.gpio_i
+    if in_val:
+        new_in_val = old_in_val | (in_val << gpio)
+    else:
+        temp = (old_in_val >> gpio) & 1
+        if temp:
+            mask = ~(1 << gpio)
+            new_in_val = old_in_val & mask
+        else:
+            new_in_val = old_in_val
+    print("Previous GPIO i: {0:b} | New GPIO i: {1:b}"
+          .format(old_in_val, new_in_val))
+    yield dut.gpio_i.eq(new_in_val)
 
-
-def sim_gpio(dut):
+def sim_gpio(dut, use_random=True):
 
     # GPIO0
     #data = yield from read_gpio(gpio, 0) # read gpio addr  0
@@ -136,27 +156,26 @@ def sim_gpio(dut):
     print(dir(dut))
     print(dut)
     num_gpios = len(dut.gpio_o)
-    bank_sel = 3
+    if use_random:
+        bank_sel = randint(0, num_gpios)
+    else:
+        bank_sel = 3 # not special, chose for testing
     oe = 1
     output = 0
+    # Configure GPIOs for 
     for gpio in range(0, num_gpios):
         yield from gpio_configure(dut, gpio, oe, output, bank_sel)
     
     for gpio in range(0, num_gpios):
         yield from gpio_set_out(dut, gpio, 1)
 
-    #for gpio in range(0, num_gpios):
-    #    yield from gpio_set_in_pad(dut, gpio, 1)
-    yield from gpio_set_in_pad(dut, 0, 1)
-    yield
-    yield from gpio_set_in_pad(dut, 1, 1)
-    yield
-    yield from gpio_set_in_pad(dut, 2, 1)
-    yield
-    yield from gpio_set_in_pad(dut, 3, 1)
-    yield
-    yield from gpio_set_in_pad(dut, 2, 0)
-    yield
+    for gpio in range(0, num_gpios):
+        yield from gpio_set_in_pad(dut, gpio, 1)
+        yield
+
+    for gpio in range(0, num_gpios):
+        yield from gpio_set_in_pad(dut, gpio, 0)
+        yield
 
     print("Finished the simple GPIO block test!")
 
