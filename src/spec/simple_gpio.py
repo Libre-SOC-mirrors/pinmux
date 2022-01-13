@@ -19,7 +19,6 @@ if cxxsim:
 else:
     from nmigen.sim import Simulator, Settle
 
-# Bit shift position for CSR word used in WB transactions
 ADDROFFSET = 8 # offset where CSR/output/input addr are specified
 CSRADDR = 0 # addr to access CSR
 OADDR = 1 # addr needed to write/read output
@@ -72,7 +71,7 @@ class SimpleGPIO(Elaboratable):
         gpio_i_list = Array(list(gpio_i))
 
         # Address first byte for GPIO (max would be 256 GPIOs)
-        # Address second byte, bit 0 indicates input read 
+        # Address second byte, indicates CSR, output, or input access
         with m.If(bus.cyc & bus.stb):
             comb += wb_ack.eq(1) # always ack
             comb += gpio_addr.eq(bus.adr[0:ADDROFFSET])
@@ -86,9 +85,10 @@ class SimpleGPIO(Elaboratable):
                     sync += gpio_oe_list[gpio_addr].eq(wb_wr_data[OESHIFT])
                     sync += bank_sel.eq(wb_wr_data[BANKSHIFT:BANKSHIFT+4])
             with m.Else(): # read
-                # Read the value of the input
+                # Read the value of the output
                 with m.If(bus.adr[ADDROFFSET:] == OADDR):
                     comb += wb_rd_data.eq(gpio_o_list[gpio_addr])
+                # Read the value of the input
                 with m.If(bus.adr[ADDROFFSET:] == IADDR):
                     comb += wb_rd_data.eq(gpio_i_list[gpio_addr])
                 # Read the state of CSR bits
@@ -96,8 +96,6 @@ class SimpleGPIO(Elaboratable):
                     comb += wb_rd_data.eq((gpio_o_list[gpio_addr] << OSHIFT)
                                           + (gpio_oe_list[gpio_addr] << OESHIFT)
                                           + (bank_sel << BANKSHIFT))
-                #comb += wb_rd_data.eq(gpio_a[gpio_addr])
-
         return m
 
     def __iter__(self):
@@ -107,8 +105,6 @@ class SimpleGPIO(Elaboratable):
 
     def ports(self):
         return list(self)
-
-
 
 def gpio_configure(dut, gpio, oe, output=0, bank_sel=0):
     csr_val = ( (bank_sel << BANKSHIFT)
