@@ -7,6 +7,7 @@ Modified for use with pinmux, will probably change the class name later.
 """
 from random import randint
 from nmigen import Elaboratable, Module, Signal, Record, Array
+from nmigen.hdl.rec import Layout
 from nmigen.utils import log2_int
 from nmigen.cli import rtlil
 from soc.minerva.wishbone import make_wb_layout
@@ -32,6 +33,21 @@ NUMBANKBITS = 3 # only supporting 8 banks (0-7)
 # For future testing:
 WORDSIZE = 8 # in bytes
 
+class CSRLayout(Layout):
+    def __init__(self):
+        super().__init__([
+            ("oe", unsigned(1)),
+            ("ie", unsigned(1)),
+            ("puen", unsigned(1)),
+            ("pden", unsigned(1)),
+            ("io", unsigned(1)),
+            ("bank_sel", unsigned(NUMBANKBITS))
+        ])
+
+class CSRBus(Record):
+    def __init__(self):
+        super().__init__(CSRLayout)
+
 class SimpleGPIO(Elaboratable):
 
     def __init__(self, n_gpio=16):
@@ -49,6 +65,7 @@ class SimpleGPIO(Elaboratable):
         self.gpio_ie = Signal(n_gpio)
         self.pden = Signal(n_gpio)
         self.puen = Signal(n_gpio)
+        self.csrbus = CSRBus()
 
     def elaborate(self, platform):
         m = Module()
@@ -66,6 +83,7 @@ class SimpleGPIO(Elaboratable):
         gpio_ie = self.gpio_ie
         pden = self.pden
         puen = self.puen
+        csrbus = self.csrbus
 
         comb += wb_ack.eq(0)
 
@@ -89,27 +107,30 @@ class SimpleGPIO(Elaboratable):
             comb += wb_ack.eq(1) # always ack
             comb += gpio_addr.eq(bus.adr)
             with m.If(bus.we): # write
-                # Write/set output
-                sync += gpio_oe_list[gpio_addr].eq(wb_wr_data[OESHIFT])
-                sync += gpio_ie_list[gpio_addr].eq(wb_wr_data[IESHIFT])
+                # Configure CSR
+                sync += csrbus.eq(wb_wr_data)
+                sync += gpio_oe_list[gpio_addr].eq(csrbus.oe)
+                sync += gpio_ie_list[gpio_addr].eq(csrbus.ie)
                 # check GPIO is in output mode and NOT input (oe high, ie low)
-                with m.If(wb_wr_data[OESHIFT] & (~wb_wr_data[IESHIFT])):
-                    sync += gpio_o_list[gpio_addr].eq(wb_wr_data[IOSHIFT])
-                sync += puen_list[gpio_addr].eq(wb_wr_data[PUSHIFT])
-                sync += pden_list[gpio_addr].eq(wb_wr_data[PDSHIFT])
+                with m.If(csrbus.oe & (~csrbus.ie)):
+                    sync += gpio_o_list[gpio_addr].eq(csrbus.io)
+                sync += puen_list[gpio_addr].eq(csrbus.puen)
+                sync += pden_list[gpio_addr].eq(csrbus.pden)
                 # TODO: clean up name
-                sync += bank_sel[gpio_addr].eq(
-                        wb_wr_data[BANKSHIFT:BANKSHIFT+NUMBANKBITS])
+                sync += bank_sel[gpio_addr].eq(csrbus.bank_sel)
             with m.Else(): # read
                 # Read the state of CSR bits
                 # Return state of input if ie
+
                 with m.If(gpio_ie_list[gpio_addr] == 1):
-                    comb += wb_rd_data.eq((gpio_oe_list[gpio_addr] << OESHIFT)
-                                        + (gpio_ie_list[gpio_addr] << IESHIFT)
-                                        + (puen_list[gpio_addr] << PUSHIFT)
-                                        + (pden_list[gpio_addr] << PDSHIFT)
-                                        + (gpio_i_list[gpio_addr] << IOSHIFT)
-                                        + (bank_sel[gpio_addr] << BANKSHIFT))
+                    comb += csrbus.ie.eq(gpio_i_list[gpio_addr])
+                    comb += wb_rd_data.eq(csrbus)
+                    #comb += wb_rd_data.eq((gpio_oe_list[gpio_addr] << OESHIFT)
+                    #                    + (gpio_ie_list[gpio_addr] << IESHIFT)
+                    #                    + (puen_list[gpio_addr] << PUSHIFT)
+                    #                    + (pden_list[gpio_addr] << PDSHIFT)
+                    #                    + (gpio_i_list[gpio_addr] << IOSHIFT)
+                    #                    + (bank_sel[gpio_addr] << BANKSHIFT))
                 # Return state of out if oe
                 with m.Else():
                     comb += wb_rd_data.eq((gpio_oe_list[gpio_addr] << OESHIFT)
