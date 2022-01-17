@@ -43,7 +43,7 @@ class SimpleGPIO(Elaboratable):
         spec.mask_wid = 4
         spec.reg_wid = 32
         self.bus = Record(make_wb_layout(spec), name="gpio_wb")
- 
+
         self.bank_sel = Array([Signal(NUMBANKBITS) for _ in range(n_gpio)])
         self.gpio_o = Signal(n_gpio)
         self.gpio_oe = Signal(n_gpio)
@@ -103,15 +103,6 @@ class SimpleGPIO(Elaboratable):
             with m.If(bus.we): # write
                 # Configure CSR
                 sync += csrbus.eq(wb_wr_data)
-                sync += gpio_oe_list[gpio_addr].eq(csrbus.oe)
-                sync += gpio_ie_list[gpio_addr].eq(csrbus.ie)
-                # check GPIO is in output mode and NOT input (oe high, ie low)
-                with m.If(csrbus.oe & (~csrbus.ie)):
-                    sync += gpio_o_list[gpio_addr].eq(csrbus.io)
-                sync += puen_list[gpio_addr].eq(csrbus.puen)
-                sync += pden_list[gpio_addr].eq(csrbus.pden)
-                # TODO: clean up name
-                sync += bank_sel[gpio_addr].eq(csrbus.bank_sel)
             with m.Else(): # read
                 # Read the state of CSR bits
                 # Return state of input if ie
@@ -122,6 +113,19 @@ class SimpleGPIO(Elaboratable):
                 with m.Else():
                     sync += csrbus.io.eq(gpio_o_list[gpio_addr])
                     comb += wb_rd_data.eq(csrbus)
+
+        # Combinatorial
+        comb += gpio_oe_list[gpio_addr].eq(csrbus.oe)
+        comb += gpio_ie_list[gpio_addr].eq(csrbus.ie)
+        # Check to prevent output being set if GPIO configured as input
+        # TODO: Is this necessary? PAD might deal with this
+        # check GPIO is in output mode and NOT input (oe high, ie low)
+        #with m.If(csrbus.oe & (~csrbus.ie)):
+        with m.If(gpio_oe_list[gpio_addr] & (~gpio_ie_list[gpio_addr])):
+            comb += gpio_o_list[gpio_addr].eq(csrbus.io)
+        comb += puen_list[gpio_addr].eq(csrbus.puen)
+        comb += pden_list[gpio_addr].eq(csrbus.pden)
+        comb += bank_sel[gpio_addr].eq(csrbus.bank_sel)
         return m
 
     def __iter__(self):
@@ -142,6 +146,10 @@ def gpio_configure(dut, gpio, oe, ie, puen, pden, outval, bank_sel):
     print("Configuring CSR to {0:x}".format(csr_val))
     yield from wb_write(dut.bus, gpio, csr_val)
     return csr_val # return the config state
+
+def reg_write(dut, gpio, reg_val):
+    print("Configuring CSR to {0:x}".format(reg_val))
+    yield from wb_write(dut.bus, gpio, reg_val)
 
 # TODO: Return the configuration states
 def gpio_rd_csr(dut, gpio):
@@ -210,7 +218,7 @@ def sim_gpio(dut, use_random=True):
         bank_sel = randint(0, 2**NUMBANKBITS)
         print("Random bank_select: {0:b}".format(bank_sel))
     else:
-        bank_sel = 0 #3 # not special, chose for testing
+        bank_sel = 3 # not special, chose for testing
     oe = 1
     ie = 0
     output = 0
@@ -238,7 +246,7 @@ def sim_gpio(dut, use_random=True):
     yield from gpio_set_in_pad(dut, 0, 1)
     yield
     temp = yield from gpio_rd_input(dut, 0)
-
+    yield
 
     # TODO: not working yet
     #test_pattern = []
@@ -246,6 +254,10 @@ def sim_gpio(dut, use_random=True):
     #    test_pattern.append(randint(0,1))
     #yield from gpio_test_in_pattern(dut, test_pattern)
 
+    #reg_val = 0x32
+    #yield from reg_write(dut, 0, reg_val)
+    #yield from reg_write(dut, 0, reg_val)
+    #yield
     print("Finished the simple GPIO block test!")
 
 def test_gpio():
