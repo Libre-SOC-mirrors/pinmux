@@ -91,6 +91,9 @@ class SimpleGPIO(Elaboratable):
         pden_list = Array(list(pden))
         puen_list = Array(list(puen))
 
+        # Flag for indicating rd/wr transactions
+        new_transaction = Signal(1)
+
         #print("Types:")
         #print("gpio_addr: ", type(gpio_addr))
         #print("gpio_o_list: ", type(gpio_o_list))
@@ -100,32 +103,38 @@ class SimpleGPIO(Elaboratable):
         with m.If(bus.cyc & bus.stb):
             comb += wb_ack.eq(1) # always ack
             comb += gpio_addr.eq(bus.adr)
+
+            sync += new_transaction.eq(1)
             with m.If(bus.we): # write
                 # Configure CSR
                 sync += csrbus.eq(wb_wr_data)
             with m.Else(): # read
                 # Read the state of CSR bits
-                # Return state of input if ie
-                with m.If(gpio_ie_list[gpio_addr] == 1):
-                    sync += csrbus.io.eq(gpio_i_list[gpio_addr])
-                    comb += wb_rd_data.eq(csrbus)
-                # Return state of out if oe
-                with m.Else():
-                    sync += csrbus.io.eq(gpio_o_list[gpio_addr])
-                    comb += wb_rd_data.eq(csrbus)
+                comb += wb_rd_data.eq(csrbus)
+        with m.Else():
+            sync += new_transaction.eq(0)
+            # Update the state of "io" while no WB transactions
+            with m.If(gpio_oe_list[gpio_addr] & (~gpio_ie_list[gpio_addr])):
+                sync += csrbus.io.eq(gpio_o_list[gpio_addr])
+            with m.If(gpio_ie_list[gpio_addr] & (~gpio_oe_list[gpio_addr])):
+                sync += csrbus.io.eq(gpio_i_list[gpio_addr])
+            with m.Else():
+                sync += csrbus.io.eq(csrbus.io)
 
-        # Combinatorial
-        comb += gpio_oe_list[gpio_addr].eq(csrbus.oe)
-        comb += gpio_ie_list[gpio_addr].eq(csrbus.ie)
-        # Check to prevent output being set if GPIO configured as input
-        # TODO: Is this necessary? PAD might deal with this
-        # check GPIO is in output mode and NOT input (oe high, ie low)
-        #with m.If(csrbus.oe & (~csrbus.ie)):
-        with m.If(gpio_oe_list[gpio_addr] & (~gpio_ie_list[gpio_addr])):
-            comb += gpio_o_list[gpio_addr].eq(csrbus.io)
-        comb += puen_list[gpio_addr].eq(csrbus.puen)
-        comb += pden_list[gpio_addr].eq(csrbus.pden)
-        comb += bank_sel[gpio_addr].eq(csrbus.bank_sel)
+        # Only update GPIOs config if a new transaction happened last cycle
+        # (read or write). Always lags from csrbus by 1 clk cycle, most
+        # sane way I could think of while using Record().
+        with m.If(new_transaction):
+            sync += gpio_oe_list[gpio_addr].eq(csrbus.oe)
+            sync += gpio_ie_list[gpio_addr].eq(csrbus.ie)
+            # Check to prevent output being set if GPIO configured as input
+            # TODO: Is this necessary? PAD might deal with this
+            # check GPIO is in output mode and NOT input (oe high, ie low)
+            with m.If(gpio_oe_list[gpio_addr] & (~gpio_ie_list[gpio_addr])):
+                sync += gpio_o_list[gpio_addr].eq(csrbus.io)
+            sync += puen_list[gpio_addr].eq(csrbus.puen)
+            sync += pden_list[gpio_addr].eq(csrbus.pden)
+            sync += bank_sel[gpio_addr].eq(csrbus.bank_sel)
         return m
 
     def __iter__(self):
@@ -145,6 +154,8 @@ def gpio_configure(dut, gpio, oe, ie, puen, pden, outval, bank_sel):
               | (bank_sel << BANKSHIFT) )
     print("Configuring CSR to {0:x}".format(csr_val))
     yield from wb_write(dut.bus, gpio, csr_val)
+    yield # Allow one clk cycle to propagate
+
     return csr_val # return the config state
 
 def reg_write(dut, gpio, reg_val):
@@ -177,6 +188,7 @@ def gpio_rd_input(dut, gpio):
 def gpio_set_out(dut, gpio, csr_val, output):
     print("Setting GPIO{0} output to {1}".format(gpio, output))
     yield from wb_write(dut.bus, gpio, csr_val | (output<<IOSHIFT))
+    yield # Allow one clk cycle to propagate
 
 # TODO: There's probably a cleaner way to clear the bit...
 def gpio_set_in_pad(dut, gpio, in_val):
@@ -193,6 +205,7 @@ def gpio_set_in_pad(dut, gpio, in_val):
     print("Previous GPIO i: {0:b} | New GPIO i: {1:b}"
           .format(old_in_val, new_in_val))
     yield dut.gpio_i.eq(new_in_val)
+    yield # Allow one clk cycle to propagate
 
 def gpio_test_in_pattern(dut, pattern):
     num_gpios = len(dut.gpio_o)
@@ -226,27 +239,27 @@ def sim_gpio(dut, use_random=True):
     pden = 0
     gpio_csr = [0] * num_gpios
     # Configure GPIOs for 
-    for gpio in range(0, 1): #num_gpios):
+    for gpio in range(0, num_gpios):
         gpio_csr[gpio] = yield from gpio_configure(dut, gpio, oe, ie, puen, 
                                                    pden, output, bank_sel)
     # Set outputs
-    for gpio in range(0, 1): #num_gpios):
+    for gpio in range(0, num_gpios):
         yield from gpio_set_out(dut, gpio, gpio_csr[gpio], 1)
 
     # Read CSR
-    for gpio in range(0, 1): #num_gpios):
+    for gpio in range(0, num_gpios):
         yield from gpio_rd_csr(dut, gpio)
 
     # Configure for input
     oe = 0
     ie = 1
-    gpio_csr[0] = yield from gpio_configure(dut, 0, oe, ie, puen, 
-                                            pden, output, bank_sel)
+    #for gpio in range(0, num_gpios):
+    #    gpio_csr[gpio] = yield from gpio_configure(dut, gpio, oe, ie, puen, 
+    #                                               pden, output, bank_sel)
     # Input testing
-    yield from gpio_set_in_pad(dut, 0, 1)
-    yield
-    temp = yield from gpio_rd_input(dut, 0)
-    yield
+    #    temp = yield from gpio_rd_input(dut, gpio)
+    #    yield from gpio_set_in_pad(dut, gpio, 1)
+    #    temp = yield from gpio_rd_input(dut, gpio)
 
     # TODO: not working yet
     #test_pattern = []
