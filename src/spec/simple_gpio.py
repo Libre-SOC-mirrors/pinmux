@@ -102,8 +102,8 @@ class SimpleGPIO(Elaboratable):
         # One address used to configure CSR, set output, read input
         with m.If(bus.cyc & bus.stb):
             comb += wb_ack.eq(1) # always ack
-            comb += gpio_addr.eq(bus.adr)
 
+            sync += gpio_addr.eq(bus.adr)
             sync += new_transaction.eq(1)
             with m.If(bus.we): # write
                 # Configure CSR
@@ -135,6 +135,7 @@ class SimpleGPIO(Elaboratable):
             sync += puen_list[gpio_addr].eq(csrbus.puen)
             sync += pden_list[gpio_addr].eq(csrbus.pden)
             sync += bank_sel[gpio_addr].eq(csrbus.bank_sel)
+
         return m
 
     def __iter__(self):
@@ -152,12 +153,13 @@ def gpio_configure(dut, gpio, oe, ie, puen, pden, outval, bank_sel):
               | (puen << PUSHIFT)
               | (pden << PDSHIFT)
               | (bank_sel << BANKSHIFT) )
-    print("Configuring CSR to {0:x}".format(csr_val))
+    print("Configuring GPIO{0} CSR to {1:x}".format(gpio, csr_val))
     yield from wb_write(dut.bus, gpio, csr_val)
     yield # Allow one clk cycle to propagate
 
     return csr_val # return the config state
 
+# Not used normally - only for debug
 def reg_write(dut, gpio, reg_val):
     print("Configuring CSR to {0:x}".format(reg_val))
     yield from wb_write(dut.bus, gpio, reg_val)
@@ -243,23 +245,27 @@ def sim_gpio(dut, use_random=True):
         gpio_csr[gpio] = yield from gpio_configure(dut, gpio, oe, ie, puen, 
                                                    pden, output, bank_sel)
     # Set outputs
+    output = 1
     for gpio in range(0, num_gpios):
-        yield from gpio_set_out(dut, gpio, gpio_csr[gpio], 1)
+        yield from gpio_set_out(dut, gpio, gpio_csr[gpio], output)
 
     # Read CSR
     for gpio in range(0, num_gpios):
-        yield from gpio_rd_csr(dut, gpio)
-
+        temp_csr = yield from gpio_rd_csr(dut, gpio)
+        assert ((temp_csr>>IOSHIFT) & 1) == output
     # Configure for input
     oe = 0
     ie = 1
-    #for gpio in range(0, num_gpios):
-    #    gpio_csr[gpio] = yield from gpio_configure(dut, gpio, oe, ie, puen, 
-    #                                               pden, output, bank_sel)
-    # Input testing
-    #    temp = yield from gpio_rd_input(dut, gpio)
-    #    yield from gpio_set_in_pad(dut, gpio, 1)
-    #    temp = yield from gpio_rd_input(dut, gpio)
+    for gpio in range(0, num_gpios):
+        gpio_csr[gpio] = yield from gpio_configure(dut, gpio, oe, ie, puen,
+                                                   pden, output, bank_sel)
+
+        temp = yield from gpio_rd_input(dut, gpio)
+        assert temp == 0
+
+        yield from gpio_set_in_pad(dut, gpio, 1)
+        temp = yield from gpio_rd_input(dut, gpio)
+        assert temp == 1
 
     # TODO: not working yet
     #test_pattern = []
