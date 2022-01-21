@@ -6,7 +6,7 @@ testing, however it could also be used as an actual GPIO peripheral
 Modified for use with pinmux, will probably change the class name later.
 """
 from random import randint
-from nmigen import Elaboratable, Module, Signal, Record, Array
+from nmigen import Elaboratable, Module, Signal, Record, Array, Cat
 from nmigen.hdl.rec import Layout
 from nmigen.utils import log2_int
 from nmigen.cli import rtlil
@@ -31,7 +31,7 @@ BANKSHIFT = 5
 NUMBANKBITS = 3 # only supporting 8 banks (0-7)
 
 # For future testing:
-WORDSIZE = 8 # in bytes
+WORDSIZE = 4 # in bytes
 
 class SimpleGPIO(Elaboratable):
 
@@ -52,14 +52,30 @@ class SimpleGPIO(Elaboratable):
         self.pden = Signal(n_gpio)
         self.puen = Signal(n_gpio)
 
-        layout = (("oe", 1),
-                  ("ie", 1),
-                  ("puen", 1),
-                  ("pden", 1),
-                  ("io", 1),
-                  ("bank_sel", NUMBANKBITS)
-                 )
-        self.csrbus = Record(layout)
+        csrbus_layout = (("oe", 1),
+                         ("ie", 1),
+                         ("puen", 1),
+                         ("pden", 1),
+                         ("io", 1),
+                         ("bank_sel", NUMBANKBITS)
+                         )
+        # self.csrbus = Record(csrbus_layout)
+
+        print("CSRBUS layout: ", csrbus_layout)
+
+        self.multicsrbus = Array([Record(csrbus_layout), Record(csrbus_layout), Record(csrbus_layout), Record(csrbus_layout)])
+
+
+        #gpio_layout = (("oe", 1),
+        #               ("ie", 1),
+        #               ("puen", 1),
+        #               ("pden", 1),
+        #               ("o", 1),
+        #               ("bank_sel", NUMBANKBITS),
+        #               ("i", 1),
+        #              )
+
+        #self.gpios = Array([Record(gpio_layout) for _ in range(n_gpio)])
 
     def elaborate(self, platform):
         m = Module()
@@ -77,7 +93,9 @@ class SimpleGPIO(Elaboratable):
         gpio_ie = self.gpio_ie
         pden = self.pden
         puen = self.puen
-        csrbus = self.csrbus
+        # csrbus = self.csrbus
+        multi = self.multicsrbus
+        #gpios = self.gpios 
 
         comb += wb_ack.eq(0)
 
@@ -107,35 +125,41 @@ class SimpleGPIO(Elaboratable):
             sync += new_transaction.eq(1)
             with m.If(bus.we): # write
                 # Configure CSR
-                sync += csrbus.eq(wb_wr_data)
+                for byte in range(0, WORDSIZE):
+                    sync += multi[byte].eq(wb_wr_data[byte*8:8+byte*8])
             with m.Else(): # read
-                # Read the state of CSR bits
-                comb += wb_rd_data.eq(csrbus)
+                # Concatinate the GPIO configs that are on the same "row" or
+                # address and send
+                multi_cat = []
+                for i in range(0, WORDSIZE):
+                    multi_cat.append(multi[i])
+                comb += wb_rd_data.eq(Cat(multi_cat))
         with m.Else():
             sync += new_transaction.eq(0)
             # Update the state of "io" while no WB transactions
-            with m.If(gpio_oe_list[gpio_addr] & (~gpio_ie_list[gpio_addr])):
-                sync += csrbus.io.eq(gpio_o_list[gpio_addr])
-            with m.If(gpio_ie_list[gpio_addr] & (~gpio_oe_list[gpio_addr])):
-                sync += csrbus.io.eq(gpio_i_list[gpio_addr])
-            with m.Else():
-                sync += csrbus.io.eq(csrbus.io)
+            for byte in range(0, WORDSIZE):
+                with m.If(gpio_oe_list[gpio_addr] & (~gpio_ie_list[gpio_addr])):
+                    sync += multi[byte].io.eq(gpio_o_list[gpio_addr+byte])
+                with m.If(gpio_ie_list[gpio_addr] & (~gpio_oe_list[gpio_addr])):
+                    sync += multi[byte].io.eq(gpio_i_list[gpio_addr+byte])
+                with m.Else():
+                    sync += multi[byte].io.eq(multi[byte].io)
 
         # Only update GPIOs config if a new transaction happened last cycle
         # (read or write). Always lags from csrbus by 1 clk cycle, most
         # sane way I could think of while using Record().
         with m.If(new_transaction):
-            sync += gpio_oe_list[gpio_addr].eq(csrbus.oe)
-            sync += gpio_ie_list[gpio_addr].eq(csrbus.ie)
-            # Check to prevent output being set if GPIO configured as input
-            # TODO: Is this necessary? PAD might deal with this
-            # check GPIO is in output mode and NOT input (oe high, ie low)
-            with m.If(gpio_oe_list[gpio_addr] & (~gpio_ie_list[gpio_addr])):
-                sync += gpio_o_list[gpio_addr].eq(csrbus.io)
-            sync += puen_list[gpio_addr].eq(csrbus.puen)
-            sync += pden_list[gpio_addr].eq(csrbus.pden)
-            sync += bank_sel[gpio_addr].eq(csrbus.bank_sel)
-
+            for byte in range(0, WORDSIZE):
+                sync += gpio_oe_list[gpio_addr+byte].eq(multi[byte].oe)
+                sync += gpio_ie_list[gpio_addr+byte].eq(multi[byte].ie)
+                sync += puen_list[gpio_addr+byte].eq(multi[byte].puen)
+                sync += pden_list[gpio_addr+byte].eq(multi[byte].pden)
+                # Check to prevent output being set if GPIO configured as input
+                # TODO: Is this necessary? PAD might deal with this
+                # check GPIO is in output mode and NOT input (oe high, ie low)
+                with m.If(gpio_oe_list[gpio_addr] & (~gpio_ie_list[gpio_addr])):
+                    sync += gpio_o_list[gpio_addr+byte].eq(multi[byte].io)
+                sync += bank_sel[gpio_addr+byte].eq(multi[byte].bank_sel)
         return m
 
     def __iter__(self):
@@ -146,8 +170,9 @@ class SimpleGPIO(Elaboratable):
     def ports(self):
         return list(self)
 
+
 # TODO: probably make into class (or return state in a variable) 
-def gpio_configure(dut, gpio, oe, ie, puen, pden, outval, bank_sel):
+def gpio_config(dut, gpio, oe, ie, puen, pden, outval, bank_sel, check=False):
     csr_val = ( (oe   << OESHIFT)
               | (ie   << IESHIFT)
               | (puen << PUSHIFT)
@@ -156,6 +181,22 @@ def gpio_configure(dut, gpio, oe, ie, puen, pden, outval, bank_sel):
     print("Configuring GPIO{0} CSR to {1:x}".format(gpio, csr_val))
     yield from wb_write(dut.bus, gpio, csr_val)
     yield # Allow one clk cycle to propagate
+
+    if(check):
+        # Check the written value
+        test_csr = yield from gpio_rd_csr(dut, gpio)
+        assert temp_csr == csi_val
+
+    return csr_val # return the config state
+
+def gpio_create_csrval(dut, oe, ie, puen, pden, outval, bank_sel):
+    csr_val = ( (oe   << OESHIFT)
+              | (ie   << IESHIFT)
+              | (puen << PUSHIFT)
+              | (pden << PDSHIFT)
+              | (outval << IOSHIFT)
+              | (bank_sel << BANKSHIFT) )
+    print("Created CSR value to write: {1:x}".format(csr_val))
 
     return csr_val # return the config state
 
@@ -224,6 +265,25 @@ def gpio_test_in_pattern(dut, pattern):
             if pat == len(pattern):
                 break
 
+def test_gpio_single(dut, gpio, use_random=True):
+    oe = 1
+    ie = 0
+    output = 0
+    puen = 0
+    pden = 0
+    if use_random:
+        bank_sel = randint(0, 2**NUMBANKBITS)
+        print("Random bank_select: {0:b}".format(bank_sel))
+    else:
+        bank_sel = 3 # not special, chose for testing
+
+    gpio_csr = yield from gpio_config(dut, gpio, oe, ie, puen, pden, output,
+                                      bank_sel, check=True)
+    # Enable output
+    output = 1
+    gpio_csr = yield from gpio_config(dut, gpio, oe, ie, puen, pden, output,
+                                      bank_sel, check=True) 
+
 
 def sim_gpio(dut, use_random=True):
     print(dir(dut))
@@ -234,6 +294,7 @@ def sim_gpio(dut, use_random=True):
         print("Random bank_select: {0:b}".format(bank_sel))
     else:
         bank_sel = 3 # not special, chose for testing
+    """
     oe = 1
     ie = 0
     output = 0
@@ -242,7 +303,7 @@ def sim_gpio(dut, use_random=True):
     gpio_csr = [0] * num_gpios
     # Configure GPIOs for 
     for gpio in range(0, num_gpios):
-        gpio_csr[gpio] = yield from gpio_configure(dut, gpio, oe, ie, puen, 
+        gpio_csr[gpio] = yield from gpio_config(dut, gpio, oe, ie, puen, 
                                                    pden, output, bank_sel)
     # Set outputs
     output = 1
@@ -257,7 +318,7 @@ def sim_gpio(dut, use_random=True):
     oe = 0
     ie = 1
     for gpio in range(0, num_gpios):
-        gpio_csr[gpio] = yield from gpio_configure(dut, gpio, oe, ie, puen,
+        gpio_csr[gpio] = yield from gpio_config(dut, gpio, oe, ie, puen,
                                                    pden, output, bank_sel)
 
         temp = yield from gpio_rd_input(dut, gpio)
@@ -272,15 +333,20 @@ def sim_gpio(dut, use_random=True):
     #for i in range(0, (num_gpios * 2)):
     #    test_pattern.append(randint(0,1))
     #yield from gpio_test_in_pattern(dut, test_pattern)
+    """
+    reg_val = 0xC56271A2
+    #reg_val =  0xFFFFFFFF
+    yield from reg_write(dut, 0, reg_val)
+    #yield from reg_write(dut, 0, reg_val)
+    yield
 
-    #reg_val = 0x32
-    #yield from reg_write(dut, 0, reg_val)
-    #yield from reg_write(dut, 0, reg_val)
-    #yield
+    csr_val = yield from wb_read(dut.bus, 0)
+    print("CSR Val: {0:x}".format(csr_val))
     print("Finished the simple GPIO block test!")
 
 def test_gpio():
-    dut = SimpleGPIO()
+    num_gpio = 4
+    dut = SimpleGPIO(num_gpio)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_gpio.il", "w") as f:
         f.write(vl)
