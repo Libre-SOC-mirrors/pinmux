@@ -63,7 +63,12 @@ class SimpleGPIO(Elaboratable):
 
         print("CSRBUS layout: ", csrbus_layout)
 
-        self.multicsrbus = Array([Record(csrbus_layout), Record(csrbus_layout), Record(csrbus_layout), Record(csrbus_layout)])
+        # create array - probably a cleaner way to do this...
+        temp = []
+        for i in range(0, WORDSIZE):
+            temp_str = "word{}".format(i)
+            temp.append(Record(name=temp_str, layout=csrbus_layout))
+        self.multicsrbus = Array(temp)
 
 
         #gpio_layout = (("oe", 1),
@@ -120,7 +125,6 @@ class SimpleGPIO(Elaboratable):
         # One address used to configure CSR, set output, read input
         with m.If(bus.cyc & bus.stb):
             comb += wb_ack.eq(1) # always ack
-
             sync += gpio_addr.eq(bus.adr)
             sync += new_transaction.eq(1)
             with m.If(bus.we): # write
@@ -170,6 +174,17 @@ class SimpleGPIO(Elaboratable):
     def ports(self):
         return list(self)
 
+def config_to_regval(oe, ie, puen, pden, outval, bank_sel):
+    csr_val = ( (oe   << OESHIFT)
+              | (ie   << IESHIFT)
+              | (puen << PUSHIFT)
+              | (pden << PDSHIFT)
+              | (outval << IOSHIFT)
+              | (bank_sel << BANKSHIFT) )
+    print("Created CSR value: {1:x}".format(csr_val))
+
+    return csr_val # return the config state
+
 
 # TODO: probably make into class (or return state in a variable) 
 def gpio_config(dut, gpio, oe, ie, puen, pden, outval, bank_sel, check=False):
@@ -177,6 +192,7 @@ def gpio_config(dut, gpio, oe, ie, puen, pden, outval, bank_sel, check=False):
               | (ie   << IESHIFT)
               | (puen << PUSHIFT)
               | (pden << PDSHIFT)
+              | (outval << IOSHIFT)
               | (bank_sel << BANKSHIFT) )
     print("Configuring GPIO{0} CSR to {1:x}".format(gpio, csr_val))
     yield from wb_write(dut.bus, gpio, csr_val)
@@ -185,18 +201,7 @@ def gpio_config(dut, gpio, oe, ie, puen, pden, outval, bank_sel, check=False):
     if(check):
         # Check the written value
         test_csr = yield from gpio_rd_csr(dut, gpio)
-        assert temp_csr == csi_val
-
-    return csr_val # return the config state
-
-def gpio_create_csrval(dut, oe, ie, puen, pden, outval, bank_sel):
-    csr_val = ( (oe   << OESHIFT)
-              | (ie   << IESHIFT)
-              | (puen << PUSHIFT)
-              | (pden << PDSHIFT)
-              | (outval << IOSHIFT)
-              | (bank_sel << BANKSHIFT) )
-    print("Created CSR value to write: {1:x}".format(csr_val))
+        assert test_csr == csr_val
 
     return csr_val # return the config state
 
@@ -217,7 +222,8 @@ def gpio_rd_csr(dut, gpio):
         print("Input: {0:b}".format((csr_val >> IOSHIFT) & 1))
     else:
         print("Output: {0:b}".format((csr_val >> IOSHIFT) & 1))
-    print("Bank Select: {0:b}".format((csr_val >> BANKSHIFT) & 1))
+    bank_sel_mask = (2**NUMBANKBITS)-1
+    print("Bank Sel: {0:b}".format((csr_val >> BANKSHIFT) & bank_sel_mask))
     # gpio_parse_csr(csr_val)
     return csr_val
 
@@ -334,14 +340,17 @@ def sim_gpio(dut, use_random=True):
     #    test_pattern.append(randint(0,1))
     #yield from gpio_test_in_pattern(dut, test_pattern)
     """
-    reg_val = 0xC56271A2
-    #reg_val =  0xFFFFFFFF
-    yield from reg_write(dut, 0, reg_val)
-    #yield from reg_write(dut, 0, reg_val)
-    yield
 
-    csr_val = yield from wb_read(dut.bus, 0)
-    print("CSR Val: {0:x}".format(csr_val))
+    yield from test_gpio_single(dut, 0, use_random=True)
+
+    #reg_val = 0xC56271A2
+    #reg_val =  0xFFFFFFFF
+    #yield from reg_write(dut, 0, reg_val)
+    #yield from reg_write(dut, 0, reg_val)
+    #yield
+
+    #csr_val = yield from wb_read(dut.bus, 0)
+    #print("CSR Val: {0:x}".format(csr_val))
     print("Finished the simple GPIO block test!")
 
 def test_gpio():
