@@ -6,6 +6,7 @@ testing, however it could also be used as an actual GPIO peripheral
 Modified for use with pinmux, will probably change the class name later.
 """
 from random import randint
+from math import ceil, floor
 from nmigen import Elaboratable, Module, Signal, Record, Array, Cat
 from nmigen.hdl.rec import Layout
 from nmigen.utils import log2_int
@@ -21,20 +22,29 @@ else:
     from nmigen.sim import Simulator, Settle
 
 # Layout of 8-bit configuration word:
-# bank_select[2:0] i/o | pden puen ien oe
-OESHIFT = 0
-IESHIFT = 1
-PUSHIFT = 2
-PDSHIFT = 3
-IOSHIFT = 4
-BANKSHIFT = 5
-NUMBANKBITS = 3 # only supporting 8 banks (0-7)
+# bank[2:0] i/o | pden puen ien oe
+NUMBANKBITS = 3 # max 3 bits, only supporting 4 banks (0-3)
+csrbus_layout = (("oe", 1),
+                 ("ie", 1),
+                 ("puen", 1),
+                 ("pden", 1),
+                 ("io", 1),
+                 ("bank", NUMBANKBITS)
+                )
+
+gpio_layout = (("i", 1),
+               ("oe", 1),
+               ("o", 1),
+               ("puen", 1),
+               ("pden", 1),
+               ("bank", NUMBANKBITS)
+              )
 
 class SimpleGPIO(Elaboratable):
 
     def __init__(self, wordsize=4, n_gpio=16):
-        print("WB Data width: {0}, # of GPIOs: {1}"
-                .format(wb_data_width, n_gpio))
+        print("WB Data # of bytes: {0}, # of GPIOs: {1}"
+                .format(wordsize, n_gpio))
         self.wordsize = wordsize
         self.n_gpio = n_gpio
         class Spec: pass
@@ -44,33 +54,7 @@ class SimpleGPIO(Elaboratable):
         spec.reg_wid = wordsize*8 # 32
         self.bus = Record(make_wb_layout(spec), name="gpio_wb")
 
-        self.bank_sel = Array([Signal(NUMBANKBITS) for _ in range(n_gpio)])
-        self.gpio_o = Signal(n_gpio)
-        self.gpio_oe = Signal(n_gpio)
-        self.gpio_i = Signal(n_gpio)
-        self.gpio_ie = Signal(n_gpio)
-        self.pden = Signal(n_gpio)
-        self.puen = Signal(n_gpio)
-
-        gpio_layout = (("i", 1),
-                       ("oe", 1),
-                       ("o", 1),
-                       ("puen", 1),
-                       ("pden", 1),
-                       ("bank", NUMBANKBITS)
-                      )
-
-        csrbus_layout = (("oe", 1),
-                         ("ie", 1),
-                         ("puen", 1),
-                         ("pden", 1),
-                         ("io", 1),
-                         ("bank_sel", NUMBANKBITS)
-                         )
-        # self.csrbus = Record(csrbus_layout)
-
         print("CSRBUS layout: ", csrbus_layout)
-
         # create array - probably a cleaner way to do this...
         temp = []
         for i in range(0, self.wordsize):
@@ -93,13 +77,6 @@ class SimpleGPIO(Elaboratable):
         wb_wr_data = bus.dat_w
         wb_ack = bus.ack
 
-        bank_sel = self.bank_sel
-        gpio_o = self.gpio_o
-        gpio_oe = self.gpio_oe
-        gpio_i = self.gpio_i
-        gpio_ie = self.gpio_ie
-        pden = self.pden
-        puen = self.puen
         gpio_ports = self.gpio_ports
         # csrbus = self.csrbus
         multi = self.multicsrbus
@@ -107,22 +84,11 @@ class SimpleGPIO(Elaboratable):
         comb += wb_ack.eq(0)
 
         gpio_addr = Signal(log2_int(self.n_gpio))
-        gpio_o_list = Array(list(gpio_o))
-        print(bank_sel)
-        print(gpio_o_list)
-        gpio_oe_list = Array(list(gpio_oe))
-        gpio_i_list = Array(list(gpio_i))
-        gpio_ie_list = Array(list(gpio_ie))
-        pden_list = Array(list(pden))
-        puen_list = Array(list(puen))
-
         # Flag for indicating rd/wr transactions
         new_transaction = Signal(1)
 
         #print("Types:")
         #print("gpio_addr: ", type(gpio_addr))
-        #print("gpio_o_list: ", type(gpio_o_list))
-        #print("bank_sel: ", type(bank_sel))
 
         # One address used to configure CSR, set output, read input
         with m.If(bus.cyc & bus.stb):
@@ -145,10 +111,8 @@ class SimpleGPIO(Elaboratable):
             # Update the state of "io" while no WB transactions
             for byte in range(0, self.wordsize):
                 with m.If(gpio_ports[gpio_addr+byte].oe):
-                    #sync += multi[byte].io.eq(gpio_o_list[gpio_addr+byte])
                     sync += multi[byte].io.eq(gpio_ports[gpio_addr+byte].o)
                 with m.Else():
-                    #sync += multi[byte].io.eq(gpio_i_list[gpio_addr+byte])
                     sync += multi[byte].io.eq(gpio_ports[gpio_addr+byte].i)
         # Only update GPIOs config if a new transaction happened last cycle
         # (read or write). Always lags from csrbus by 1 clk cycle, most
@@ -156,49 +120,82 @@ class SimpleGPIO(Elaboratable):
         with m.If(new_transaction):
             for byte in range(0, self.wordsize):
                 sync += gpio_ports[gpio_addr+byte].oe.eq(multi[byte].oe)
-                #sync += gpio_ie_list[gpio_addr+byte].eq(multi[byte].ie)
                 sync += gpio_ports[gpio_addr+byte].puen.eq(multi[byte].puen)
                 sync += gpio_ports[gpio_addr+byte].pden.eq(multi[byte].pden)
                 # Check to prevent output being set if GPIO configured as input
-                # TODO: Is this necessary? PAD might deal with this
-                # check GPIO is in output mode and NOT input (oe high, ie low)
+                # NOTE: No checking is done if ie/oe high together
                 with m.If(gpio_ports[gpio_addr+byte].oe):
                     sync += gpio_ports[gpio_addr+byte].o.eq(multi[byte].io)
-                sync += gpio_ports[gpio_addr+byte].bank.eq(multi[byte].bank_sel)
+                sync += gpio_ports[gpio_addr+byte].bank.eq(multi[byte].bank)
         return m
 
     def __iter__(self):
         for field in self.bus.fields.values():
             yield field
-        yield self.gpio_o
+        #yield self.gpio_o
 
     def ports(self):
         return list(self)
 
-def config_to_regval(oe, ie, puen, pden, outval, bank_sel):
-    csr_val = ( (oe   << OESHIFT)
-              | (ie   << IESHIFT)
-              | (puen << PUSHIFT)
-              | (pden << PDSHIFT)
-              | (outval << IOSHIFT)
-              | (bank_sel << BANKSHIFT) )
-    print("Created CSR value: {1:x}".format(csr_val))
+# The shifting of control bits in the configuration word is dependent on the
+# defined layout. To prevent maintaining the shift constants in a separate
+# location, the same layout is used to generate a dictionary of bit shifts
+# with which the configuration word can be produced!
+def create_shift_dict():
+    shift = 0
+    shift_dict = {}
+    for i in range(0, len(csrbus_layout)):
+        shift_dict[csrbus_layout[i][0]] = shift
+        shift += csrbus_layout[i][1]
+    print(shift_dict)
+    return shift_dict
+
+def config_to_csr(oe, ie, puen, pden, outval, bank):
+    shift_dict = create_shift_dict()
+    csr_val = ( (oe   << shift_dict['oe'])
+              | (ie   << shift_dict['ie'])
+              | (puen << shift_dict['puen'])
+              | (pden << shift_dict['pden'])
+              | (outval << shift_dict['io'])
+              | (bank << shift_dict['bank']) )
+
+    print("Created CSR value: {0:x}".format(csr_val))
 
     return csr_val # return the config state
 
 
 # TODO: probably make into class (or return state in a variable) 
-def gpio_config(dut, gpio, oe, ie, puen, pden, outval, bank_sel, check=False):
-    csr_val = ( (oe   << OESHIFT)
-              | (ie   << IESHIFT)
-              | (puen << PUSHIFT)
-              | (pden << PDSHIFT)
-              | (outval << IOSHIFT)
-              | (bank_sel << BANKSHIFT) )
-    print("Configuring GPIO{0} CSR to {1:x}".format(gpio, csr_val))
-    yield from wb_write(dut.bus, gpio, csr_val)
-    yield # Allow one clk cycle to propagate
-
+def gpio_config(dut, gpio, oe, ie, puen, pden, outval, bank, gpio_end=-1, check=False, wordsize=4):
+    csr_val = config_to_csr(oe, ie, puen, pden, outval, bank)
+    if gpio_end == -1:
+        # Single gpio configure
+        print("Configuring GPIO{0} CSR to {1:x}".format(gpio, csr_val))
+        yield from wb_write(dut.bus, gpio, csr_val)
+        yield # Allow one clk cycle to propagate
+    else:
+        if gpio > gpio_end:
+            print("ERROR! Last GPIO given {0} is lower than the start GPIO {1}"
+                  .format(gpio_end, gpio))
+            #exit()
+        else:
+            single_csr = csr_val
+            n_gpios = gpio_end - gpio + 1
+            n_rows = ceil(n_gpios / wordsize)
+            print("Num of GPIOs: {0}, Num of rows: {1}".format(n_gpios, n_rows))
+            curr_gpio = gpio
+            start_addr = floor(gpio / wordsize)
+            for row in range(0, n_rows):
+                temp = 0
+                start_byte = curr_gpio % wordsize
+                for byte in range(start_byte, wordsize):
+                    if curr_gpio > n_gpios:
+                        break
+                    temp += single_csr << (8 * byte)
+                    curr_gpio += 1
+                print("Configuring CSR to {0:x} to addr: {1:x}"
+                        .format(temp, start_addr+row))
+                yield from wb_write(dut.bus, start_addr+row, temp)
+                yield # Allow one clk cycle to propagate 
     if(check):
         # Check the written value
         test_csr = yield from gpio_rd_csr(dut, gpio)
@@ -213,19 +210,19 @@ def reg_write(dut, gpio, reg_val):
 
 # TODO: Return the configuration states
 def gpio_rd_csr(dut, gpio):
+    shift_dict = create_shift_dict()
     csr_val = yield from wb_read(dut.bus, gpio)
     print("GPIO{0} | CSR: {1:x}".format(gpio, csr_val))
-    print("Output Enable: {0:b}".format((csr_val >> OESHIFT) & 1))
-    print("Input Enable: {0:b}".format((csr_val >> IESHIFT) & 1))
-    print("Pull-Up Enable: {0:b}".format((csr_val >> PUSHIFT) & 1))
-    print("Pull-Down Enable: {0:b}".format((csr_val >> PDSHIFT) & 1))
-    if ((csr_val >> IESHIFT) & 1):
-        print("Input: {0:b}".format((csr_val >> IOSHIFT) & 1))
+    print("Output Enable: {0:b}".format((csr_val >> shift_dict['oe']) & 1))
+    print("Input Enable: {0:b}".format((csr_val >> shift_dict['ie']) & 1))
+    print("Pull-Up Enable: {0:b}".format((csr_val >> shift_dict['puen']) & 1))
+    print("Pull-Down Enable: {0:b}".format((csr_val >> shift_dict['pden']) & 1))
+    if ((csr_val >> shift_dict['oe']) & 1):
+        print("Output: {0:b}".format((csr_val >> shift_dict['io']) & 1))
     else:
-        print("Output: {0:b}".format((csr_val >> IOSHIFT) & 1))
-    bank_sel_mask = (2**NUMBANKBITS)-1
-    print("Bank Sel: {0:b}".format((csr_val >> BANKSHIFT) & bank_sel_mask))
-    # gpio_parse_csr(csr_val)
+        print("Input: {0:b}".format((csr_val >> shift_dict['io']) & 1))
+    bank_mask = (2**NUMBANKBITS)-1
+    print("Bank: {0:b}".format((csr_val >> shift_dict['bank']) & bank_mask))
     return csr_val
 
 # TODO
@@ -258,7 +255,7 @@ def gpio_set_in_pad(dut, gpio, in_val):
     yield # Allow one clk cycle to propagate
 
 def gpio_test_in_pattern(dut, pattern):
-    num_gpios = len(dut.gpio_o)
+    num_gpios = len(dut.gpio_ports)
     print("Test pattern:")
     print(pattern)
     for pat in range(0, len(pattern)):
@@ -279,28 +276,29 @@ def test_gpio_single(dut, gpio, use_random=True):
     puen = 0
     pden = 0
     if use_random:
-        bank_sel = randint(0, 2**NUMBANKBITS)
-        print("Random bank_select: {0:b}".format(bank_sel))
+        bank = randint(0, (2**NUMBANKBITS)-1)
+        print("Random bank select: {0:b}".format(bank))
     else:
-        bank_sel = 3 # not special, chose for testing
+        bank = 3 # not special, chose for testing
 
     gpio_csr = yield from gpio_config(dut, gpio, oe, ie, puen, pden, output,
-                                      bank_sel, check=True)
+                                      bank, check=True)
     # Enable output
     output = 1
     gpio_csr = yield from gpio_config(dut, gpio, oe, ie, puen, pden, output,
-                                      bank_sel, check=True) 
+                                      bank, check=True) 
 
 
 def sim_gpio(dut, use_random=True):
-    #print(dir(dut))
+    num_gpios = len(dut.gpio_ports)
     #print(dut)
-    num_gpios = len(dut.gpio_o)
-    if use_random:
-        bank_sel = randint(0, 2**NUMBANKBITS)
-        print("Random bank_select: {0:b}".format(bank_sel))
-    else:
-        bank_sel = 3 # not special, chose for testing
+    #print(dir(dut.gpio_ports))
+    #print(len(dut.gpio_ports))
+    #if use_random:
+    #    bank = randint(0, (2**NUMBANKBITS)-1)
+    #    print("Random bank select: {0:b}".format(bank))
+    #else:
+    #    bank = 3 # not special, chose for testing
     """
     oe = 1
     ie = 0
@@ -311,7 +309,7 @@ def sim_gpio(dut, use_random=True):
     # Configure GPIOs for 
     for gpio in range(0, num_gpios):
         gpio_csr[gpio] = yield from gpio_config(dut, gpio, oe, ie, puen, 
-                                                   pden, output, bank_sel)
+                                                   pden, output, bank)
     # Set outputs
     output = 1
     for gpio in range(0, num_gpios):
@@ -326,7 +324,7 @@ def sim_gpio(dut, use_random=True):
     ie = 1
     for gpio in range(0, num_gpios):
         gpio_csr[gpio] = yield from gpio_config(dut, gpio, oe, ie, puen,
-                                                   pden, output, bank_sel)
+                                                   pden, output, bank)
 
         temp = yield from gpio_rd_input(dut, gpio)
         assert temp == 0
@@ -342,8 +340,17 @@ def sim_gpio(dut, use_random=True):
     #yield from gpio_test_in_pattern(dut, test_pattern)
     """
 
-    yield from test_gpio_single(dut, 0, use_random=True)
-
+    #yield from test_gpio_single(dut, 0, use_random)
+    #yield from test_gpio_single(dut, 1, use_random)
+    oe = 1
+    ie = 0
+    puen = 0
+    pden = 1
+    outval = 1
+    bank = 2
+    start_gpio = 1
+    end_gpio = 6
+    yield from gpio_config(dut, start_gpio, oe, ie, puen, pden, outval, bank, end_gpio, check=False, wordsize=4)
     #reg_val = 0xC56271A2
     #reg_val =  0xFFFFFFFF
     #yield from reg_write(dut, 0, reg_val)
@@ -355,7 +362,7 @@ def sim_gpio(dut, use_random=True):
     print("Finished the simple GPIO block test!")
 
 def test_gpio():
-    num_gpio = 4
+    num_gpio = 8
     wordsize = 4 # Number of bytes in the WB data word
     dut = SimpleGPIO(wordsize, num_gpio)
     vl = rtlil.convert(dut, ports=dut.ports())
