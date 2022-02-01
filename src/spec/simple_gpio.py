@@ -137,94 +137,13 @@ class SimpleGPIO(Elaboratable):
     def ports(self):
         return list(self)
 
-# The shifting of control bits in the configuration word is dependent on the
-# defined layout. To prevent maintaining the shift constants in a separate
-# location, the same layout is used to generate a dictionary of bit shifts
-# with which the configuration word can be produced!
-def create_shift_dict():
-    shift = 0
-    shift_dict = {}
-    for i in range(0, len(csrbus_layout)):
-        shift_dict[csrbus_layout[i][0]] = shift
-        shift += csrbus_layout[i][1]
-    print(shift_dict)
-    return shift_dict
-
-def config_to_csr(oe, ie, puen, pden, outval, bank):
-    shift_dict = create_shift_dict()
-    csr_val = ( (oe   << shift_dict['oe'])
-              | (ie   << shift_dict['ie'])
-              | (puen << shift_dict['puen'])
-              | (pden << shift_dict['pden'])
-              | (outval << shift_dict['io'])
-              | (bank << shift_dict['bank']) )
-
-    print("Created CSR value: {0:x}".format(csr_val))
-
-    return csr_val # return the config state
-
-
 # TODO: probably make into class (or return state in a variable) 
-def gpio_config(dut, gpio, oe, ie, puen, pden, outval, bank, gpio_end=-1, check=False, wordsize=4):
-    csr_val = config_to_csr(oe, ie, puen, pden, outval, bank)
-    if gpio_end == -1:
-        # Single gpio configure
-        print("Configuring GPIO{0} CSR to {1:x}".format(gpio, csr_val))
-        yield from wb_write(dut.bus, gpio, csr_val)
-        yield # Allow one clk cycle to propagate
-    else:
-        if gpio > gpio_end:
-            print("ERROR! Last GPIO given {0} is lower than the start GPIO {1}"
-                  .format(gpio_end, gpio))
-            #exit()
-        else:
-            single_csr = csr_val
-            n_gpios = gpio_end - gpio + 1
-            n_rows = ceil(n_gpios / wordsize)
-            print("Num of GPIOs: {0}, Num of rows: {1}".format(n_gpios, n_rows))
-            curr_gpio = gpio
-            start_addr = floor(gpio / wordsize)
-            for row in range(0, n_rows):
-                temp = 0
-                start_byte = curr_gpio % wordsize
-                for byte in range(start_byte, wordsize):
-                    if curr_gpio > n_gpios:
-                        break
-                    temp += single_csr << (8 * byte)
-                    curr_gpio += 1
-                print("Configuring CSR to {0:x} to addr: {1:x}"
-                        .format(temp, start_addr+row))
-                yield from wb_write(dut.bus, start_addr+row, temp)
-                yield # Allow one clk cycle to propagate 
-    if(check):
-        # Check the written value
-        test_csr = yield from gpio_rd_csr(dut, gpio)
-        assert test_csr == csr_val
-
-    return csr_val # return the config state
-
 # Not used normally - only for debug
 def reg_write(dut, gpio, reg_val):
     print("Configuring CSR to {0:x}".format(reg_val))
     yield from wb_write(dut.bus, gpio, reg_val)
 
 # TODO: Return the configuration states
-def gpio_rd_csr(dut, gpio):
-    shift_dict = create_shift_dict()
-    csr_val = yield from wb_read(dut.bus, gpio)
-    print("GPIO{0} | CSR: {1:x}".format(gpio, csr_val))
-    print("Output Enable: {0:b}".format((csr_val >> shift_dict['oe']) & 1))
-    print("Input Enable: {0:b}".format((csr_val >> shift_dict['ie']) & 1))
-    print("Pull-Up Enable: {0:b}".format((csr_val >> shift_dict['puen']) & 1))
-    print("Pull-Down Enable: {0:b}".format((csr_val >> shift_dict['pden']) & 1))
-    if ((csr_val >> shift_dict['oe']) & 1):
-        print("Output: {0:b}".format((csr_val >> shift_dict['io']) & 1))
-    else:
-        print("Input: {0:b}".format((csr_val >> shift_dict['io']) & 1))
-    bank_mask = (2**NUMBANKBITS)-1
-    print("Bank: {0:b}".format((csr_val >> shift_dict['bank']) & bank_mask))
-    return csr_val
-
 # TODO
 def gpio_rd_input(dut, gpio):
     in_val = yield from wb_read(dut.bus, gpio)
@@ -289,68 +208,161 @@ def test_gpio_single(dut, gpio, use_random=True):
                                       bank, check=True) 
 
 
+
+
+
+
+# TODO:
+class GPIOConfigReg():
+    def __init__(self):
+        self.oe=0
+        self.ie=0
+        self.puen=0
+        self.pden=0
+        self.io=0
+        self.bank=0
+
+    def set(self, oe=0, ie=0, puen=0, pden=0, outval=0, bank=0):
+        self.oe=oe
+        self.ie=ie
+        self.puen=puen
+        self.pden=pden
+        self.io=outval
+        self.bank=bank
+
+# Object for storing each gpio's config state
+
+class GPIOManager():
+    def __init__(self, dut, layout):
+        self.dut = dut
+        # arrangement of config bits making up csr word
+        self.csr_layout = layout
+        self.shift_dict = self._create_shift_dict()
+        self.n_gpios = len(self.dut.gpio_ports)
+        print(dir(self.dut))
+        # Since GPIO HDL block already has wordsize parameter, use directly
+        # Alternatively, can derive from WB data r/w buses (div by 8 for bytes)
+        #self.wordsize = len(self.dut.gpio_wb__dat_w) / 8
+        self.wordsize = self.dut.wordsize
+        self.n_rows = ceil(self.n_gpios / self.wordsize)
+        self.shadow_csr = []
+        for i in range(self.n_gpios):
+            self.shadow_csr.append(GPIOConfigReg())
+
+    # The shifting of control bits in the configuration word is dependent on the
+    # defined layout. To prevent maintaining the shift constants in a separate
+    # location, the same layout is used to generate a dictionary of bit shifts
+    # with which the configuration word can be produced!
+    def _create_shift_dict(self):
+        shift = 0
+        shift_dict = {}
+        for i in range(0, len(self.csr_layout)):
+            shift_dict[self.csr_layout[i][0]] = shift
+            shift += self.csr_layout[i][1]
+        print(shift_dict)
+        return shift_dict
+
+    def _parse_gpio_arg(self, gpio_str):
+        # TODO: No input checking!
+        print("Given GPIO/range string: {}".format(gpio_str))
+        if gpio_str == "all":
+            start = 0
+            end = self.n_gpios
+        elif '-' in gpio_str:
+            start, end = gpio_str.split('-')
+            start = int(start)
+            end = int(end) + 1
+            if (end < start) or (end > self.n_gpios):
+                raise Exception("Second GPIO must be higher than first and"
+                        + " must be lower or equal to last available GPIO.")
+        else:
+            start = int(gpio_str)
+            if start >= self.n_gpios:
+                raise Exception("GPIO must be less/equal to last GPIO.")
+            end = start + 1
+        print("Setting config for GPIOs {0} until {1}".format(start, end))
+        return start, end
+
+    # Take config parameters of specified GPIOs, and combine them to produce
+    # bytes for sending via WB bus
+    def _pack_csr(self, start, end):
+        #start, end = self._parse_gpio_arg(gpio_str)
+        num_csr = end-start
+        csr = [0] * num_csr
+        for i in range(0, num_csr):
+            gpio = i + start
+            print("Pack: gpio{}".format(gpio))
+            csr[i] = ((self.shadow_csr[gpio].oe     << self.shift_dict['oe'])
+                    | (self.shadow_csr[gpio].ie     << self.shift_dict['ie'])
+                    | (self.shadow_csr[gpio].puen   << self.shift_dict['puen'])
+                    | (self.shadow_csr[gpio].pden   << self.shift_dict['pden'])
+                    | (self.shadow_csr[gpio].io << self.shift_dict['io'])
+                    | (self.shadow_csr[gpio].bank   << self.shift_dict['bank']))
+
+            print("GPIO{0} Packed CSR: {1:x}".format(gpio, csr[i]))
+
+        return csr # return the config byte list
+
+
+
+    def rd_csr(self, row_addr):
+        row_word = yield from wb_read(self.dut.bus, row_addr)
+        print("Returned CSR: {0:x}".format(row_word))
+        return row_word
+
+
+    def print_info(self):
+        print("----------")
+        print("GPIO Block Info:")
+        print("Number of GPIOs: {}".format(self.n_gpios))
+        print("WB Data bus width (in bytes): {}".format(self.wordsize))
+        print("Number of rows: {}".format(self.n_rows))
+        print("----------")
+
+    def config(self, gpio_str, oe, ie, puen, pden, outval, bank, check=False):
+        start, end = self._parse_gpio_arg(gpio_str) 
+        # Update the shadow configuration
+        for gpio in range(start, end):
+            print(oe, ie, puen, pden, outval, bank)
+            self.shadow_csr[gpio].set(oe, ie, puen, pden, outval, bank)
+
+        # UPDATE using ALL shadow registers
+        csr = self._pack_csr(0, self.n_gpios)
+        #start_addr = floor(start / self.wordsize)
+        start_addr = 0
+        curr_gpio = 0
+        for row in range(0, self.n_rows):
+            row_word = 0
+            start_byte = curr_gpio % self.wordsize
+            for byte in range(start_byte, self.wordsize):
+                if curr_gpio > self.n_gpios:
+                    break
+                #row_word += csr[byte] << (8 * byte)
+                row_word += csr[curr_gpio] << (8 * byte)
+                curr_gpio += 1
+            print("Configuring CSR to {0:x} to addr: {1:x}"
+                    .format(row_word, start_addr+row))
+            yield from wb_write(self.dut.bus, start_addr+row, row_word)
+            yield # Allow one clk cycle to propagate
+
+            if(True): #check):
+                test_row = yield from self.rd_csr(start_addr+row)
+                assert row_word == test_row
+
 def sim_gpio(dut, use_random=True):
-    num_gpios = len(dut.gpio_ports)
     #print(dut)
     #print(dir(dut.gpio_ports))
     #print(len(dut.gpio_ports))
-    #if use_random:
-    #    bank = randint(0, (2**NUMBANKBITS)-1)
-    #    print("Random bank select: {0:b}".format(bank))
-    #else:
-    #    bank = 3 # not special, chose for testing
-    """
-    oe = 1
-    ie = 0
-    output = 0
-    puen = 0 # 1
-    pden = 0
-    gpio_csr = [0] * num_gpios
-    # Configure GPIOs for 
-    for gpio in range(0, num_gpios):
-        gpio_csr[gpio] = yield from gpio_config(dut, gpio, oe, ie, puen, 
-                                                   pden, output, bank)
-    # Set outputs
-    output = 1
-    for gpio in range(0, num_gpios):
-        yield from gpio_set_out(dut, gpio, gpio_csr[gpio], output)
 
-    # Read CSR
-    for gpio in range(0, num_gpios):
-        temp_csr = yield from gpio_rd_csr(dut, gpio)
-        assert ((temp_csr>>IOSHIFT) & 1) == output
-    # Configure for input
-    oe = 0
-    ie = 1
-    for gpio in range(0, num_gpios):
-        gpio_csr[gpio] = yield from gpio_config(dut, gpio, oe, ie, puen,
-                                                   pden, output, bank)
-
-        temp = yield from gpio_rd_input(dut, gpio)
-        assert temp == 0
-
-        yield from gpio_set_in_pad(dut, gpio, 1)
-        temp = yield from gpio_rd_input(dut, gpio)
-        assert temp == 1
-
+    gpios = GPIOManager(dut, csrbus_layout)
+    gpios.print_info()
     # TODO: not working yet
     #test_pattern = []
     #for i in range(0, (num_gpios * 2)):
     #    test_pattern.append(randint(0,1))
     #yield from gpio_test_in_pattern(dut, test_pattern)
-    """
 
-    #yield from test_gpio_single(dut, 0, use_random)
-    #yield from test_gpio_single(dut, 1, use_random)
-    oe = 1
-    ie = 0
-    puen = 0
-    pden = 1
-    outval = 1
-    bank = 2
-    start_gpio = 1
-    end_gpio = 6
-    yield from gpio_config(dut, start_gpio, oe, ie, puen, pden, outval, bank, end_gpio, check=False, wordsize=4)
+    #yield from gpio_config(dut, start_gpio, oe, ie, puen, pden, outval, bank, end_gpio, check=False, wordsize=4)
     #reg_val = 0xC56271A2
     #reg_val =  0xFFFFFFFF
     #yield from reg_write(dut, 0, reg_val)
@@ -375,10 +387,29 @@ def test_gpio():
     sim = Simulator(m)
     sim.add_clock(1e-6)
 
-    sim.add_sync_process(wrap(sim_gpio(dut, use_random=False)))
+    #sim.add_sync_process(wrap(sim_gpio(dut, use_random=False)))
+    sim.add_sync_process(wrap(test_gpioman(dut)))
     sim_writer = sim.write_vcd('test_gpio.vcd')
     with sim_writer:
         sim.run()
+
+def test_gpioman(dut):
+    gpios = GPIOManager(dut, csrbus_layout)
+    gpios.print_info()
+    #gpios._parse_gpio_arg("all")
+    #gpios._parse_gpio_arg("0")
+    #gpios._parse_gpio_arg("1-3")
+    #gpios._parse_gpio_arg("20")
+
+    oe = 1
+    ie = 0
+    puen = 0
+    pden = 1
+    outval = 0
+    bank = 3
+    yield from gpios.config("0-3", oe=1, ie=0, puen=0, pden=1, outval=0, bank=2)
+    ie = 1
+    yield from gpios.config("4-7", oe=0, ie=1, puen=0, pden=1, outval=0, bank=2)
 
 
 if __name__ == '__main__':
