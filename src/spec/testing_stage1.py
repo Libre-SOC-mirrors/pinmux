@@ -199,10 +199,10 @@ class Blinker(Elaboratable):
         m.d.comb += gpio.gpio2.o.eq(gpio_o_test[2] ^ gpio.gpio2.i)
         m.d.comb += gpio.gpio3.o.eq(gpio_o_test[3] ^ gpio.gpio3.i)
 
-        m.d.comb += gpio.gpio0.oe.eq(gpio_oe_test[0])
-        m.d.comb += gpio.gpio1.oe.eq(gpio_oe_test[1])
-        m.d.comb += gpio.gpio2.oe.eq(gpio_oe_test[2])
-        m.d.comb += gpio.gpio3.oe.eq(gpio_oe_test[3])
+        m.d.comb += gpio.gpio0.oe.eq(gpio_oe_test[0])# ^ gpio.gpio0.i)
+        m.d.comb += gpio.gpio1.oe.eq(gpio_oe_test[1])# ^ gpio.gpio1.i)
+        m.d.comb += gpio.gpio2.oe.eq(gpio_oe_test[2])# ^ gpio.gpio2.i)
+        m.d.comb += gpio.gpio3.oe.eq(gpio_oe_test[3])# ^ gpio.gpio3.i)
 
         # get the UART resource, mess with the output tx
         uart = self.jtag.request('uart')
@@ -221,11 +221,11 @@ class Blinker(Elaboratable):
         i2c = self.jtag.request('i2c')
         print("i2c fields", i2c, i2c.fields)
         # Connect in loopback
-        m.d.comb += i2c.scl.o.eq(i2c.scl.i)
         m.d.comb += i2c.sda.o.eq(i2c.sda.i)
+        m.d.comb += i2c.scl.o.eq(i2c.scl.i)
         # Connect output enable to test port for sim
-        m.d.comb += i2c.sda.oe.eq(i2c_sda_oe_test)
-        m.d.comb += i2c.scl.oe.eq(i2c_scl_oe_test)
+        m.d.comb += i2c.sda.oe.eq(i2c_sda_oe_test)# ^ i2c.sda.i)
+        m.d.comb += i2c.scl.oe.eq(i2c_scl_oe_test)# ^ i2c.scl.i)
 
         # to even be able to get at objects, you first have to make them
         # available - i.e. not as local variables
@@ -705,8 +705,24 @@ def test_jtag_bs_chain(dut):
         yield from jtag_set_idle(dut.jtag)
         """
 
+    #uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
+    #yield uart_rx_pad.eq(1)
+    #uart_tx_test = dut.uart_tx_test
+    #yield uart_tx_test.eq(1)
 
+    #gpio0_i = dut.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
+    #gpio1_i = dut.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
+    #gpio2_i = dut.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
+    #gpio3_i = dut.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
+    #yield gpio0_i.eq(1)
+    #yield gpio1_i.eq(1)
+    #yield gpio0_o.eq(1)
+    #yield gpio0_oe.eq(1)
+    #yield dut.gpio_o_test.eq(0x2)
+    #yield dut.gpio_oe_test.eq(0x1)
 
+    #bsdata = 0xDB6DA
+    #bsdata = 0x00000
     yield from jtag_unit_test(dut, BS_EXTEST, False, bsdata, mask_outputs)
     #yield from jtag_unit_test(dut, BS_SAMPLE, False, bsdata, mask_low)
 
@@ -739,7 +755,7 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
               .format(bsdata))
 
     result = yield from jtag_read_write_reg(dut.jtag, bs_type, bslen, bsdata)
-
+    # Previous test may not have been EXTEST, need to switch over
     yield from jtag_set_shift_ir(dut.jtag)
     yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, BS_EXTEST)
     yield from jtag_set_idle(dut.jtag)
@@ -747,6 +763,13 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
     result = yield from tms_data_getset(dut.jtag, bs_type, bslen, bsdata)
     yield from jtag_set_idle(dut.jtag)
 
+    # swap bit order
+    temp = 0
+    for i in range(bslen):
+        temp += ((result >> i) & 0x1) << (bslen-1-i)
+    print("{0:020b}".format(result))
+    print("{0:020b}".format(temp))
+    result = temp
 
 
     # TODO: TDO data does not always match the signal states, maybe JTAG reset?
@@ -754,28 +777,32 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
     print("TDI BS Data: {0:020b}, Data Length (bits): {1}"
             .format(bsdata, bslen))
     print("TDO BS Data: {0:020b}".format(result))
-    yield from check_ios_keys(dut, expected)
+    yield from check_ios_keys(dut, result, expected)
 
     yield # testing extra clock
     # Reset shift register between tests
     yield from jtag_set_reset(dut.jtag)
 
 
-def check_ios_keys(dut, test_vector):
-    print("Checking ios signals with given test vector")
+def check_ios_keys(dut, tdo_data, test_vector):
+    print("Checking ios signals with TDO and given test vectors")
     bslen = len(dut.jtag.ios)
     ios_keys = list(dut.jtag.ios.keys())
+    print("Signal | From TDO | I/O | Name")
     for i in range(0, bslen):
         signal = ios_keys[i]
         test_value = (test_vector >> i) & 0b1
+        tdo_value = (tdo_data >> i) & 0b1
         # Only observed signals so far are outputs...
         if check_if_signal_output(ios_keys[i]):
             temp_result = yield dut.jtag.boundary_scan_pads[signal]['o']
-            print("Core Output | Name: ", signal, " Value: ", temp_result)
+            print("Pad: {0} | Core: {1} |  o  | {2}".format(temp_result, tdo_value, signal))
+            #print("Output (from JTAG BS) Name: ", signal, " Val: ", temp_result)
         # ...or inputs
         elif check_if_signal_input(ios_keys[i]):
             temp_result = yield dut.jtag.boundary_scan_pads[signal]['i']
-            print("Pad  Input  | Name: ", signal, " Value: ", temp_result)
+            print("Pad: {0} | Pad : {1} |  i  | {2}".format(temp_result, tdo_value, signal))
+            #print("Input  (to JTAG BS)   Name: ", signal, " Val: ", temp_result)
         else:
             raise Exception("Signal in JTAG ios dict: " + signal
                             + " cannot be determined as input or output!")
