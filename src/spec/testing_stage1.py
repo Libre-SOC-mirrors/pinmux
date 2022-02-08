@@ -30,7 +30,8 @@ from soc.debug.test.test_jtag_tap import (jtag_read_write_reg,
                                           jtag_set_shift_ir,
                                           jtag_set_shift_dr,
                                           jtag_set_run,
-                                          jtag_set_idle)
+                                          jtag_set_idle,
+                                          tms_data_getset)
 
 from c4m.nmigen.jtag.tap import TAP, IOType
 from c4m.nmigen.jtag.bus import Interface as JTAGInterface
@@ -661,12 +662,52 @@ def test_jtag_bs_chain(dut):
     print(dut.jtag._ir_width)
     #bsdata = 0xA3659
     #bsdata = 0x20000
-    bsdata = 0x00000
-    uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
-    yield uart_rx_pad.eq(1)
-    yield from jtag_unit_test(dut, BS_EXTEST, False, bsdata, mask_outputs)
-    yield from jtag_unit_test(dut, BS_SAMPLE, False, bsdata, mask_low)
+    #bsdata = 0x00000
+    #uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
+    #yield uart_rx_pad.eq(1)
 
+    for i in range(0, 1):
+        print("Data Reg Address: {}".format(i))
+        d_len=20
+        #d_in=0xFFFFF
+        d_in=0xB1EA5
+        """
+        yield from jtag_set_reset(dut.jtag)
+        yield from jtag_set_run(dut.jtag)
+        yield from jtag_set_shift_ir(dut.jtag)
+        yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, BS_EXTEST)
+        yield from jtag_set_idle(dut.jtag)
+
+        yield from jtag_set_shift_dr(dut.jtag)
+        result = yield from tms_data_getset(dut.jtag, 0, d_len, d_in)
+        yield from jtag_set_idle(dut.jtag)
+        print("TDI BS Data: {0:020b}, TDO Data: {1:020b}".format(d_in, result))
+        print("TDI BS Data: {0:05x}, TDO Data: {1:05x}".format(d_in, result))
+        """
+        """
+        #d_in=0xDBEEF
+        yield from jtag_set_reset(dut.jtag)
+        yield from jtag_set_run(dut.jtag)
+        yield from jtag_set_shift_ir(dut.jtag)
+        yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, 0)
+        yield from jtag_set_idle(dut.jtag)
+
+        yield from jtag_set_shift_dr(dut.jtag)
+        result = yield from tms_data_getset(dut.jtag, 0, d_len, d_in)
+        yield from jtag_set_idle(dut.jtag)
+        print("TDI BS Data: {0:020b}, TDO Data: {1:020b}".format(d_in, result))
+        print("TDI BS Data: {0:05x}, TDO Data: {1:05x}".format(d_in, result))
+        #print("TDI BS Data: {0:05x}, TDO Shift: {1:05x}".format(d_in, result>>2))
+        #yield from jtag_set_reset(dut.jtag)
+        #yield from jtag_set_run(dut.jtag)
+        yield from jtag_set_shift_ir(dut.jtag)
+        yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, BS_EXTEST)
+        yield from jtag_set_idle(dut.jtag)
+        """
+
+
+
+    yield from jtag_unit_test(dut, BS_EXTEST, False, bsdata, mask_outputs)
     #yield from jtag_unit_test(dut, BS_SAMPLE, False, bsdata, mask_low)
 
     # Run through GPIO, UART, and I2C tests so that all signals are asserted
@@ -698,6 +739,15 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
               .format(bsdata))
 
     result = yield from jtag_read_write_reg(dut.jtag, bs_type, bslen, bsdata)
+
+    yield from jtag_set_shift_ir(dut.jtag)
+    yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, BS_EXTEST)
+    yield from jtag_set_idle(dut.jtag)
+    yield from jtag_set_shift_dr(dut.jtag)
+    result = yield from tms_data_getset(dut.jtag, bs_type, bslen, bsdata)
+    yield from jtag_set_idle(dut.jtag)
+
+
 
     # TODO: TDO data does not always match the signal states, maybe JTAG reset?
     # TODO: make format based on bslen, not a magic number 20-bits wide
