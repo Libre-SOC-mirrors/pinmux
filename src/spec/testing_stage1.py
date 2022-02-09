@@ -626,118 +626,72 @@ def test_i2c(dut):
 
     print("I2C Test PASSED!")
 
-
 # JTAG boundary scan reg addresses - See c4m/nmigen/jtag/tap.py line #357
 BS_EXTEST = 0
 BS_INTEST = 0
 BS_SAMPLE = 2
 BS_PRELOAD = 2
 
-
 def test_jtag_bs_chain(dut):
-    print(dir(dut.jtag))
-    print(dir(dut))
+    # print(dir(dut.jtag))
+    # print(dir(dut))
+    # print(dut.jtag._ir_width)
+    # print("JTAG I/O dictionary of core/pad signals:")
+    # print(dut.jtag.ios.keys())
 
     print("JTAG BS Reset")
     yield from jtag_set_reset(dut.jtag)
 
-    #print("JTAG I/O dictionary of core/pad signals:")
-    # print(dut.jtag.ios.keys())
-
+    # TODO: cleanup!
     # Based on number of ios entries, produce a test shift reg pattern
     bslen = len(dut.jtag.ios)
     bsdata = 2**bslen - 1  # Fill with all 1s for now
     fulldata = bsdata  # for testing
     emptydata = 0  # for testing
 
-    mask_inputs = produce_ios_io_mask(dut, is_input=True)
-    mask_outputs = produce_ios_io_mask(dut, is_input=False)
+    mask_i = produce_ios_mask(dut, is_i=True, is_o=False, is_oe=False)
+    mask_i_oe = produce_ios_mask(dut, is_i=True, is_o=False, is_oe=True)
+    mask_o = produce_ios_mask(dut, is_i=False, is_o=True, is_oe=False)
+    mask_oe = produce_ios_mask(dut, is_i=False, is_o=False, is_oe=True)
+    mask_o_oe = produce_ios_mask(dut, is_i=False, is_o=True, is_oe=True)
     mask_low = 0
-    mask_high = bsdata
+    mask_all = 2**bslen - 1
 
-    # TODO: make format based on bslen, not a magic number 20-bits wide
-    print("Input  Mask: {0:020b}".format(mask_inputs))
-    print("Output Mask: {0:020b}".format(mask_outputs))
+    num_bit_format = "{:0" + str(bslen) + "b}"
+    print("Masks (LSB corresponds to bit0 of the BS chain register!)")
+    print("Input  only  :", num_bit_format.format(mask_i))
+    print("Input  and oe:", num_bit_format.format(mask_o_oe))
+    print("Output only  :", num_bit_format.format(mask_o))
+    print("Out en only  :", num_bit_format.format(mask_oe))
+    print("Output and oe:", num_bit_format.format(mask_o_oe))
 
-    print(dut.jtag._ir_width)
-    #bsdata = 0xA3659
-    #bsdata = 0x20000
-    #bsdata = 0x00000
-    #uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
-    #yield uart_rx_pad.eq(1)
-
-    for i in range(0, 1):
-        print("Data Reg Address: {}".format(i))
-        d_len=20
-        #d_in=0xFFFFF
-        d_in=0xB1EA5
-        """
-        yield from jtag_set_reset(dut.jtag)
-        yield from jtag_set_run(dut.jtag)
-        yield from jtag_set_shift_ir(dut.jtag)
-        yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, BS_EXTEST)
-        yield from jtag_set_idle(dut.jtag)
-
-        yield from jtag_set_shift_dr(dut.jtag)
-        result = yield from tms_data_getset(dut.jtag, 0, d_len, d_in)
-        yield from jtag_set_idle(dut.jtag)
-        print("TDI BS Data: {0:020b}, TDO Data: {1:020b}".format(d_in, result))
-        print("TDI BS Data: {0:05x}, TDO Data: {1:05x}".format(d_in, result))
-        """
-        """
-        #d_in=0xDBEEF
-        yield from jtag_set_reset(dut.jtag)
-        yield from jtag_set_run(dut.jtag)
-        yield from jtag_set_shift_ir(dut.jtag)
-        yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, 0)
-        yield from jtag_set_idle(dut.jtag)
-
-        yield from jtag_set_shift_dr(dut.jtag)
-        result = yield from tms_data_getset(dut.jtag, 0, d_len, d_in)
-        yield from jtag_set_idle(dut.jtag)
-        print("TDI BS Data: {0:020b}, TDO Data: {1:020b}".format(d_in, result))
-        print("TDI BS Data: {0:05x}, TDO Data: {1:05x}".format(d_in, result))
-        #print("TDI BS Data: {0:05x}, TDO Shift: {1:05x}".format(d_in, result>>2))
-        #yield from jtag_set_reset(dut.jtag)
-        #yield from jtag_set_run(dut.jtag)
-        yield from jtag_set_shift_ir(dut.jtag)
-        yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, BS_EXTEST)
-        yield from jtag_set_idle(dut.jtag)
-        """
-
-    #uart_rx_pad = dut.jtag.boundary_scan_pads['uart_0__rx']['i']
-    #yield uart_rx_pad.eq(1)
-    #uart_tx_test = dut.uart_tx_test
-    #yield uart_tx_test.eq(1)
-
-    #gpio0_i = dut.jtag.boundary_scan_pads['gpio_0__gpio0__i']['i']
-    #gpio1_i = dut.jtag.boundary_scan_pads['gpio_0__gpio1__i']['i']
-    #gpio2_i = dut.jtag.boundary_scan_pads['gpio_0__gpio2__i']['i']
-    #gpio3_i = dut.jtag.boundary_scan_pads['gpio_0__gpio3__i']['i']
-    #yield gpio0_i.eq(1)
-    #yield gpio1_i.eq(1)
-    #yield gpio0_o.eq(1)
-    #yield gpio0_oe.eq(1)
-    #yield dut.gpio_o_test.eq(0x2)
-    #yield dut.gpio_oe_test.eq(0x1)
-
-    #bsdata = 0xDB6DA
-    #bsdata = 0x00000
-    yield from jtag_unit_test(dut, BS_EXTEST, False, bsdata, mask_outputs)
-    #yield from jtag_unit_test(dut, BS_SAMPLE, False, bsdata, mask_low)
+    yield from jtag_unit_test(dut, BS_EXTEST, False, bsdata, mask_o_oe, mask_o)
+    yield from jtag_unit_test(dut, BS_SAMPLE, False, bsdata, mask_low, mask_low)
 
     # Run through GPIO, UART, and I2C tests so that all signals are asserted
-    #yield from test_gpios(dut)
-    #yield from test_uart(dut)
-    #yield from test_i2c(dut)
+    yield from test_gpios(dut)
+    yield from test_uart(dut)
+    yield from test_i2c(dut)
 
-    #yield from jtag_unit_test(dut, BS_EXTEST, True, emptydata, mask_inputs)
-    #yield from jtag_unit_test(dut, BS_SAMPLE, True, emptydata, mask_high)
+    bsdata = emptydata
+    yield from jtag_unit_test(dut, BS_EXTEST, True, bsdata, mask_i, mask_i_oe)
+    yield from jtag_unit_test(dut, BS_SAMPLE, True, bsdata, mask_all, mask_all)
 
     print("JTAG Boundary Scan Chain Test PASSED!")
 
+# ONLY NEEDED FOR DEBUG - MAKE SURE TAP DRIVER FUNCTIONS CORRECT FIRST!
+def swap_bit_order(word, wordlen):
+    rev_word = 0
+    for i in range(wordlen):
+        rev_word += ((word >> i) & 0x1) << (wordlen-1-i)
 
-def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
+    num_bit_format = "{:0" + str(wordlen) + "b}"
+    print_str = "Orig:" + num_bit_format + " | Bit Swapped:" + num_bit_format
+    print(print_str.format(word, rev_word))
+
+    return rev_word
+
+def jtag_unit_test(dut, bs_type, is_io_set, bsdata, exp_pads, exp_tdo):
     bslen = len(dut.jtag.ios) #* 2
     print("Chain len based on jtag.ios: {}".format(bslen))
     if bs_type == BS_EXTEST:
@@ -755,58 +709,52 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, expected):
               .format(bsdata))
 
     result = yield from jtag_read_write_reg(dut.jtag, bs_type, bslen, bsdata)
-    # Previous test may not have been EXTEST, need to switch over
-    yield from jtag_set_shift_ir(dut.jtag)
-    yield from tms_data_getset(dut.jtag, 0, dut.jtag._ir_width, BS_EXTEST)
-    yield from jtag_set_idle(dut.jtag)
-    yield from jtag_set_shift_dr(dut.jtag)
-    result = yield from tms_data_getset(dut.jtag, bs_type, bslen, bsdata)
-    yield from jtag_set_idle(dut.jtag)
+    if bs_type == BS_EXTEST:
+        # TDO is only outputting previous BS chain data, must configure to
+        # output BS chain to the main shift register
 
-    # swap bit order
-    temp = 0
-    for i in range(bslen):
-        temp += ((result >> i) & 0x1) << (bslen-1-i)
-    print("{0:020b}".format(result))
-    print("{0:020b}".format(temp))
-    result = temp
+        # Previous test may not have been EXTEST, need to switch over
+        yield from jtag_set_shift_dr(dut.jtag)
+        result = yield from tms_data_getset(dut.jtag, bs_type, bslen, bsdata)
+        yield from jtag_set_idle(dut.jtag)
 
-
-    # TODO: TDO data does not always match the signal states, maybe JTAG reset?
     # TODO: make format based on bslen, not a magic number 20-bits wide
     print("TDI BS Data: {0:020b}, Data Length (bits): {1}"
             .format(bsdata, bslen))
     print("TDO BS Data: {0:020b}".format(result))
-    yield from check_ios_keys(dut, result, expected)
+    yield from check_ios_keys(dut, result, exp_pads, exp_tdo)
 
-    yield # testing extra clock
+    #yield # testing extra clock
     # Reset shift register between tests
     yield from jtag_set_reset(dut.jtag)
 
-
-def check_ios_keys(dut, tdo_data, test_vector):
+def check_ios_keys(dut, tdo_data, test_vector, exp_tdo):
     print("Checking ios signals with TDO and given test vectors")
     bslen = len(dut.jtag.ios)
     ios_keys = list(dut.jtag.ios.keys())
-    print("Signal | From TDO | I/O | Name")
+    print(" ios Signals  |   From TDO    | --- | ----")
+    print("Side|Exp|Seen | Side|Exp|Seen | I/O | Name")
     for i in range(0, bslen):
         signal = ios_keys[i]
-        test_value = (test_vector >> i) & 0b1
+        exp_pad_val = (test_vector >> i) & 0b1
+        exp_tdo_val = (exp_tdo >> i) & 0b1
         tdo_value = (tdo_data >> i) & 0b1
         # Only observed signals so far are outputs...
+        # TODO: Cleanup!
         if check_if_signal_output(ios_keys[i]):
             temp_result = yield dut.jtag.boundary_scan_pads[signal]['o']
-            print("Pad: {0} | Core: {1} |  o  | {2}".format(temp_result, tdo_value, signal))
-            #print("Output (from JTAG BS) Name: ", signal, " Val: ", temp_result)
+            print("Pad |{0:3b}|{1:4b} | Core|{2:3b}|{3:4b} |  o  | {4}"
+            .format(exp_pad_val, temp_result, exp_tdo_val, tdo_value, signal))
         # ...or inputs
         elif check_if_signal_input(ios_keys[i]):
             temp_result = yield dut.jtag.boundary_scan_pads[signal]['i']
-            print("Pad: {0} | Pad : {1} |  i  | {2}".format(temp_result, tdo_value, signal))
-            #print("Input  (to JTAG BS)   Name: ", signal, " Val: ", temp_result)
+            print("Pad |{0:3b}|{1:4b} | Pad |{2:3b}|{3:4b} |  i  | {4}"
+            .format(exp_pad_val, temp_result, exp_tdo_val, tdo_value, signal))
         else:
             raise Exception("Signal in JTAG ios dict: " + signal
                             + " cannot be determined as input or output!")
-        #assert temp_result == test_value
+        assert temp_result == exp_pad_val
+        assert tdo_value == exp_tdo_val
 
 # TODO: may need to expand to support further signals contained in the
 # JTAG module ios dictionary!
@@ -826,11 +774,13 @@ def check_if_signal_input(signal_str):
         return False
 
 
-def produce_ios_io_mask(dut, is_input=False):
-    if is_input:
+def produce_ios_mask(dut, is_i=False, is_o=True, is_oe=False):
+    if is_i and not(is_o) and not(is_oe):
         mask_type = "input"
-    else:
+    elif not(is_i) and is_o:
         mask_type = "output"
+    else:
+        mask_type = "i={:b} | o={:b} | oe={:b} ".format(is_i, is_o, is_oe)
     print("Determine the", mask_type, "mask")
     bslen = len(dut.jtag.ios)
     ios_keys = list(dut.jtag.ios.keys())
@@ -838,10 +788,14 @@ def produce_ios_io_mask(dut, is_input=False):
     for i in range(0, bslen):
         signal = ios_keys[i]
         if (('__o' in ios_keys[i]) or ('__tx' in ios_keys[i])):
-            if is_input == False:
-                mask += (1 << i)
+            if ('__oe' in ios_keys[i]):
+                if is_oe:
+                    mask += (1 << i)
+            else:
+                if is_o:
+                    mask += (1 << i)
         else:
-            if is_input == True:
+            if is_i:
                 mask += (1 << i)
     return mask
 
@@ -854,9 +808,9 @@ def print_all_ios_keys(dut):
         signal = ios_keys[i]
         # Check if outputs are asserted
         if ('__o' in ios_keys[i]) or ('__tx' in ios_keys[i]):
-            print("Core Output | Name: ", signal)
+            print("Pad Output | Name: ", signal)
         else:
-            print("Pad  Input  | Name: ", signal)
+            print("Pad  Input | Name: ", signal)
 
 
 # Copied from test_jtag_tap.py
