@@ -708,14 +708,14 @@ def jtag_unit_test(dut, bs_type, is_io_set, bsdata, exp_pads, exp_tdo):
         print("All pad inputs/core outputs reset, bs data: {0:b}"
               .format(bsdata))
 
-    result = yield from jtag_read_write_reg(dut.jtag, bs_type, bslen, bsdata)
+    result = yield from jtag_read_write_reg(dut.jtag, bs_type, bslen, bsdata,
+                                            reverse=True)
     if bs_type == BS_EXTEST:
         # TDO is only outputting previous BS chain data, must configure to
         # output BS chain to the main shift register
-
-        # Previous test may not have been EXTEST, need to switch over
         yield from jtag_set_shift_dr(dut.jtag)
-        result = yield from tms_data_getset(dut.jtag, bs_type, bslen, bsdata)
+        result = yield from tms_data_getset(dut.jtag, bs_type, bslen, bsdata,
+                                            reverse=True)
         yield from jtag_set_idle(dut.jtag)
 
     # TODO: make format based on bslen, not a magic number 20-bits wide
