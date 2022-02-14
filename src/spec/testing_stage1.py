@@ -21,6 +21,8 @@ from nmigen.sim import Simulator, Delay, Settle, Tick, Passive
 
 from nmutil.util import wrap
 
+from nmutil.gtkw import write_gtkw
+
 # from soc.debug.jtagutils import (jtag_read_write_reg,
 #                                 jtag_srv, jtag_set_reset,
 #                                 jtag_set_ir, jtag_set_get_dr)
@@ -645,9 +647,8 @@ def test_jtag_bs_chain(dut):
     # TODO: cleanup!
     # Based on number of ios entries, produce a test shift reg pattern
     bslen = len(dut.jtag.ios)
-    bsdata = 2**bslen - 1  # Fill with all 1s for now
-    fulldata = bsdata  # for testing
-    emptydata = 0  # for testing
+    #fulldata = bsdata  # for testing
+    #emptydata = 0  # for testing
 
     mask_i = produce_ios_mask(dut, is_i=True, is_o=False, is_oe=False)
     mask_i_oe = produce_ios_mask(dut, is_i=True, is_o=False, is_oe=True)
@@ -665,6 +666,8 @@ def test_jtag_bs_chain(dut):
     print("Out en only  :", num_bit_format.format(mask_oe))
     print("Output and oe:", num_bit_format.format(mask_o_oe))
 
+    bsdata = mask_all
+
     yield from jtag_unit_test(dut, BS_EXTEST, False, bsdata, mask_o_oe, mask_o)
     yield from jtag_unit_test(dut, BS_SAMPLE, False, bsdata, mask_low, mask_low)
 
@@ -673,7 +676,7 @@ def test_jtag_bs_chain(dut):
     yield from test_uart(dut)
     yield from test_i2c(dut)
 
-    bsdata = emptydata
+    bsdata = mask_low
     yield from jtag_unit_test(dut, BS_EXTEST, True, bsdata, mask_i, mask_i_oe)
     yield from jtag_unit_test(dut, BS_SAMPLE, True, bsdata, mask_all, mask_all)
 
@@ -1031,6 +1034,62 @@ def test_jtag():
     with sim.write_vcd("blinker_test.vcd"):
         sim.run()
 
+    # GTKWave doc generation
+    style = {
+        '': {'base': 'dec'},
+        'in': {'color': 'orange'},
+        'out': {'color': 'yellow'},
+        'pad_i': {'color': 'orange'},
+        'pad_o': {'color': 'yellow'},
+        'core_i': {'color': 'indigo'},
+        'core_o': {'color': 'blue'},
+        'debug': {'module': 'top', 'color': 'red'}
+    }
+    traces = [
+        ('ios', [
+            ('uart_0__rx__pad__i', 'pad_i'),
+            ('uart_0__tx__core__o', 'core_o'),
+            ('gpio_0__gpio0__i__pad__i', 'pad_i'),
+            ('gpio_0__gpio0__o__core__o', 'core_o'),
+            ('gpio_0__gpio0__oe__core__o', 'core_o'),
+            ('gpio_0__gpio1__i__pad__i', 'pad_i'),
+            ('gpio_0__gpio1__o__core__o', 'core_o'),
+            ('gpio_0__gpio1__oe__core__o', 'core_o'),
+            ('gpio_0__gpio2__i__pad__i', 'pad_i'),
+            ('gpio_0__gpio2__o__core__o', 'core_o'),
+            ('gpio_0__gpio2__oe__core__o', 'core_o'),
+            ('gpio_0__gpio3__i__pad__i', 'pad_i'),
+            ('gpio_0__gpio3__o__core__o', 'core_o'),
+            ('gpio_0__gpio3__oe__core__o', 'core_o'),
+            ('i2c_0__sda__i__pad__i', 'pad_i'),
+            ('i2c_0__sda__o__core__o', 'core_o'),
+            ('i2c_0__sda__oe__core__o', 'core_o'),
+            ('i2c_0__scl__i__pad__i', 'pad_i'),
+            ('i2c_0__scl__o__core__o', 'core_o'),
+            ('i2c_0__scl__oe__core__o', 'core_o')
+        ]),
+        ('JTAG', [
+            'fsm.TAP_bus__tck',
+            ('fsm.TAP_bus__tms', 'in'),
+            ('TAP_bus__tdi', 'in'),
+            ('TAP_bus__tdo', 'out'),
+            'fsm.fsm_state'
+        ]),
+        ('JTAG internal', [
+            ('io_bd2core', 'in'),
+            ('io_bd2io', 'in'),
+            ('io_bd[19:0]', {'base': 'hex'}),
+            'io_sr[19:0]', {'base': 'hex'},
+            ('io_capture', 'in'),
+            ('io_shift', 'in'),
+            'ir[3:0]', {'base': 'hex'},
+            ('io_update', 'in'),
+            ('io_isdr', 'in'),
+            ('io_isir', 'in')
+        ])
+    ]
+
+    write_gtkw("jtag_blinker.gtkw", "blinker_test.vcd", traces, style, module="top.jtag")
 
 if __name__ == '__main__':
     test_jtag()
