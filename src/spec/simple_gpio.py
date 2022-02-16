@@ -15,6 +15,8 @@ from soc.minerva.wishbone import make_wb_layout
 from nmutil.util import wrap
 from soc.bus.test.wb_rw import wb_read, wb_write
 
+from nmutil.gtkw import write_gtkw
+
 cxxsim = False
 if cxxsim:
     from nmigen.sim.cxxsim import Simulator, Settle
@@ -380,10 +382,77 @@ def sim_gpio(dut, use_random=True):
     #print("CSR Val: {0:x}".format(csr_val))
     print("Finished the simple GPIO block test!")
 
+def gen_gtkw_doc(n_gpios, wordsize, filename):
+    # GTKWave doc generation
+    wb_data_width = wordsize*8
+    n_rows = ceil(n_gpios/wordsize)
+    style = {
+        '': {'base': 'hex'},
+        'in': {'color': 'orange'},
+        'out': {'color': 'yellow'},
+        'debug': {'module': 'top', 'color': 'red'}
+    }
+
+    # Create a trace list, each block expected to be a tuple()
+    traces = []
+    wb_traces = ('Wishbone Bus', [
+                        ('gpio_wb__cyc', 'in'),
+                        ('gpio_wb__stb', 'in'),
+                        ('gpio_wb__we', 'in'),
+                        ('gpio_wb__adr[27:0]', 'in'),
+                        ('gpio_wb__dat_w[{}:0]'.format(wb_data_width-1), 'in'),
+                        ('gpio_wb__dat_r[{}:0]'.format(wb_data_width-1), 'out'),
+                        ('gpio_wb__ack', 'out'),
+                ])
+    traces.append(wb_traces)
+
+    gpio_internal_traces = ('Internal', [
+                                ('clk', 'in'),
+                                ('new_transaction'),
+                                ('row_start[2:0]'),
+                                ('rst', 'in')
+                            ])
+    traces.append(gpio_internal_traces)
+
+    traces.append({'comment': 'Multi-byte GPIO config bus'})
+    for word in range(0, wordsize):
+        prefix = "word{}__".format(word)
+        single_word = []
+        word_signals = []
+        single_word.append('Word{}'.format(word))
+        word_signals.append((prefix+'bank[{}:0]'.format(NUMBANKBITS-1)))
+        word_signals.append((prefix+'ie'))
+        word_signals.append((prefix+'io'))
+        word_signals.append((prefix+'oe'))
+        word_signals.append((prefix+'pden'))
+        word_signals.append((prefix+'puen'))
+        single_word.append(word_signals)
+        traces.append(tuple(single_word))
+
+    for gpio in range(0, n_gpios):
+        prefix = "gpio{}__".format(gpio)
+        single_gpio = []
+        gpio_signals = []
+        single_gpio.append('GPIO{} Port'.format(gpio))
+        gpio_signals.append((prefix+'bank[{}:0]'.format(NUMBANKBITS-1), 'out'))
+        gpio_signals.append( (prefix+'i', 'in') )
+        gpio_signals.append( (prefix+'o', 'out') )
+        gpio_signals.append( (prefix+'oe', 'out') )
+        gpio_signals.append( (prefix+'pden', 'out') )
+        gpio_signals.append( (prefix+'puen', 'out') )
+        single_gpio.append(gpio_signals)
+        traces.append(tuple(single_gpio))
+
+    print(traces)
+
+    write_gtkw(filename+".gtkw", filename+".vcd", traces, style,
+               module="top.xics_icp")
+
 def test_gpio():
-    num_gpio = 8
+    filename = "test_gpio"
+    n_gpios = 8
     wordsize = 4 # Number of bytes in the WB data word
-    dut = SimpleGPIO(wordsize, num_gpio)
+    dut = SimpleGPIO(wordsize, n_gpios)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_gpio.il", "w") as f:
         f.write(vl)
@@ -399,6 +468,8 @@ def test_gpio():
     sim_writer = sim.write_vcd('test_gpio.vcd')
     with sim_writer:
         sim.run()
+
+    gen_gtkw_doc(n_gpios, wordsize, filename)
 
 def test_gpioman(dut):
     gpios = GPIOManager(dut, csrbus_layout)
