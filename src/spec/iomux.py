@@ -28,10 +28,10 @@ io_layout = (("i", 1),
              ("o", 1)
             )
 
-class IOMuxBlock(Elaboratable):
+class IOMuxBlockSingle(Elaboratable):
 
     def __init__(self):
-        print("IO Mux Block")
+        print("1-bit IO Mux Block")
         self.n_banks = 4
         self.bank = Signal(log2_int(self.n_banks))
 
@@ -64,22 +64,34 @@ class IOMuxBlock(Elaboratable):
         # Connect peripheral inputs to the IO pad input
 
         bank_range = range(self.n_banks)
+        # const
+        BANK0_WB = 0
+        BANK1_P1 = 1
+        BANK2_P2 = 2
+        BANK3_P3 = 3
 
-        #with m.Switch(bank):
-
-        for cur_bank in bank_range:
-            sync += out_port.o.eq(bank_ports[cur_bank].o)
-            sync += out_port.oe.eq(bank_ports[cur_bank].oe)
-            sync += bank_ports[cur_bank].i.eq(out_port.i)
-
-            temp_list = list(bank_range)
-            temp_list.pop(temp_list.index(cur_bank))
-            print("Banks with input hardwired to zero: {}".format(temp_list))
-            for j in range(len(temp_list)):
-                unused_bank = temp_list[j]
-                sync += bank_ports[unused_bank].i.eq(0)
-
+        with m.Switch(bank):
+            with m.Case(BANK0_WB):
+                self.connect_bank_to_io(sync, BANK0_WB)
+            with m.Case(BANK1_P1):
+                self.connect_bank_to_io(sync, BANK1_P1)
+            with m.Case(BANK2_P2):
+                self.connect_bank_to_io(sync, BANK2_P2)
+            with m.Case(BANK3_P3):
+                self.connect_bank_to_io(sync, BANK3_P3)
         return m
+
+    def connect_bank_to_io(self, domain, bank_arg):
+        domain += self.out_port.o.eq(self.bank_ports[bank_arg].o)
+        domain += self.out_port.oe.eq(self.bank_ports[bank_arg].oe)
+        domain += self.bank_ports[bank_arg].i.eq(self.out_port.i)
+
+        temp_list = list(range(self.n_banks))
+        temp_list.pop(temp_list.index(bank_arg))
+        print("Banks with input hardwired to 0: {}".format(temp_list))
+        for j in range(len(temp_list)):
+            unused_bank = temp_list[j]
+            domain += self.bank_ports[unused_bank].i.eq(0)
 
     def __iter__(self):
         """ Get member signals for Verilog form. """
@@ -111,6 +123,18 @@ def gen_gtkw_doc(module_name, n_banks, filename):
                         ('bank{}__oe'.format(bank), 'out')
                       ])
         traces.append(temp_traces)
+
+    temp_traces = ('Misc', [
+                    ('clk'),
+                    ('bank[1:0]', 'in')
+                  ])
+    traces.append(temp_traces)
+    temp_traces = ('IO port to pad', [
+                    ('IO__i', 'in'),
+                    ('IO__o', 'out'),
+                    ('IO__oe', 'out')
+                  ])
+    traces.append(temp_traces)
     #print(traces)
 
     write_gtkw(filename+".gtkw", filename+".vcd", traces, style,
@@ -118,7 +142,7 @@ def gen_gtkw_doc(module_name, n_banks, filename):
 
 def sim_iomux():
     filename = "test_pinmux" # Doesn't include extension
-    dut = IOMuxBlock()
+    dut = IOMuxBlockSingle()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open(filename+".il", "w") as f:
         f.write(vl)
@@ -140,18 +164,12 @@ def test_iomux(dut):
     print("------START----------------------")
     #print(dir(dut.bank_ports[0]))
     #print(dut.bank_ports[0].fields)
-    #for (name, signal) in dut.b0.fields.items():
-    #    print(name, signal)
-    #print(dir(dut.bank_ports))
-    #print(dut.bank_ports.__len__())
-    #for bank in range(len(dut.bank_ports)):
-    #    for values in dut.bank_ports[bank].fields.values():
-    #        print(values)
+
+    # TODO: turn into methods
     yield dut.bank_ports[0].o.eq(1)
     yield dut.bank.eq(0)
     yield
     yield dut.bank_ports[0].o.eq(1)
-    yield
     yield
     yield dut.bank_ports[1].o.eq(1)
     yield
@@ -169,7 +187,27 @@ def test_iomux(dut):
     yield dut.bank.eq(0)
     yield
 
-    print("Finished the IO mux block test!")
+    yield dut.bank.eq(1)
+    yield
+    yield dut.bank_ports[1].o.eq(1)
+    yield
+    yield dut.bank_ports[2].o.eq(1)
+    yield
+    yield dut.bank_ports[1].oe.eq(1)
+    yield
+    yield dut.bank.eq(2)
+    yield
+
+    yield dut.bank_ports[1].o.eq(0)
+    yield
+    yield dut.bank_ports[2].o.eq(0)
+    yield
+    yield dut.bank_ports[2].oe.eq(1)
+    yield
+    yield dut.bank.eq(0)
+    yield
+
+    print("Finished the 1-bit IO mux block test!")
 
 if __name__ == '__main__':
     sim_iomux()
