@@ -6,14 +6,14 @@ testing, however it could also be used as an actual GPIO peripheral
 Modified for use with pinmux, will probably change the class name later.
 """
 from random import randint
-from math import ceil, floor
+#from math import ceil, floor
 from nmigen import Elaboratable, Module, Signal, Record, Array, Cat
 from nmigen.hdl.rec import Layout
 from nmigen.utils import log2_int
 from nmigen.cli import rtlil
-from soc.minerva.wishbone import make_wb_layout
+#from soc.minerva.wishbone import make_wb_layout
 from nmutil.util import wrap
-from soc.bus.test.wb_rw import wb_read, wb_write
+#from soc.bus.test.wb_rw import wb_read, wb_write
 
 from nmutil.gtkw import write_gtkw
 
@@ -160,52 +160,86 @@ def sim_iomux():
 
     gen_gtkw_doc("top.pinmux", dut.n_banks, filename)
 
+# Method for toggling i/o/oe of a particular bank port,
+# while bank_sel has three different values:
+# value before, given value, value after
+# when rand is True, previous and consecutive values are
+# random (but NOT equal to given bank_sel)
+def test_single_bank(dut, bank, rand=True):
+    if rand:
+        print("Randomising the prev and next banks")
+        prev_bank=bank
+        while(prev_bank == bank):
+            prev_bank = randint(0, dut.n_banks-1)
+        next_bank=bank
+        while(next_bank == bank):
+            next_bank = randint(0, dut.n_banks-1)
+    else:
+        if bank == 0:
+            prev_bank = dut.n_banks
+        else:
+            prev_bank = bank - 1
+
+        if bank == dut.n_banks:
+            next_bank = 0
+        else:
+            next_bank = bank + 1
+
+    print("Prev={}, Given={}, Next={}".format(prev_bank, bank, next_bank))
+
+    yield dut.bank.eq(prev_bank)
+    yield
+    yield dut.bank_ports[bank].o.eq(0)
+    yield dut.bank_ports[bank].oe.eq(0)
+    yield dut.out_port.i.eq(0)
+    yield
+    yield
+
+    yield dut.bank.eq(bank)
+    yield
+
+    test_o = yield dut.out_port.o
+    test_oe = yield dut.out_port.oe
+    test_i = yield dut.bank_ports[bank].i
+    assert(test_o == 0)
+    assert(test_oe == 0)
+    assert(test_i == 0)
+
+    yield dut.bank_ports[bank].o.eq(1)
+    yield
+    yield dut.bank_ports[bank].oe.eq(1)
+    yield
+    yield dut.out_port.i.eq(1)
+    yield
+    yield
+
+    test_o = yield dut.out_port.o
+    test_oe = yield dut.out_port.oe
+    test_i = yield dut.bank_ports[bank].i
+    #print(test_o, test_oe, test_i)
+    assert(test_o == 1)
+    assert(test_oe == 1)
+    assert(test_i == 1)
+
+    yield dut.bank.eq(next_bank)
+    yield
+    yield
+    yield dut.bank_ports[bank].o.eq(0)
+    yield dut.bank_ports[bank].oe.eq(0)
+    yield dut.out_port.i.eq(0)
+    yield
+    yield
+
 def test_iomux(dut):
     print("------START----------------------")
     #print(dir(dut.bank_ports[0]))
     #print(dut.bank_ports[0].fields)
 
     # TODO: turn into methods
-    yield dut.bank_ports[0].o.eq(1)
-    yield dut.bank.eq(0)
-    yield
-    yield dut.bank_ports[0].o.eq(1)
-    yield
-    yield dut.bank_ports[1].o.eq(1)
-    yield
-    yield dut.bank_ports[0].oe.eq(1)
-    yield
-    yield dut.bank.eq(1)
-    yield
-
-    yield dut.bank_ports[0].o.eq(0)
-    yield
-    yield dut.bank_ports[1].o.eq(0)
-    yield
-    yield dut.bank_ports[1].oe.eq(1)
-    yield
-    yield dut.bank.eq(0)
-    yield
-
-    yield dut.bank.eq(1)
-    yield
-    yield dut.bank_ports[1].o.eq(1)
-    yield
-    yield dut.bank_ports[2].o.eq(1)
-    yield
-    yield dut.bank_ports[1].oe.eq(1)
-    yield
-    yield dut.bank.eq(2)
-    yield
-
-    yield dut.bank_ports[1].o.eq(0)
-    yield
-    yield dut.bank_ports[2].o.eq(0)
-    yield
-    yield dut.bank_ports[2].oe.eq(1)
-    yield
-    yield dut.bank.eq(0)
-    yield
+    yield from test_single_bank(dut, 0)
+    yield from test_single_bank(dut, 1)
+    yield from test_single_bank(dut, 2)
+    yield from test_single_bank(dut, 3)
 
     print("Finished the 1-bit IO mux block test!")
 
