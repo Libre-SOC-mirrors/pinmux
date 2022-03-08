@@ -19,9 +19,9 @@ from nmutil.gtkw import write_gtkw
 
 cxxsim = False
 if cxxsim:
-    from nmigen.sim.cxxsim import Simulator, Settle
+    from nmigen.sim.cxxsim import Simulator, Settle, Delay
 else:
-    from nmigen.sim import Simulator, Settle
+    from nmigen.sim import Simulator, Settle, Delay
 
 io_layout = (("i", 1),
              ("oe", 1),
@@ -56,10 +56,6 @@ class IOMuxBlockSingle(Elaboratable):
         #b1 = self.b1
         out_port = self.out_port
 
-        sync += out_port.o.eq(bank_ports[0].o)
-        sync += out_port.oe.eq(bank_ports[0].oe)
-        sync += bank_ports[0].i.eq(out_port.i)
-
         # Connect IO Pad output port to one of the peripheral IOs
         # Connect peripheral inputs to the IO pad input
 
@@ -72,13 +68,13 @@ class IOMuxBlockSingle(Elaboratable):
 
         with m.Switch(bank):
             with m.Case(BANK0_WB):
-                self.connect_bank_to_io(sync, BANK0_WB)
+                self.connect_bank_to_io(comb, BANK0_WB)
             with m.Case(BANK1_P1):
-                self.connect_bank_to_io(sync, BANK1_P1)
+                self.connect_bank_to_io(comb, BANK1_P1)
             with m.Case(BANK2_P2):
-                self.connect_bank_to_io(sync, BANK2_P2)
+                self.connect_bank_to_io(comb, BANK2_P2)
             with m.Case(BANK3_P3):
-                self.connect_bank_to_io(sync, BANK3_P3)
+                self.connect_bank_to_io(comb, BANK3_P3)
         return m
 
     def connect_bank_to_io(self, domain, bank_arg):
@@ -86,12 +82,13 @@ class IOMuxBlockSingle(Elaboratable):
         domain += self.out_port.oe.eq(self.bank_ports[bank_arg].oe)
         domain += self.bank_ports[bank_arg].i.eq(self.out_port.i)
 
-        temp_list = list(range(self.n_banks))
-        temp_list.pop(temp_list.index(bank_arg))
-        print("Banks with input hardwired to 0: {}".format(temp_list))
-        for j in range(len(temp_list)):
-            unused_bank = temp_list[j]
-            domain += self.bank_ports[unused_bank].i.eq(0)
+        # unnecessary, yosys correctly converted to mux's already
+        #temp_list = list(range(self.n_banks))
+        #temp_list.pop(temp_list.index(bank_arg))
+        #print("Banks with input hardwired to 0: {}".format(temp_list))
+        #for j in range(len(temp_list)):
+        #    unused_bank = temp_list[j]
+        #    domain += self.bank_ports[unused_bank].i.eq(0)
 
     def __iter__(self):
         """ Get member signals for Verilog form. """
@@ -151,9 +148,10 @@ def sim_iomux():
     m.submodules.pinmux = dut
 
     sim = Simulator(m)
-    sim.add_clock(1e-6)
+    #sim.add_clock(1e-6)
 
-    sim.add_sync_process(wrap(test_iomux(dut)))
+    #sim.add_sync_process(wrap(test_iomux(dut)))
+    sim.add_process(wrap(test_iomux(dut)))
     sim_writer = sim.write_vcd(filename+".vcd")
     with sim_writer:
         sim.run()
@@ -188,15 +186,14 @@ def test_single_bank(dut, bank, rand=True):
     print("Prev={}, Given={}, Next={}".format(prev_bank, bank, next_bank))
 
     yield dut.bank.eq(prev_bank)
-    yield
+    yield Delay(1e-6)
     yield dut.bank_ports[bank].o.eq(0)
     yield dut.bank_ports[bank].oe.eq(0)
     yield dut.out_port.i.eq(0)
-    yield
-    yield
+    yield Delay(1e-6)
 
     yield dut.bank.eq(bank)
-    yield
+    yield Delay(1e-6)
 
     test_o = yield dut.out_port.o
     test_oe = yield dut.out_port.oe
@@ -206,12 +203,11 @@ def test_single_bank(dut, bank, rand=True):
     assert(test_i == 0)
 
     yield dut.bank_ports[bank].o.eq(1)
-    yield
+    yield Delay(1e-6)
     yield dut.bank_ports[bank].oe.eq(1)
-    yield
+    yield Delay(1e-6)
     yield dut.out_port.i.eq(1)
-    yield
-    yield
+    yield Delay(1e-6)
 
     test_o = yield dut.out_port.o
     test_oe = yield dut.out_port.oe
@@ -222,13 +218,11 @@ def test_single_bank(dut, bank, rand=True):
     assert(test_i == 1)
 
     yield dut.bank.eq(next_bank)
-    yield
-    yield
+    yield Delay(1e-6)
     yield dut.bank_ports[bank].o.eq(0)
     yield dut.bank_ports[bank].oe.eq(0)
     yield dut.out_port.i.eq(0)
-    yield
-    yield
+    yield Delay(1e-6)
 
 def test_iomux(dut):
     print("------START----------------------")
