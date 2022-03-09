@@ -297,7 +297,7 @@ class GPIOManager():
         curr_gpio = row_addr * self.wordsize
         config_word = 0
         for byte in range(0, self.wordsize):
-            if curr_gpio > self.n_gpios:
+            if curr_gpio >= self.n_gpios:
                 break
             config_word += self.shadow_csr[curr_gpio].packed << (8 * byte)
             #print("Reading GPIO{} shadow reg".format(curr_gpio))
@@ -317,7 +317,7 @@ class GPIOManager():
         curr_gpio = row_addr * self.wordsize
         single_csr = 0
         for byte in range(0, self.wordsize):
-            if curr_gpio > self.n_gpios:
+            if curr_gpio >= self.n_gpios:
                 break
             single_csr = (read_word >> (8 * byte)) & 0xFF
             #print("Updating GPIO{0} shadow reg to {1:x}"
