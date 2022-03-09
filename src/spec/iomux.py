@@ -43,23 +43,17 @@ class IOMuxBlockSingle(Elaboratable):
 
         self.out_port = Record(name="IO", layout=io_layout)
 
-        #self.b0 = Record(name="b0", layout=io_layout)
-        #self.b1 = Record(name="b1", layout=io_layout)
-
     def elaborate(self, platform):
         m = Module()
         comb, sync = m.d.comb, m.d.sync
 
         bank = self.bank
         bank_ports = self.bank_ports
-        #b0 = self.b0
-        #b1 = self.b1
         out_port = self.out_port
 
         # Connect IO Pad output port to one of the peripheral IOs
         # Connect peripheral inputs to the IO pad input
 
-        bank_range = range(self.n_banks)
         # const
         BANK0_WB = 0
         BANK1_P1 = 1
@@ -81,14 +75,6 @@ class IOMuxBlockSingle(Elaboratable):
         domain += self.out_port.o.eq(self.bank_ports[bank_arg].o)
         domain += self.out_port.oe.eq(self.bank_ports[bank_arg].oe)
         domain += self.bank_ports[bank_arg].i.eq(self.out_port.i)
-
-        # unnecessary, yosys correctly converted to mux's already
-        #temp_list = list(range(self.n_banks))
-        #temp_list.pop(temp_list.index(bank_arg))
-        #print("Banks with input hardwired to 0: {}".format(temp_list))
-        #for j in range(len(temp_list)):
-        #    unused_bank = temp_list[j]
-        #    domain += self.bank_ports[unused_bank].i.eq(0)
 
     def __iter__(self):
         """ Get member signals for Verilog form. """
@@ -122,7 +108,6 @@ def gen_gtkw_doc(module_name, n_banks, filename):
         traces.append(temp_traces)
 
     temp_traces = ('Misc', [
-                    ('clk'),
                     ('bank[1:0]', 'in')
                   ])
     traces.append(temp_traces)
@@ -148,9 +133,7 @@ def sim_iomux():
     m.submodules.pinmux = dut
 
     sim = Simulator(m)
-    #sim.add_clock(1e-6)
 
-    #sim.add_sync_process(wrap(test_iomux(dut)))
     sim.add_process(wrap(test_iomux(dut)))
     sim_writer = sim.write_vcd(filename+".vcd")
     with sim_writer:
@@ -229,7 +212,6 @@ def test_iomux(dut):
     #print(dir(dut.bank_ports[0]))
     #print(dut.bank_ports[0].fields)
 
-    # TODO: turn into methods
     yield from test_single_bank(dut, 0)
     yield from test_single_bank(dut, 1)
     yield from test_single_bank(dut, 2)
