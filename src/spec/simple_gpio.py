@@ -56,7 +56,7 @@ class SimpleGPIO(Elaboratable):
         spec.reg_wid = wordsize*8 # 32
         self.bus = Record(make_wb_layout(spec), name="gpio_wb")
 
-        print("CSRBUS layout: ", csrbus_layout)
+        #print("CSRBUS layout: ", csrbus_layout)
         # create array - probably a cleaner way to do this...
         temp = []
         for i in range(self.wordsize):
@@ -134,7 +134,9 @@ class SimpleGPIO(Elaboratable):
     def __iter__(self):
         for field in self.bus.fields.values():
             yield field
-        #yield self.gpio_o
+        for gpio in range(len(self.gpio_ports)):
+            for field in self.gpio_ports[gpio].fields.values():
+                yield field
 
     def ports(self):
         return list(self)
@@ -213,8 +215,9 @@ class GPIOConfigReg():
 # Object for storing each gpio's config state
 
 class GPIOManager():
-    def __init__(self, dut, layout):
+    def __init__(self, dut, layout, wb_bus):
         self.dut = dut
+        self.wb_bus = wb_bus
         # arrangement of config bits making up csr word
         self.csr_layout = layout
         self.shift_dict = self._create_shift_dict()
@@ -288,7 +291,7 @@ class GPIOManager():
         return oe, ie, puen, pden, io, bank
 
     def rd_csr(self, row_start):
-        row_word = yield from wb_read(self.dut.bus, row_start)
+        row_word = yield from wb_read(self.wb_bus, row_start)
         print("Returned CSR: {0:x}".format(row_word))
         return row_word
 
@@ -304,7 +307,7 @@ class GPIOManager():
             curr_gpio += 1
         print("Writing shadow CSRs val {0:x}  to row addr {1:x}"
               .format(config_word, row_addr))
-        yield from wb_write(self.dut.bus, row_addr, config_word)
+        yield from wb_write(self.wb_bus, row_addr, config_word)
         yield # Allow one clk cycle to propagate
 
         if(check):
@@ -520,7 +523,7 @@ def test_gpio():
 
 def test_gpioman(dut):
     print("------START----------------------")
-    gpios = GPIOManager(dut, csrbus_layout)
+    gpios = GPIOManager(dut, csrbus_layout, dut.bus)
     gpios.print_info()
     #gpios._parse_gpio_arg("all")
     #gpios._parse_gpio_arg("0")
