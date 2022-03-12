@@ -28,7 +28,6 @@ class PinMuxBlockSingle(Elaboratable):
     def __init__(self, wb_wordsize):
         print("1-bit Pin Mux Block with JTAG")
         self.n_banks = 4
-        self.bank = Signal(log2_int(self.n_banks))
         self.n_gpios = 1
         self.wb_wordsize = wb_wordsize # 4 Bytes, 32-bits
 
@@ -38,7 +37,7 @@ class PinMuxBlockSingle(Elaboratable):
         spec.addr_wid = 30
         spec.mask_wid = 4
         spec.reg_wid = self.wb_wordsize*8
-        self.bus = Record(make_wb_layout(spec), name="gpio_wb")
+        self.bus = Record(make_wb_layout(spec), name="pinmux_wb")
 
         temp = []
         for i in range(1, self.n_banks):
@@ -50,6 +49,9 @@ class PinMuxBlockSingle(Elaboratable):
 
         self.iomux = IOMuxBlockSingle()
         self.gpio = SimpleGPIO(self.wb_wordsize, self.n_gpios)
+        # This is probably easier to extend in future by bringing out WB
+        # interface to top-level
+        #self.bus = self.gpio.bus
 
     def elaborate(self, platform):
         m = Module()
@@ -57,7 +59,6 @@ class PinMuxBlockSingle(Elaboratable):
         iomux = self.iomux
         gpio = self.gpio
         bus = self.bus
-        bank = self.bank
         periph_ports = self.periph_ports
         pad_port = self.pad_port
 
@@ -67,37 +68,35 @@ class PinMuxBlockSingle(Elaboratable):
 
         # Connect up modules and signals
         # WB bus connection
-        gpio.bus.adr.eq(bus.adr)
-        gpio.bus.dat_w.eq(bus.dat_w)
-        bus.dat_r.eq(gpio.bus.dat_r)
-        gpio.bus.sel.eq(bus.sel)
-        gpio.bus.cyc.eq(bus.cyc)
-        gpio.bus.stb.eq(bus.stb)
-        bus.ack.eq(gpio.bus.ack)
-        gpio.bus.we.eq(bus.we)
-        bus.err.eq(gpio.bus.err)
-        gpio.bus.cti.eq(bus.cti) # Cycle Type Identifier
-        gpio.bus.bte.eq(bus.bte) # Burst Type Extension
+        m.d.comb += [gpio.bus.adr.eq(bus.adr),
+                     gpio.bus.dat_w.eq(bus.dat_w),
+                     bus.dat_r.eq(gpio.bus.dat_r),
+                     gpio.bus.sel.eq(bus.sel),
+                     gpio.bus.cyc.eq(bus.cyc),
+                     gpio.bus.stb.eq(bus.stb),
+                     bus.ack.eq(gpio.bus.ack),
+                     gpio.bus.we.eq(bus.we),
+                     bus.err.eq(gpio.bus.err),
+                     gpio.bus.cti.eq(bus.cti), # Cycle Type Identifier
+                     gpio.bus.bte.eq(bus.bte) # Burst Type Extension
+                    ]
 
-        iomux.bank.eq(gpio.gpio_ports[0].bank)
+        m.d.comb += iomux.bank.eq(gpio.gpio_ports[0].bank)
 
         # WB GPIO always bank0
-        iomux.bank_ports[0].o.eq(gpio.gpio_ports[0].o)
-        iomux.bank_ports[0].oe.eq(gpio.gpio_ports[0].oe)
-        gpio.gpio_ports[0].i.eq(iomux.bank_ports[0].i)
+        m.d.comb += iomux.bank_ports[0].o.eq(gpio.gpio_ports[0].o)
+        m.d.comb += iomux.bank_ports[0].oe.eq(gpio.gpio_ports[0].oe)
+        m.d.comb += gpio.gpio_ports[0].i.eq(iomux.bank_ports[0].i)
 
         # banks1-3 external
-        iomux.bank_ports[1].o.eq(periph_ports[0].o)
-        iomux.bank_ports[1].oe.eq(periph_ports[0].oe)
-        periph_ports[0].i.eq(iomux.bank_ports[1].i)
-        #for bank in range(0, self.n_banks-1):
-        #    iomux.bank_ports[bank+1].o.eq(periph_ports[bank].o)
-        #    iomux.bank_ports[bank+1].oe.eq(periph_ports[bank].oe)
-        #    periph_ports[bank].i.eq(iomux.bank_ports[bank+1].i)
+        for bank in range(0, self.n_banks-1):
+            m.d.comb += iomux.bank_ports[bank+1].o.eq(periph_ports[bank].o)
+            m.d.comb += iomux.bank_ports[bank+1].oe.eq(periph_ports[bank].oe)
+            m.d.comb += periph_ports[bank].i.eq(iomux.bank_ports[bank+1].i)
 
-        pad_port.o.eq(iomux.out_port.o)
-        pad_port.oe.eq(iomux.out_port.oe)
-        iomux.out_port.i.eq(pad_port.i)
+        m.d.comb += pad_port.o.eq(iomux.out_port.o)
+        m.d.comb += pad_port.oe.eq(iomux.out_port.oe)
+        m.d.comb += iomux.out_port.i.eq(pad_port.i)
 
         return m
 
@@ -110,7 +109,6 @@ class PinMuxBlockSingle(Elaboratable):
         for bank in range(len(self.periph_ports)):
             for field in self.periph_ports[bank].fields.values():
                 yield field
-        #yield self.bank
 
     def ports(self):
         return list(self)
@@ -199,9 +197,7 @@ def test_gpio_pinmux(dut):
     pden = 1
     outval = 0
     bank = 0
-    #yield from gpios.config("0", oe=1, ie=0, puen=0, pden=1, outval=0, bank=2)
-    yield dut.bus.adr.eq(0x1)
-    yield dut.bus.dat_w.eq(0xA5A5)
+    yield from gpios.config("0", oe=1, ie=0, puen=0, pden=1, outval=0, bank=2)
 
     yield
     yield dut.periph_ports[0].o.eq(1)
