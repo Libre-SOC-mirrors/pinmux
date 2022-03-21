@@ -7,7 +7,7 @@ Modified for use with pinmux, will probably change the class name later.
 """
 from random import randint
 from math import ceil, floor
-from nmigen import Elaboratable, Module, Signal, Record, Array, Cat
+from nmigen import Elaboratable, Module, Signal, Record, Array, Cat, Const
 from nmigen.hdl.rec import Layout
 from nmigen.utils import log2_int
 from nmigen.cli import rtlil
@@ -84,7 +84,12 @@ class SimpleGPIO(Elaboratable):
 
         comb += wb_ack.eq(0)
 
-        row_start = Signal(log2_int(self.n_gpio))
+        # log2_int(1) will give 0, which wouldn't work?
+        if (self.n_gpio == 1):
+            row_start = Signal(1)
+        else:
+            row_start = Signal(log2_int(self.n_gpio))
+
         # Flag for indicating rd/wr transactions
         new_transaction = Signal(1)
 
@@ -110,25 +115,41 @@ class SimpleGPIO(Elaboratable):
                 comb += wb_rd_data.eq(Cat(multi_cat))
         with m.Else():
             sync += new_transaction.eq(0)
-            # Update the state of "io" while no WB transactions
-            for byte in range(0, self.wordsize):
-                with m.If(gpio_ports[row_start+byte].oe):
-                    sync += multi[byte].io.eq(gpio_ports[row_start+byte].o)
-                with m.Else():
-                    sync += multi[byte].io.eq(gpio_ports[row_start+byte].i)
+
         # Only update GPIOs config if a new transaction happened last cycle
         # (read or write). Always lags from multi csrbus by 1 clk cycle, most
         # sane way I could think of while using Record().
         with m.If(new_transaction):
-            for byte in range(0, self.wordsize):
-                sync += gpio_ports[row_start+byte].oe.eq(multi[byte].oe)
-                sync += gpio_ports[row_start+byte].puen.eq(multi[byte].puen)
-                sync += gpio_ports[row_start+byte].pden.eq(multi[byte].pden)
-                # Check to prevent output being set if GPIO configured as input
-                # TODO: No checking is done if ie/oe high together
-                with m.If(gpio_ports[row_start+byte].oe):
-                    sync += gpio_ports[row_start+byte].o.eq(multi[byte].io)
-                sync += gpio_ports[row_start+byte].bank.eq(multi[byte].bank)
+            # This is a complex case, not needed atm
+            if self.n_gpio > self.wordsize:
+                print("NOT IMPLEMENTED THIS CASE")
+                """
+                for byte in range(0, self.wordsize):
+                    if ((row_start+byte) < Const(self.n_gpio)):
+                        sync += gpio_ports[row+byte].oe.eq(multi[byte].oe)
+                        sync += gpio_ports[row+byte].puen.eq(multi[byte].puen)
+                        sync += gpio_ports[row+byte].pden.eq(multi[byte].pden)
+                        # prevent output being set if GPIO configured as i
+                        # TODO: No checking is done if ie/oe high together
+                        with m.If(gpio_ports[row+byte].oe):
+                            sync += gpio_ports[row+byte].o.eq(multi[byte].io)
+                        with m.Else():
+                            sync += multi[byte].io.eq(gpio_ports[row+byte].i)
+                        sync += gpio_ports[row+byte].bank.eq(multi[byte].bank)
+                """
+                raise
+            else:
+                for byte in range(self.n_gpio):
+                    sync += gpio_ports[byte].oe.eq(multi[byte].oe)
+                    sync += gpio_ports[byte].puen.eq(multi[byte].puen)
+                    sync += gpio_ports[byte].pden.eq(multi[byte].pden)
+                    # Check to prevent output being set if GPIO configured as i
+                    # TODO: No checking is done if ie/oe high together
+                    with m.If(multi[byte].oe): # gpio_ports[byte].oe):
+                        sync += gpio_ports[byte].o.eq(multi[byte].io)
+                    with m.Else():
+                        sync += multi[byte].io.eq(gpio_ports[byte].i)
+                    sync += gpio_ports[byte].bank.eq(multi[byte].bank)
         return m
 
     def __iter__(self):

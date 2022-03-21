@@ -203,7 +203,9 @@ def test_gpio_pinmux(dut):
     yield dut.periph_ports[0].o.eq(1)
     yield dut.periph_ports[0].oe.eq(1)
     yield dut.pad_port.i.eq(1)
-
+    yield
+    yield from gpios.config("0", oe=0, ie=0, puen=0, pden=1, outval=0, bank=0)
+    yield from gpios.rd_input("0")
 
     print("Finished the 1-bit IO mux block test!")
 
