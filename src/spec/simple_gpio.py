@@ -120,25 +120,30 @@ class SimpleGPIO(Elaboratable):
         # (read or write). Always lags from multi csrbus by 1 clk cycle, most
         # sane way I could think of while using Record().
         with m.If(new_transaction):
-            # This is a complex case, not needed atm
-            if self.n_gpio > self.wordsize:
-                print("NOT IMPLEMENTED THIS CASE")
-                """
-                for byte in range(0, self.wordsize):
-                    if ((row_start+byte) < Const(self.n_gpio)):
-                        sync += gpio_ports[row+byte].oe.eq(multi[byte].oe)
-                        sync += gpio_ports[row+byte].puen.eq(multi[byte].puen)
-                        sync += gpio_ports[row+byte].pden.eq(multi[byte].pden)
+            print("#GPIOs is greater than, and is a multiple of WB wordsize")
+            # Case where all gpios fit within full words
+            if self.n_gpio % self.wordsize == 0:
+                gpio = 0
+                while (gpio < self.n_gpio):
+                    for byte in range(self.wordsize):
+                        sync += gpio_ports[gpio].oe.eq(multi[byte].oe)
+                        sync += gpio_ports[gpio].puen.eq(multi[byte].puen)
+                        sync += gpio_ports[gpio].pden.eq(multi[byte].pden)
                         # prevent output being set if GPIO configured as i
                         # TODO: No checking is done if ie/oe high together
-                        with m.If(gpio_ports[row+byte].oe):
-                            sync += gpio_ports[row+byte].o.eq(multi[byte].io)
+                        with m.If(multi[byte].oe):
+                            sync += gpio_ports[gpio].o.eq(multi[byte].io)
                         with m.Else():
-                            sync += multi[byte].io.eq(gpio_ports[row+byte].i)
-                        sync += gpio_ports[row+byte].bank.eq(multi[byte].bank)
-                """
+                            sync += multi[byte].io.eq(gpio_ports[gpio].i)
+                        sync += gpio_ports[gpio].bank.eq(multi[byte].bank)
+                    gpio += 1
+            elif self.n_gpio > self.wordsize:
+                # This is a complex case, not needed atm
+                print("#GPIOs is greater than WB wordsize")
+                print("NOT IMPLEMENTED THIS CASE")
                 raise
             else:
+                print("#GPIOs is less or equal to WB wordsize (in bytes)")
                 for byte in range(self.n_gpio):
                     sync += gpio_ports[byte].oe.eq(multi[byte].oe)
                     sync += gpio_ports[byte].puen.eq(multi[byte].puen)
@@ -150,6 +155,10 @@ class SimpleGPIO(Elaboratable):
                     with m.Else():
                         sync += multi[byte].io.eq(gpio_ports[byte].i)
                     sync += gpio_ports[byte].bank.eq(multi[byte].bank)
+        # TODO: need logic for reading gpio config...
+        #with m.Else():
+        #    print("Copy gpio_ports to multi...")
+        #    sync += multi[]
         return m
 
     def __iter__(self):
@@ -162,13 +171,14 @@ class SimpleGPIO(Elaboratable):
     def ports(self):
         return list(self)
 
+"""
 def gpio_test_in_pattern(dut, pattern):
     num_gpios = len(dut.gpio_ports)
     print("Test pattern:")
     print(pattern)
     for pat in range(0, len(pattern)):
         for gpio in range(0, num_gpios):
-            yield from gpio_set_in_pad(dut, gpio, pattern[pat])
+            yield gpio_set_in_pad(dut, gpio, pattern[pat])
             yield
             temp = yield from gpio_rd_input(dut, gpio)
             print("Pattern: {0}, Reading {1}".format(pattern[pat], temp))
@@ -176,6 +186,7 @@ def gpio_test_in_pattern(dut, pattern):
             pat += 1
             if pat == len(pattern):
                 break
+"""
 
 def test_gpio_single(dut, gpio, use_random=True):
     oe = 1
