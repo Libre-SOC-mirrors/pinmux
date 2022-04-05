@@ -45,10 +45,11 @@ gpio_layout = (("i", 1),
 class SimpleGPIO(Elaboratable):
 
     def __init__(self, wordsize=4, n_gpio=16):
-        print("SimpleGPIO: WB Data # of bytes: {0}, # of GPIOs: {1}"
-              .format(wordsize, n_gpio))
         self.wordsize = wordsize
         self.n_gpio = n_gpio
+        self.n_rows = ceil(self.n_gpio / self.wordsize)
+        print("SimpleGPIO: WB Data # of bytes: {0}, #GPIOs: {1}, Rows: {2}"
+              .format(self.wordsize, self.n_gpio, self.n_rows))
         class Spec: pass
         spec = Spec()
         spec.addr_wid = 30
@@ -57,7 +58,13 @@ class SimpleGPIO(Elaboratable):
         self.bus = Record(make_wb_layout(spec), name="gpio_wb")
 
         #print("CSRBUS layout: ", csrbus_layout)
-        # create array - probably a cleaner way to do this...
+        # MultiCSR read and write buses
+        temp = []
+        for i in range(self.wordsize):
+            temp_str = "rd_word{}".format(i)
+            temp.append(Record(name=temp_str, layout=csrbus_layout))
+        self.rd_multicsr = Array(temp)
+
         temp = []
         for i in range(self.wordsize):
             temp_str = "word{}".format(i)
@@ -81,8 +88,13 @@ class SimpleGPIO(Elaboratable):
 
         gpio_ports = self.gpio_ports
         multi = self.multicsrbus
+        rd_multi = self.rd_multicsr
 
         comb += wb_ack.eq(0)
+
+        row_const = []
+        for row in range(self.n_rows):
+            row_const.append(Const(row))
 
         # log2_int(1) will give 0, which wouldn't work?
         if (self.n_gpio == 1):
@@ -111,7 +123,7 @@ class SimpleGPIO(Elaboratable):
                 # address and send
                 multi_cat = []
                 for i in range(0, self.wordsize):
-                    multi_cat.append(multi[i])
+                    multi_cat.append(rd_multi[i])
                 comb += wb_rd_data.eq(Cat(multi_cat))
         with m.Else():
             sync += new_transaction.eq(0)
@@ -120,46 +132,90 @@ class SimpleGPIO(Elaboratable):
         # (read or write). Always lags from multi csrbus by 1 clk cycle, most
         # sane way I could think of while using Record().
         with m.If(new_transaction):
-            print("#GPIOs is greater than, and is a multiple of WB wordsize")
-            # Case where all gpios fit within full words
-            if self.n_gpio % self.wordsize == 0:
-                gpio = 0
-                while (gpio < self.n_gpio):
-                    for byte in range(self.wordsize):
-                        sync += gpio_ports[gpio].oe.eq(multi[byte].oe)
-                        sync += gpio_ports[gpio].puen.eq(multi[byte].puen)
-                        sync += gpio_ports[gpio].pden.eq(multi[byte].pden)
-                        # prevent output being set if GPIO configured as i
-                        # TODO: No checking is done if ie/oe high together
-                        with m.If(multi[byte].oe):
-                            sync += gpio_ports[gpio].o.eq(multi[byte].io)
-                        with m.Else():
-                            sync += multi[byte].io.eq(gpio_ports[gpio].i)
-                        sync += gpio_ports[gpio].bank.eq(multi[byte].bank)
-                    gpio += 1
-            elif self.n_gpio > self.wordsize:
-                # This is a complex case, not needed atm
-                print("#GPIOs is greater than WB wordsize")
-                print("NOT IMPLEMENTED THIS CASE")
-                raise
-            else:
-                print("#GPIOs is less or equal to WB wordsize (in bytes)")
-                for byte in range(self.n_gpio):
-                    sync += gpio_ports[byte].oe.eq(multi[byte].oe)
-                    sync += gpio_ports[byte].puen.eq(multi[byte].puen)
-                    sync += gpio_ports[byte].pden.eq(multi[byte].pden)
-                    # Check to prevent output being set if GPIO configured as i
-                    # TODO: No checking is done if ie/oe high together
-                    with m.If(multi[byte].oe): # gpio_ports[byte].oe):
-                        sync += gpio_ports[byte].o.eq(multi[byte].io)
-                    with m.Else():
-                        sync += multi[byte].io.eq(gpio_ports[byte].i)
-                    sync += gpio_ports[byte].bank.eq(multi[byte].bank)
-        # TODO: need logic for reading gpio config...
+            self.connect_wr_bus_to_gpio(m, sync, bus.adr, gpio_ports, multi)
+        self.connect_gpio_to_rd_bus(m, sync, bus.adr, gpio_ports, rd_multi)
         #with m.Else():
         #    print("Copy gpio_ports to multi...")
         #    sync += multi[]
         return m
+
+    def connect_wr_bus_to_gpio(self, module, domain, addr, gp, multi):
+        if self.n_gpio > self.wordsize:
+            print("#GPIOs is greater than, and is a multiple of WB wordsize")
+            # Case where all gpios fit within full words
+            if self.n_gpio % self.wordsize == 0:
+                for row in range(self.n_rows):
+                    with module.If(addr == Const(row)):
+                        offset = row*self.wordsize
+                        for byte in range(self.wordsize):
+                            domain += gp[byte+offset].oe.eq(multi[byte].oe)
+                            domain += gp[byte+offset].puen.eq(multi[byte].puen)
+                            domain += gp[byte+offset].pden.eq(multi[byte].pden)
+                            # prevent output being set if GPIO configured as i
+                            # TODO: No checking is done if ie/oe high together
+                            with module.If(multi[byte].oe):
+                                domain += gp[byte+offset].o.eq(multi[byte].io)
+                            with module.Else():
+                                domain += multi[byte].io.eq(gp[byte+offset].i)
+                            domain += gp[byte+offset].bank.eq(multi[byte].bank)
+            else:
+                # TODO: This is a complex case, not needed atm
+                print("#GPIOs is greater than WB wordsize")
+                print("But not fully fitting in words...")
+                print("NOT IMPLEMENTED THIS CASE")
+                raise
+        else:
+            print("#GPIOs is less or equal to WB wordsize (in bytes)")
+            for byte in range(self.n_gpio):
+                domain += gp[byte].oe.eq(multi[byte].oe)
+                domain += gp[byte].puen.eq(multi[byte].puen)
+                domain += gp[byte].pden.eq(multi[byte].pden)
+                # Check to prevent output being set if GPIO configured as i
+                # TODO: No checking is done if ie/oe high together
+                with module.If(multi[byte].oe):
+                    domain += gp[byte].o.eq(multi[byte].io)
+                with module.Else():
+                    domain += gp[byte].o.eq(0)
+                domain += gp[byte].bank.eq(multi[byte].bank)
+
+    def connect_gpio_to_rd_bus(self, module, domain, addr, gp, multi):
+        if self.n_gpio > self.wordsize:
+            print("#GPIOs is greater than, and is a multiple of WB wordsize")
+            # Case where all gpios fit within full words
+            if self.n_gpio % self.wordsize == 0:
+                for row in range(self.n_rows):
+                    with module.If(addr == Const(row)):
+                        offset = row*self.wordsize
+                        for byte in range(self.wordsize):
+                            domain += multi[byte].oe.eq(gp[byte+offset].oe)
+                            domain += multi[byte].puen.eq(gp[byte+offset].puen)
+                            domain += multi[byte].pden.eq(gp[byte+offset].pden)
+                            # prevent output being set if GPIO configured as i
+                            # TODO: No checking is done if ie/oe high together
+                            with module.If(gp[byte+offset].oe):
+                                domain += multi[byte].io.eq(gp[byte+offset].o)
+                            with module.Else():
+                                domain += multi[byte].io.eq(gp[byte+offset].i)
+                            domain += multi[byte].bank.eq(gp[byte+offset].bank)
+            else:
+                # TODO: This is a complex case, not needed atm
+                print("#GPIOs is greater than WB wordsize")
+                print("NOT IMPLEMENTED THIS CASE")
+                raise
+        else:
+            print("#GPIOs is less or equal to WB wordsize (in bytes)")
+            for byte in range(self.n_gpio):
+                domain += multi[byte].oe.eq(gp[gpio].oe)
+                domain += multi[byte].puen.eq(gp[gpio].puen)
+                domain += multi[byte].pden.eq(gp[gpio].pden)
+                # Check to prevent output being set if GPIO configured as i
+                # TODO: No checking is done if ie/oe high together
+                with module.If(multi[byte].oe):
+                    domain += multi[byte].io.eq(gp[gpio].o)
+                with module.Else():
+                    domain += multi[byte].io.eq(gp[byte].i)
+                domain += multi[byte].bank.eq(gp[gpio].bank)
+
 
     def __iter__(self):
         for field in self.bus.fields.values():
