@@ -84,23 +84,12 @@ class SimpleGPIO(Elaboratable):
         bus = self.bus
         wb_rd_data = bus.dat_r
         wb_wr_data = bus.dat_w
+        wb_rd_data_reg = Signal(self.wordsize*8) # same len as WB bus
         wb_ack = bus.ack
 
         gpio_ports = self.gpio_ports
         multi = self.multicsrbus
         rd_multi = self.rd_multicsr
-
-        comb += wb_ack.eq(0)
-
-        row_const = []
-        for row in range(self.n_rows):
-            row_const.append(Const(row))
-
-        # log2_int(1) will give 0, which wouldn't work?
-        if (self.n_gpio == 1):
-            row_start = Signal(1)
-        else:
-            row_start = Signal(log2_int(self.n_gpio))
 
         # Flag for indicating rd/wr transactions
         new_transaction = Signal(1)
@@ -110,23 +99,25 @@ class SimpleGPIO(Elaboratable):
 
         # One address used to configure CSR, set output, read input
         with m.If(bus.cyc & bus.stb):
-            comb += wb_ack.eq(1) # always ack
-            # Probably wasteful
-            sync += row_start.eq(bus.adr * self.wordsize)
+            sync += wb_ack.eq(1) # always ack, always delayed
+            # TODO: is this needed anymore?
             sync += new_transaction.eq(1)
+            # Concatinate the GPIO configs that are on the same "row" or
+            # address and send
+            multi_cat = []
+            for i in range(0, self.wordsize):
+                multi_cat.append(rd_multi[i])
+            sync += wb_rd_data_reg.eq(Cat(multi_cat))
             with m.If(bus.we): # write
                 # Configure CSR
                 for byte in range(0, self.wordsize):
+                    # TODO: wasteful... convert to Cat(), somehow
                     sync += multi[byte].eq(wb_wr_data[byte*8:8+byte*8])
-            with m.Else(): # read
-                # Concatinate the GPIO configs that are on the same "row" or
-                # address and send
-                multi_cat = []
-                for i in range(0, self.wordsize):
-                    multi_cat.append(rd_multi[i])
-                comb += wb_rd_data.eq(Cat(multi_cat))
+            with m.Elif(wb_ack): # read (and acked)
+                comb += wb_rd_data.eq(wb_rd_data_reg)
         with m.Else():
             sync += new_transaction.eq(0)
+            sync += wb_ack.eq(0)
 
         # Only update GPIOs config if a new transaction happened last cycle
         # (read or write). Always lags from multi csrbus by 1 clk cycle, most
@@ -547,7 +538,6 @@ def gen_gtkw_doc(n_gpios, wordsize, filename):
     gpio_internal_traces = ('Internal', [
                                 ('clk', 'in'),
                                 ('new_transaction'),
-                                ('row_start[2:0]'),
                                 ('rst', 'in')
                             ])
     traces.append(gpio_internal_traces)
@@ -615,7 +605,7 @@ def test_gpioman(dut):
     gpios.print_info()
     #gpios._parse_gpio_arg("all")
     #gpios._parse_gpio_arg("0")
-    gpios._parse_gpio_arg("1-3")
+    #gpios._parse_gpio_arg("1-3")
     #gpios._parse_gpio_arg("20")
 
     oe = 1
@@ -626,7 +616,7 @@ def test_gpioman(dut):
     bank = 3
     yield from gpios.config("0-3", oe=1, ie=0, puen=0, pden=1, outval=0, bank=2)
     ie = 1
-    yield from gpios.config("4-7", oe=0, ie=1, puen=0, pden=1, outval=0, bank=2)
+    yield from gpios.config("4-7", oe=0, ie=1, puen=0, pden=1, outval=0, bank=6)
     yield from gpios.set_out("0-3", outval=1)
 
     #yield from gpios.rd_all()
