@@ -56,6 +56,7 @@ class SimpleGPIO(Elaboratable):
         spec.mask_wid = 4
         spec.reg_wid = wordsize*8 # 32
         self.bus = Record(make_wb_layout(spec), name="gpio_wb")
+        self.wb_rd_data_reg = Signal(self.wordsize*8) # same len as WB bus
 
         #print("CSRBUS layout: ", csrbus_layout)
         # MultiCSR read and write buses
@@ -84,7 +85,7 @@ class SimpleGPIO(Elaboratable):
         bus = self.bus
         wb_rd_data = bus.dat_r
         wb_wr_data = bus.dat_w
-        wb_rd_data_reg = Signal(self.wordsize*8) # same len as WB bus
+        wb_rd_data_reg = self.wb_rd_data_reg
         wb_ack = bus.ack
 
         gpio_ports = self.gpio_ports
@@ -93,9 +94,6 @@ class SimpleGPIO(Elaboratable):
 
         # Flag for indicating rd/wr transactions
         new_transaction = Signal(1)
-
-        #print("Types:")
-        #print("gpio_addr: ", type(gpio_addr))
 
         # One address used to configure CSR, set output, read input
         with m.If(bus.cyc & bus.stb):
@@ -113,21 +111,21 @@ class SimpleGPIO(Elaboratable):
                 for byte in range(0, self.wordsize):
                     # TODO: wasteful... convert to Cat(), somehow
                     sync += multi[byte].eq(wb_wr_data[byte*8:8+byte*8])
-            with m.Elif(wb_ack): # read (and acked)
-                comb += wb_rd_data.eq(wb_rd_data_reg)
         with m.Else():
             sync += new_transaction.eq(0)
             sync += wb_ack.eq(0)
+
+        with m.If(wb_ack): # read (and acked)
+            comb += wb_rd_data.eq(wb_rd_data_reg)
+
+        self.connect_gpio_to_rd_bus(m, sync, bus.adr, gpio_ports, rd_multi)
 
         # Only update GPIOs config if a new transaction happened last cycle
         # (read or write). Always lags from multi csrbus by 1 clk cycle, most
         # sane way I could think of while using Record().
         with m.If(new_transaction):
             self.connect_wr_bus_to_gpio(m, sync, bus.adr, gpio_ports, multi)
-        self.connect_gpio_to_rd_bus(m, sync, bus.adr, gpio_ports, rd_multi)
-        #with m.Else():
-        #    print("Copy gpio_ports to multi...")
-        #    sync += multi[]
+
         return m
 
     def connect_wr_bus_to_gpio(self, module, domain, addr, gp, multi):
@@ -174,20 +172,11 @@ class SimpleGPIO(Elaboratable):
             print("#GPIOs is greater than, and is a multiple of WB wordsize")
             # Case where all gpios fit within full words
             if self.n_gpio % self.wordsize == 0:
-                for row in range(self.n_rows):
-                    with module.If(addr == Const(row)):
-                        offset = row*self.wordsize
-                        for byte in range(self.wordsize):
-                            domain += multi[byte].oe.eq(gp[byte+offset].oe)
-                            domain += multi[byte].puen.eq(gp[byte+offset].puen)
-                            domain += multi[byte].pden.eq(gp[byte+offset].pden)
-                            # prevent output being set if GPIO configured as i
-                            # TODO: No checking is done if ie/oe high together
-                            with module.If(gp[byte+offset].oe):
-                                domain += multi[byte].io.eq(gp[byte+offset].o)
-                            with module.Else():
-                                domain += multi[byte].io.eq(gp[byte+offset].i)
-                            domain += multi[byte].bank.eq(gp[byte+offset].bank)
+                for byte in range(self.wordsize):
+                    with module.If(addr[0]):
+                        self.rd_connect_one_byte(module, domain, gp, multi, byte, self.wordsize)
+                    with module.Else():
+                        self.rd_connect_one_byte(module, domain, gp, multi, byte, 0)
             else:
                 # TODO: This is a complex case, not needed atm
                 print("#GPIOs is greater than WB wordsize")
@@ -207,6 +196,17 @@ class SimpleGPIO(Elaboratable):
                     domain += multi[byte].io.eq(gp[byte].i)
                 domain += multi[byte].bank.eq(gp[gpio].bank)
 
+    def rd_connect_one_byte(self, module, domain, gp, multi, byte, offset):
+        domain += multi[byte].oe.eq(gp[byte+offset].oe)
+        domain += multi[byte].puen.eq(gp[byte+offset].puen)
+        domain += multi[byte].pden.eq(gp[byte+offset].pden)
+        with module.If(gp[byte+offset].oe):
+            domain += multi[byte].ie.eq(0)
+            domain += multi[byte].io.eq(gp[byte+offset].i)
+        with module.Else():
+            domain += multi[byte].ie.eq(1) # Return GPIO as i by default
+
+        domain += multi[byte].bank.eq(gp[byte+offset].bank)
 
     def __iter__(self):
         for field in self.bus.fields.values():
@@ -530,6 +530,7 @@ def gen_gtkw_doc(n_gpios, wordsize, filename):
                         ('gpio_wb__we', 'in'),
                         ('gpio_wb__adr[27:0]', 'in'),
                         ('gpio_wb__dat_w[{}:0]'.format(wb_data_width-1), 'in'),
+                        ('wb_rd_data_reg[{}:0]'.format(wb_data_width-1), ''),
                         ('gpio_wb__dat_r[{}:0]'.format(wb_data_width-1), 'out'),
                         ('gpio_wb__ack', 'out'),
                 ])
@@ -541,6 +542,21 @@ def gen_gtkw_doc(n_gpios, wordsize, filename):
                                 ('rst', 'in')
                             ])
     traces.append(gpio_internal_traces)
+
+    traces.append({'comment': 'Multi-byte GPIO config read bus'})
+    for word in range(0, wordsize):
+        prefix = "rd_word{}__".format(word)
+        single_word = []
+        word_signals = []
+        single_word.append('Word{}'.format(word))
+        word_signals.append((prefix+'bank[{}:0]'.format(NUMBANKBITS-1)))
+        word_signals.append((prefix+'ie'))
+        word_signals.append((prefix+'io'))
+        word_signals.append((prefix+'oe'))
+        word_signals.append((prefix+'pden'))
+        word_signals.append((prefix+'puen'))
+        single_word.append(word_signals)
+        traces.append(tuple(single_word))
 
     traces.append({'comment': 'Multi-byte GPIO config bus'})
     for word in range(0, wordsize):
