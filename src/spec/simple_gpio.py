@@ -133,20 +133,13 @@ class SimpleGPIO(Elaboratable):
             print("#GPIOs is greater than, and is a multiple of WB wordsize")
             # Case where all gpios fit within full words
             if self.n_gpio % self.wordsize == 0:
-                for row in range(self.n_rows):
-                    with module.If(addr == Const(row)):
-                        offset = row*self.wordsize
-                        for byte in range(self.wordsize):
-                            domain += gp[byte+offset].oe.eq(multi[byte].oe)
-                            domain += gp[byte+offset].puen.eq(multi[byte].puen)
-                            domain += gp[byte+offset].pden.eq(multi[byte].pden)
-                            # prevent output being set if GPIO configured as i
-                            # TODO: No checking is done if ie/oe high together
-                            with module.If(multi[byte].oe):
-                                domain += gp[byte+offset].o.eq(multi[byte].io)
-                            with module.Else():
-                                domain += multi[byte].io.eq(gp[byte+offset].i)
-                            domain += gp[byte+offset].bank.eq(multi[byte].bank)
+                for byte in range(self.wordsize):
+                    with module.If(addr[0]):
+                        self.wr_connect_one_byte(module, domain, gp, multi,
+                                                 byte, self.wordsize)
+                    with module.Else():
+                        self.wr_connect_one_byte(module, domain, gp, multi,
+                                                 byte, 0)
             else:
                 # TODO: This is a complex case, not needed atm
                 print("#GPIOs is greater than WB wordsize")
@@ -156,16 +149,7 @@ class SimpleGPIO(Elaboratable):
         else:
             print("#GPIOs is less or equal to WB wordsize (in bytes)")
             for byte in range(self.n_gpio):
-                domain += gp[byte].oe.eq(multi[byte].oe)
-                domain += gp[byte].puen.eq(multi[byte].puen)
-                domain += gp[byte].pden.eq(multi[byte].pden)
-                # Check to prevent output being set if GPIO configured as i
-                # TODO: No checking is done if ie/oe high together
-                with module.If(multi[byte].oe):
-                    domain += gp[byte].o.eq(multi[byte].io)
-                with module.Else():
-                    domain += gp[byte].o.eq(0)
-                domain += gp[byte].bank.eq(multi[byte].bank)
+                self.wr_connect_one_byte(module, domain, gp, multi, byte, 0)
 
     def connect_gpio_to_rd_bus(self, module, domain, addr, gp, multi):
         if self.n_gpio > self.wordsize:
@@ -185,16 +169,7 @@ class SimpleGPIO(Elaboratable):
         else:
             print("#GPIOs is less or equal to WB wordsize (in bytes)")
             for byte in range(self.n_gpio):
-                domain += multi[byte].oe.eq(gp[gpio].oe)
-                domain += multi[byte].puen.eq(gp[gpio].puen)
-                domain += multi[byte].pden.eq(gp[gpio].pden)
-                # Check to prevent output being set if GPIO configured as i
-                # TODO: No checking is done if ie/oe high together
-                with module.If(multi[byte].oe):
-                    domain += multi[byte].io.eq(gp[gpio].o)
-                with module.Else():
-                    domain += multi[byte].io.eq(gp[byte].i)
-                domain += multi[byte].bank.eq(gp[gpio].bank)
+                self.rd_connect_one_byte(module, domain, gp, multi, byte, 0)
 
     def rd_connect_one_byte(self, module, domain, gp, multi, byte, offset):
         domain += multi[byte].oe.eq(gp[byte+offset].oe)
@@ -202,11 +177,25 @@ class SimpleGPIO(Elaboratable):
         domain += multi[byte].pden.eq(gp[byte+offset].pden)
         with module.If(gp[byte+offset].oe):
             domain += multi[byte].ie.eq(0)
-            domain += multi[byte].io.eq(gp[byte+offset].i)
+            domain += multi[byte].io.eq(gp[byte+offset].o)
         with module.Else():
             domain += multi[byte].ie.eq(1) # Return GPIO as i by default
+            domain += multi[byte].io.eq(gp[byte+offset].i)
 
         domain += multi[byte].bank.eq(gp[byte+offset].bank)
+
+    def wr_connect_one_byte(self, module, domain, gp, multi, byte, offset):
+        domain += gp[byte+offset].oe.eq(multi[byte].oe)
+        domain += gp[byte+offset].puen.eq(multi[byte].puen)
+        domain += gp[byte+offset].pden.eq(multi[byte].pden)
+        # prevent output being set if GPIO configured as i
+        # TODO: No checking is done if ie/oe high together
+        with module.If(multi[byte].oe):
+            domain += gp[byte+offset].o.eq(multi[byte].io)
+        with module.Else():
+            domain += gp[byte+offset].o.eq(0)
+        domain += gp[byte+offset].bank.eq(multi[byte].bank)
+
 
     def __iter__(self):
         for field in self.bus.fields.values():
