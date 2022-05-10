@@ -56,7 +56,7 @@ class SimpleGPIO(Elaboratable):
         spec.mask_wid = 4
         spec.reg_wid = wordsize*8 # 32
         self.bus = Record(make_wb_layout(spec), name="gpio_wb")
-        self.wb_rd_data_reg = Signal(self.wordsize*8) # same len as WB bus
+        #self.wb_rd_data_reg = Signal(self.wordsize*8) # same len as WB bus
 
         #print("CSRBUS layout: ", csrbus_layout)
         # MultiCSR read and write buses
@@ -85,7 +85,7 @@ class SimpleGPIO(Elaboratable):
         bus = self.bus
         wb_rd_data = bus.dat_r
         wb_wr_data = bus.dat_w
-        wb_rd_data_reg = self.wb_rd_data_reg
+        #wb_rd_data_reg = self.wb_rd_data_reg
         wb_ack = bus.ack
 
         gpio_ports = self.gpio_ports
@@ -97,34 +97,42 @@ class SimpleGPIO(Elaboratable):
 
         # One address used to configure CSR, set output, read input
         with m.If(bus.cyc & bus.stb):
-            sync += wb_ack.eq(1) # always ack, always delayed
             # TODO: is this needed anymore?
             sync += new_transaction.eq(1)
             # Concatinate the GPIO configs that are on the same "row" or
             # address and send
-            multi_cat = []
-            for i in range(0, self.wordsize):
-                multi_cat.append(rd_multi[i])
-            sync += wb_rd_data_reg.eq(Cat(multi_cat))
+            #multi_cat = []
+            #for i in range(0, self.wordsize):
+            #    multi_cat.append(rd_multi[i])
+            #sync += wb_rd_data_reg.eq(Cat(multi_cat))
             with m.If(bus.we): # write
+                sync += wb_ack.eq(1) # always ack, always delayed
                 # Configure CSR
                 for byte in range(0, self.wordsize):
                     # TODO: wasteful... convert to Cat(), somehow
                     sync += multi[byte].eq(wb_wr_data[byte*8:8+byte*8])
+                # sync += Cat(*multi).eq(wb_wr_data)
+            with m.Else():
+                self.connect_gpio_to_rd_bus(m, sync, bus.adr, gpio_ports,
+                                            rd_multi)
         with m.Else():
             sync += new_transaction.eq(0)
             sync += wb_ack.eq(0)
 
-        with m.If(wb_ack): # read (and acked)
-            comb += wb_rd_data.eq(wb_rd_data_reg)
-
-        self.connect_gpio_to_rd_bus(m, sync, bus.adr, gpio_ports, rd_multi)
-
-        # Only update GPIOs config if a new transaction happened last cycle
+        # Only update GPIOs config if a new transaction happened last cy=cle
         # (read or write). Always lags from multi csrbus by 1 clk cycle, most
         # sane way I could think of while using Record().
         with m.If(new_transaction):
-            self.connect_wr_bus_to_gpio(m, sync, bus.adr, gpio_ports, multi)
+            with m.If(bus.we):
+                self.connect_wr_bus_to_gpio(m, sync, bus.adr, gpio_ports, multi)
+                sync += wb_ack.eq(0)
+            with m.Else():
+                multi_cat = []
+                for i in range(0, self.wordsize):
+                    multi_cat.append(rd_multi[i])
+                sync += wb_rd_data.eq(Cat(multi_cat))
+                sync += wb_ack.eq(1) # Delay ack until rd data is ready!
+
 
         return m
 
@@ -519,7 +527,6 @@ def gen_gtkw_doc(n_gpios, wordsize, filename):
                         ('gpio_wb__we', 'in'),
                         ('gpio_wb__adr[27:0]', 'in'),
                         ('gpio_wb__dat_w[{}:0]'.format(wb_data_width-1), 'in'),
-                        ('wb_rd_data_reg[{}:0]'.format(wb_data_width-1), ''),
                         ('gpio_wb__dat_r[{}:0]'.format(wb_data_width-1), 'out'),
                         ('gpio_wb__ack', 'out'),
                 ])
@@ -622,10 +629,10 @@ def test_gpioman(dut):
     yield from gpios.config("0-3", oe=1, ie=0, puen=0, pden=1, outval=0, bank=2)
     ie = 1
     yield from gpios.config("4-7", oe=0, ie=1, puen=0, pden=1, outval=0, bank=6)
-    yield from gpios.set_out("0-3", outval=1)
+    yield from gpios.set_out("0-1", outval=1)
 
     #yield from gpios.rd_all()
-    yield from gpios.sim_set_in_pad("4-7", 1)
+    yield from gpios.sim_set_in_pad("6-7", 1)
     print("----------------------------")
     yield from gpios.rd_input("4-7")
 
