@@ -56,7 +56,6 @@ class SimpleGPIO(Elaboratable):
         spec.mask_wid = 4
         spec.reg_wid = wordsize*8 # 32
         self.bus = Record(make_wb_layout(spec), name="gpio_wb")
-        #self.wb_rd_data_reg = Signal(self.wordsize*8) # same len as WB bus
 
         #print("CSRBUS layout: ", csrbus_layout)
         # MultiCSR read and write buses
@@ -68,9 +67,9 @@ class SimpleGPIO(Elaboratable):
 
         temp = []
         for i in range(self.wordsize):
-            temp_str = "word{}".format(i)
+            temp_str = "wr_word{}".format(i)
             temp.append(Record(name=temp_str, layout=csrbus_layout))
-        self.multicsrbus = Array(temp)
+        self.wr_multicsr = Array(temp)
 
         temp = []
         for i in range(self.n_gpio):
@@ -85,11 +84,10 @@ class SimpleGPIO(Elaboratable):
         bus = self.bus
         wb_rd_data = bus.dat_r
         wb_wr_data = bus.dat_w
-        #wb_rd_data_reg = self.wb_rd_data_reg
         wb_ack = bus.ack
 
         gpio_ports = self.gpio_ports
-        multi = self.multicsrbus
+        wr_multi = self.wr_multicsr
         rd_multi = self.rd_multicsr
 
         # Flag for indicating rd/wr transactions
@@ -99,40 +97,35 @@ class SimpleGPIO(Elaboratable):
         with m.If(bus.cyc & bus.stb):
             # TODO: is this needed anymore?
             sync += new_transaction.eq(1)
-            # Concatinate the GPIO configs that are on the same "row" or
-            # address and send
-            #multi_cat = []
-            #for i in range(0, self.wordsize):
-            #    multi_cat.append(rd_multi[i])
-            #sync += wb_rd_data_reg.eq(Cat(multi_cat))
+
             with m.If(bus.we): # write
                 sync += wb_ack.eq(1) # always ack, always delayed
-                # Configure CSR
-                for byte in range(0, self.wordsize):
-                    # TODO: wasteful... convert to Cat(), somehow
-                    sync += multi[byte].eq(wb_wr_data[byte*8:8+byte*8])
-                # sync += Cat(*multi).eq(wb_wr_data)
+                # Split the WB data into bytes for individual GPIOs
+                sync += Cat(*wr_multi).eq(wb_wr_data)
             with m.Else():
+                # Update the read multi bus with current GPIO configs
+                # not ack'ing as we need to wait 1 clk cycle before data ready
                 self.connect_gpio_to_rd_bus(m, sync, bus.adr, gpio_ports,
                                             rd_multi)
         with m.Else():
             sync += new_transaction.eq(0)
             sync += wb_ack.eq(0)
 
-        # Only update GPIOs config if a new transaction happened last cy=cle
-        # (read or write). Always lags from multi csrbus by 1 clk cycle, most
-        # sane way I could think of while using Record().
+        # Delayed from the start of transaction by 1 clk cycle
         with m.If(new_transaction):
+            # Update the GPIO configs with sent parameters
             with m.If(bus.we):
-                self.connect_wr_bus_to_gpio(m, sync, bus.adr, gpio_ports, multi)
-                sync += wb_ack.eq(0)
+                self.connect_wr_bus_to_gpio(m, sync, bus.adr, gpio_ports,
+                                            wr_multi)
+                sync += wb_ack.eq(0) # stop ack'ing!
+            # Copy the GPIO config data in read multi bus to the WB data bus
+            # Ack as we're done
             with m.Else():
                 multi_cat = []
                 for i in range(0, self.wordsize):
                     multi_cat.append(rd_multi[i])
                 sync += wb_rd_data.eq(Cat(multi_cat))
                 sync += wb_ack.eq(1) # Delay ack until rd data is ready!
-
 
         return m
 
@@ -166,9 +159,11 @@ class SimpleGPIO(Elaboratable):
             if self.n_gpio % self.wordsize == 0:
                 for byte in range(self.wordsize):
                     with module.If(addr[0]):
-                        self.rd_connect_one_byte(module, domain, gp, multi, byte, self.wordsize)
+                        self.rd_connect_one_byte(module, domain, gp, multi,
+                                                 byte, self.wordsize)
                     with module.Else():
-                        self.rd_connect_one_byte(module, domain, gp, multi, byte, 0)
+                        self.rd_connect_one_byte(module, domain, gp, multi,
+                                                 byte, 0)
             else:
                 # TODO: This is a complex case, not needed atm
                 print("#GPIOs is greater than WB wordsize")
@@ -179,6 +174,8 @@ class SimpleGPIO(Elaboratable):
             for byte in range(self.n_gpio):
                 self.rd_connect_one_byte(module, domain, gp, multi, byte, 0)
 
+    # Pass a single GPIO config to one byte of the read multi bus
+    # Offset parameter allows to connect multiple GPIO rows to same multi bus.
     def rd_connect_one_byte(self, module, domain, gp, multi, byte, offset):
         domain += multi[byte].oe.eq(gp[byte+offset].oe)
         domain += multi[byte].puen.eq(gp[byte+offset].puen)
@@ -192,6 +189,7 @@ class SimpleGPIO(Elaboratable):
 
         domain += multi[byte].bank.eq(gp[byte+offset].bank)
 
+    # Pass a single CSR byte from write multi bus to one GPIO
     def wr_connect_one_byte(self, module, domain, gp, multi, byte, offset):
         domain += gp[byte+offset].oe.eq(multi[byte].oe)
         domain += gp[byte+offset].puen.eq(multi[byte].puen)
@@ -201,7 +199,7 @@ class SimpleGPIO(Elaboratable):
         with module.If(multi[byte].oe):
             domain += gp[byte+offset].o.eq(multi[byte].io)
         with module.Else():
-            domain += gp[byte+offset].o.eq(0)
+            domain += gp[byte+offset].o.eq(0) # Clear GPIO o by default
         domain += gp[byte+offset].bank.eq(multi[byte].bank)
 
 
@@ -554,9 +552,9 @@ def gen_gtkw_doc(n_gpios, wordsize, filename):
         single_word.append(word_signals)
         traces.append(tuple(single_word))
 
-    traces.append({'comment': 'Multi-byte GPIO config bus'})
+    traces.append({'comment': 'Multi-byte GPIO config write bus'})
     for word in range(0, wordsize):
-        prefix = "word{}__".format(word)
+        prefix = "wr_word{}__".format(word)
         single_word = []
         word_signals = []
         single_word.append('Word{}'.format(word))
