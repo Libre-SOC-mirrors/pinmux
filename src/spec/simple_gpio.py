@@ -95,7 +95,6 @@ class SimpleGPIO(Elaboratable):
 
         # One address used to configure CSR, set output, read input
         with m.If(bus.cyc & bus.stb):
-            # TODO: is this needed anymore?
             sync += new_transaction.eq(1)
 
             with m.If(bus.we): # write
@@ -105,8 +104,28 @@ class SimpleGPIO(Elaboratable):
             with m.Else():
                 # Update the read multi bus with current GPIO configs
                 # not ack'ing as we need to wait 1 clk cycle before data ready
-                self.connect_gpio_to_rd_bus(m, sync, bus.adr, gpio_ports,
-                                            rd_multi)
+                # New code based on Luke's idea (still using intermediate
+                # signal for Layouts)
+                for i in range(len(bus.sel)):
+                    GPIO_num = Signal(16) # fixed for now
+                    comb += GPIO_num.eq(bus.adr*len(bus.sel)+i)
+                    with m.If(bus.sel[i]):
+                        sync += rd_multi[i].oe.eq(gpio_ports[GPIO_num].oe)
+                        sync += rd_multi[i].ie.eq(~gpio_ports[GPIO_num].oe)
+                        sync += rd_multi[i].puen.eq(gpio_ports[GPIO_num].puen)
+                        sync += rd_multi[i].pden.eq(gpio_ports[GPIO_num].pden)
+                        with m.If (gpio_ports[GPIO_num].oe):
+                            sync += rd_multi[i].io.eq(gpio_ports[GPIO_num].o)
+                        with m.Else():
+                            sync += rd_multi[i].io.eq(gpio_ports[GPIO_num].i)
+                        sync += rd_multi[i].bank.eq(gpio_ports[GPIO_num].bank)
+                    with m.Else():
+                        sync += rd_multi[i].oe.eq(0)
+                        sync += rd_multi[i].ie.eq(0)
+                        sync += rd_multi[i].puen.eq(0)
+                        sync += rd_multi[i].pden.eq(0)
+                        sync += rd_multi[i].io.eq(0)
+                        sync += rd_multi[i].bank.eq(0)
         with m.Else():
             sync += new_transaction.eq(0)
             sync += wb_ack.eq(0)
@@ -115,93 +134,25 @@ class SimpleGPIO(Elaboratable):
         with m.If(new_transaction):
             # Update the GPIO configs with sent parameters
             with m.If(bus.we):
-                self.connect_wr_bus_to_gpio(m, sync, bus.adr, gpio_ports,
-                                            wr_multi)
+                for i in range(len(bus.sel)):
+                    GPIO_num = Signal(16) # fixed for now
+                    comb += GPIO_num.eq(bus.adr*len(bus.sel)+i)
+                    with m.If(bus.sel[i]):
+                        sync += gpio_ports[GPIO_num].oe.eq(wr_multi[i].oe)
+                        sync += gpio_ports[GPIO_num].puen.eq(wr_multi[i].puen)
+                        sync += gpio_ports[GPIO_num].pden.eq(wr_multi[i].pden)
+                        with m.If (wr_multi[i].oe):
+                            sync += gpio_ports[GPIO_num].o.eq(wr_multi[i].io)
+                        with m.Else():
+                            sync += gpio_ports[GPIO_num].o.eq(0)
+                        sync += gpio_ports[GPIO_num].bank.eq(wr_multi[i].bank)
                 sync += wb_ack.eq(0) # stop ack'ing!
             # Copy the GPIO config data in read multi bus to the WB data bus
             # Ack as we're done
             with m.Else():
-                multi_cat = []
-                for i in range(0, self.wordsize):
-                    multi_cat.append(rd_multi[i])
-                sync += wb_rd_data.eq(Cat(multi_cat))
+                sync += wb_rd_data.eq(Cat(*rd_multi))
                 sync += wb_ack.eq(1) # Delay ack until rd data is ready!
-
         return m
-
-    def connect_wr_bus_to_gpio(self, module, domain, addr, gp, multi):
-        if self.n_gpio > self.wordsize:
-            print("#GPIOs is greater than, and is a multiple of WB wordsize")
-            # Case where all gpios fit within full words
-            if self.n_gpio % self.wordsize == 0:
-                for byte in range(self.wordsize):
-                    with module.If(addr[0]):
-                        self.wr_connect_one_byte(module, domain, gp, multi,
-                                                 byte, self.wordsize)
-                    with module.Else():
-                        self.wr_connect_one_byte(module, domain, gp, multi,
-                                                 byte, 0)
-            else:
-                # TODO: This is a complex case, not needed atm
-                print("#GPIOs is greater than WB wordsize")
-                print("But not fully fitting in words...")
-                print("NOT IMPLEMENTED THIS CASE")
-                raise
-        else:
-            print("#GPIOs is less or equal to WB wordsize (in bytes)")
-            for byte in range(self.n_gpio):
-                self.wr_connect_one_byte(module, domain, gp, multi, byte, 0)
-
-    def connect_gpio_to_rd_bus(self, module, domain, addr, gp, multi):
-        if self.n_gpio > self.wordsize:
-            print("#GPIOs is greater than, and is a multiple of WB wordsize")
-            # Case where all gpios fit within full words
-            if self.n_gpio % self.wordsize == 0:
-                for byte in range(self.wordsize):
-                    with module.If(addr[0]):
-                        self.rd_connect_one_byte(module, domain, gp, multi,
-                                                 byte, self.wordsize)
-                    with module.Else():
-                        self.rd_connect_one_byte(module, domain, gp, multi,
-                                                 byte, 0)
-            else:
-                # TODO: This is a complex case, not needed atm
-                print("#GPIOs is greater than WB wordsize")
-                print("NOT IMPLEMENTED THIS CASE")
-                raise
-        else:
-            print("#GPIOs is less or equal to WB wordsize (in bytes)")
-            for byte in range(self.n_gpio):
-                self.rd_connect_one_byte(module, domain, gp, multi, byte, 0)
-
-    # Pass a single GPIO config to one byte of the read multi bus
-    # Offset parameter allows to connect multiple GPIO rows to same multi bus.
-    def rd_connect_one_byte(self, module, domain, gp, multi, byte, offset):
-        domain += multi[byte].oe.eq(gp[byte+offset].oe)
-        domain += multi[byte].puen.eq(gp[byte+offset].puen)
-        domain += multi[byte].pden.eq(gp[byte+offset].pden)
-        with module.If(gp[byte+offset].oe):
-            domain += multi[byte].ie.eq(0)
-            domain += multi[byte].io.eq(gp[byte+offset].o)
-        with module.Else():
-            domain += multi[byte].ie.eq(1) # Return GPIO as i by default
-            domain += multi[byte].io.eq(gp[byte+offset].i)
-
-        domain += multi[byte].bank.eq(gp[byte+offset].bank)
-
-    # Pass a single CSR byte from write multi bus to one GPIO
-    def wr_connect_one_byte(self, module, domain, gp, multi, byte, offset):
-        domain += gp[byte+offset].oe.eq(multi[byte].oe)
-        domain += gp[byte+offset].puen.eq(multi[byte].puen)
-        domain += gp[byte+offset].pden.eq(multi[byte].pden)
-        # prevent output being set if GPIO configured as i
-        # TODO: No checking is done if ie/oe high together
-        with module.If(multi[byte].oe):
-            domain += gp[byte+offset].o.eq(multi[byte].io)
-        with module.Else():
-            domain += gp[byte+offset].o.eq(0) # Clear GPIO o by default
-        domain += gp[byte+offset].bank.eq(multi[byte].bank)
-
 
     def __iter__(self):
         for field in self.bus.fields.values():
@@ -524,6 +475,7 @@ def gen_gtkw_doc(n_gpios, wordsize, filename):
                         ('gpio_wb__stb', 'in'),
                         ('gpio_wb__we', 'in'),
                         ('gpio_wb__adr[27:0]', 'in'),
+                        ('gpio_wb__sel[3:0]', 'in'),
                         ('gpio_wb__dat_w[{}:0]'.format(wb_data_width-1), 'in'),
                         ('gpio_wb__dat_r[{}:0]'.format(wb_data_width-1), 'out'),
                         ('gpio_wb__ack', 'out'),
@@ -583,8 +535,10 @@ def gen_gtkw_doc(n_gpios, wordsize, filename):
 
     #print(traces)
 
+    #module = "top.xics_icp"
+    module = "bench.top.xics_icp"
     write_gtkw(filename+".gtkw", filename+".vcd", traces, style,
-               module="top.xics_icp")
+               module=module)
 
 def test_gpio():
     filename = "test_gpio" # Doesn't include extension
