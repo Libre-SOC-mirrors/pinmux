@@ -57,24 +57,10 @@ class SimpleGPIO(Elaboratable):
         spec.reg_wid = wordsize*8 # 32
         self.bus = Record(make_wb_layout(spec), name="gpio_wb")
 
-        #print("CSRBUS layout: ", csrbus_layout)
-        # MultiCSR read and write buses
-        temp = []
-        for i in range(self.wordsize):
-            temp_str = "rd_word{}".format(i)
-            temp.append(Record(name=temp_str, layout=csrbus_layout))
-        self.rd_multicsr = Array(temp)
-
-        temp = []
-        for i in range(self.wordsize):
-            temp_str = "wr_word{}".format(i)
-            temp.append(Record(name=temp_str, layout=csrbus_layout))
-        self.wr_multicsr = Array(temp)
-
         temp = []
         for i in range(self.n_gpio):
-            temp_str = "gpio{}".format(i)
-            temp.append(Record(name=temp_str, layout=gpio_layout))
+            name = "gpio{}".format(i)
+            temp.append(Record(name=name, layout=gpio_layout))
         self.gpio_ports = Array(temp)
 
     def elaborate(self, platform):
@@ -87,8 +73,22 @@ class SimpleGPIO(Elaboratable):
         wb_ack = bus.ack
 
         gpio_ports = self.gpio_ports
-        wr_multi = self.wr_multicsr
-        rd_multi = self.rd_multicsr
+
+        # MultiCSR read and write buses
+        rd_multi = []
+        for i in range(self.wordsize):
+            name = "rd_word%d" % i
+            rd_multi.append(Record(name=name, layout=csrbus_layout))
+
+        wr_multi = []
+        for i in range(self.wordsize):
+            name = "wr_word%d" % i
+            wr_multi.append(Record(name=name, layout=csrbus_layout))
+
+        # Combinatorial data reformarting for ease of connection
+        # Split the WB data into bytes for use with individual GPIOs
+        comb += Cat(*wr_multi).eq(wb_wr_data)
+        comb += wb_rd_data.eq(Cat(*rd_multi))
 
         # Flag for indicating rd/wr transactions
         new_transaction = Signal(1)
@@ -99,13 +99,9 @@ class SimpleGPIO(Elaboratable):
 
             with m.If(bus.we): # write
                 sync += wb_ack.eq(1) # always ack, always delayed
-                # Split the WB data into bytes for individual GPIOs
-                sync += Cat(*wr_multi).eq(wb_wr_data)
             with m.Else():
                 # Update the read multi bus with current GPIO configs
                 # not ack'ing as we need to wait 1 clk cycle before data ready
-                # New code based on Luke's idea (still using intermediate
-                # signal for Layouts)
                 for i in range(len(bus.sel)):
                     GPIO_num = Signal(16) # fixed for now
                     comb += GPIO_num.eq(bus.adr*len(bus.sel)+i)
@@ -150,7 +146,6 @@ class SimpleGPIO(Elaboratable):
             # Copy the GPIO config data in read multi bus to the WB data bus
             # Ack as we're done
             with m.Else():
-                sync += wb_rd_data.eq(Cat(*rd_multi))
                 sync += wb_ack.eq(1) # Delay ack until rd data is ready!
         return m
 
