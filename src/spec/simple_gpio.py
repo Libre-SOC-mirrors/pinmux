@@ -85,9 +85,11 @@ class SimpleGPIO(Elaboratable):
             name = "wr_word%d" % i
             wr_multi.append(Record(name=name, layout=csrbus_layout))
 
-        # Combinatorial data reformarting for ease of connection
+        # Connecting intermediate signals to the WB data buses
+        # allows the use of Records/Layouts
         # Split the WB data into bytes for use with individual GPIOs
         comb += Cat(*wr_multi).eq(wb_wr_data)
+        # Connect GPIO config bytes to form a single word
         comb += wb_rd_data.eq(Cat(*rd_multi))
 
         # Flag for indicating rd/wr transactions
@@ -97,9 +99,7 @@ class SimpleGPIO(Elaboratable):
         with m.If(bus.cyc & bus.stb):
             sync += new_transaction.eq(1)
 
-            with m.If(bus.we): # write
-                sync += wb_ack.eq(1) # always ack, always delayed
-            with m.Else():
+            with m.If(~bus.we): # read
                 # Update the read multi bus with current GPIO configs
                 # not ack'ing as we need to wait 1 clk cycle before data ready
                 for i in range(len(bus.sel)):
@@ -122,6 +122,7 @@ class SimpleGPIO(Elaboratable):
                         sync += rd_multi[i].pden.eq(0)
                         sync += rd_multi[i].io.eq(0)
                         sync += rd_multi[i].bank.eq(0)
+                sync += wb_ack.eq(1) # ack after latching data
         with m.Else():
             sync += new_transaction.eq(0)
             sync += wb_ack.eq(0)
@@ -142,11 +143,10 @@ class SimpleGPIO(Elaboratable):
                         with m.Else():
                             sync += gpio_ports[GPIO_num].o.eq(0)
                         sync += gpio_ports[GPIO_num].bank.eq(wr_multi[i].bank)
-                sync += wb_ack.eq(0) # stop ack'ing!
-            # Copy the GPIO config data in read multi bus to the WB data bus
-            # Ack as we're done
-            with m.Else():
-                sync += wb_ack.eq(1) # Delay ack until rd data is ready!
+                sync += wb_ack.eq(1) # ack after latching data
+            # No need as rd data is can be outputed on the first clk
+            # with m.Else():
+            #     sync += wb_ack.eq(1) # Delay ack until rd data is ready!
         return m
 
     def __iter__(self):
