@@ -91,15 +91,26 @@ class SimpleGPIO(Elaboratable):
         comb += Cat(*wr_multi).eq(wb_wr_data)
         # Connect GPIO config bytes to form a single word
         comb += wb_rd_data.eq(Cat(*rd_multi))
-
-        # Flag for indicating rd/wr transactions
-        new_transaction = Signal(1)
+        for i in range(len(bus.sel)):
+            sync += rd_multi[i].eq(0)
 
         # One address used to configure CSR, set output, read input
         with m.If(bus.cyc & bus.stb):
-            sync += new_transaction.eq(1)
-
-            with m.If(~bus.we): # read
+            with m.If(bus.we): # write
+                # Update the GPIO configs with sent parameters
+                for i in range(len(bus.sel)):
+                    GPIO_num = Signal(16) # fixed for now
+                    comb += GPIO_num.eq(bus.adr*len(bus.sel)+i)
+                    with m.If(bus.sel[i]):
+                        sync += gpio_ports[GPIO_num].oe.eq(wr_multi[i].oe)
+                        sync += gpio_ports[GPIO_num].puen.eq(wr_multi[i].puen)
+                        sync += gpio_ports[GPIO_num].pden.eq(wr_multi[i].pden)
+                        with m.If (wr_multi[i].oe):
+                            sync += gpio_ports[GPIO_num].o.eq(wr_multi[i].io)
+                        with m.Else():
+                            sync += gpio_ports[GPIO_num].o.eq(0)
+                        sync += gpio_ports[GPIO_num].bank.eq(wr_multi[i].bank)
+            with m.Else(): # read
                 # Update the read multi bus with current GPIO configs
                 # not ack'ing as we need to wait 1 clk cycle before data ready
                 for i in range(len(bus.sel)):
@@ -115,38 +126,10 @@ class SimpleGPIO(Elaboratable):
                         with m.Else():
                             sync += rd_multi[i].io.eq(gpio_ports[GPIO_num].i)
                         sync += rd_multi[i].bank.eq(gpio_ports[GPIO_num].bank)
-                    with m.Else():
-                        sync += rd_multi[i].oe.eq(0)
-                        sync += rd_multi[i].ie.eq(0)
-                        sync += rd_multi[i].puen.eq(0)
-                        sync += rd_multi[i].pden.eq(0)
-                        sync += rd_multi[i].io.eq(0)
-                        sync += rd_multi[i].bank.eq(0)
-                sync += wb_ack.eq(1) # ack after latching data
+            sync += wb_ack.eq(1) # ack after latching data
         with m.Else():
-            sync += new_transaction.eq(0)
             sync += wb_ack.eq(0)
 
-        # Delayed from the start of transaction by 1 clk cycle
-        with m.If(new_transaction):
-            # Update the GPIO configs with sent parameters
-            with m.If(bus.we):
-                for i in range(len(bus.sel)):
-                    GPIO_num = Signal(16) # fixed for now
-                    comb += GPIO_num.eq(bus.adr*len(bus.sel)+i)
-                    with m.If(bus.sel[i]):
-                        sync += gpio_ports[GPIO_num].oe.eq(wr_multi[i].oe)
-                        sync += gpio_ports[GPIO_num].puen.eq(wr_multi[i].puen)
-                        sync += gpio_ports[GPIO_num].pden.eq(wr_multi[i].pden)
-                        with m.If (wr_multi[i].oe):
-                            sync += gpio_ports[GPIO_num].o.eq(wr_multi[i].io)
-                        with m.Else():
-                            sync += gpio_ports[GPIO_num].o.eq(0)
-                        sync += gpio_ports[GPIO_num].bank.eq(wr_multi[i].bank)
-                sync += wb_ack.eq(1) # ack after latching data
-            # No need as rd data is can be outputed on the first clk
-            # with m.Else():
-            #     sync += wb_ack.eq(1) # Delay ack until rd data is ready!
         return m
 
     def __iter__(self):
