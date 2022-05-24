@@ -63,6 +63,10 @@ class SimpleGPIO(Elaboratable):
             temp.append(Record(name=name, layout=gpio_layout))
         self.gpio_ports = Array(temp)
 
+        self.granuality = (len(self.bus.dat_w) // len(self.bus.sel))
+        print("Granuality: %d" % self.granuality)
+        assert self.granuality == 8, "Only byte granuality is supported atm!"
+
     def elaborate(self, platform):
         m = Module()
         comb, sync = m.d.comb, m.d.sync
