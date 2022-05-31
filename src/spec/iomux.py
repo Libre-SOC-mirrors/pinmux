@@ -5,7 +5,7 @@ testing, however it could also be used as an actual GPIO peripheral
 
 Modified for use with pinmux, will probably change the class name later.
 """
-from random import randint
+from random import randint, shuffle
 #from math import ceil, floor
 from nmigen import Elaboratable, Module, Signal, Record, Array, Cat
 from nmigen.hdl.rec import Layout
@@ -30,15 +30,15 @@ io_layout = (("i", 1),
 
 class IOMuxBlockSingle(Elaboratable):
 
-    def __init__(self):
+    def __init__(self, n_banks=4):
         print("1-bit IO Mux Block")
-        self.n_banks = 4
+        self.n_banks = n_banks
         self.bank = Signal(log2_int(self.n_banks))
 
         temp = []
         for i in range(self.n_banks):
-            temp_str = "bank{}".format(i)
-            temp.append(Record(name=temp_str, layout=io_layout))
+            name = "bank%d" % i
+            temp.append(Record(name=name, layout=io_layout))
         self.bank_ports = Array(temp)
 
         self.out_port = Record(name="IO", layout=io_layout)
@@ -53,22 +53,11 @@ class IOMuxBlockSingle(Elaboratable):
 
         # Connect IO Pad output port to one of the peripheral IOs
         # Connect peripheral inputs to the IO pad input
+        comb += self.out_port.o.eq(self.bank_ports[bank].o)
+        comb += self.out_port.oe.eq(self.bank_ports[bank].oe)
 
-        # const
-        BANK0_WB = 0
-        BANK1_P1 = 1
-        BANK2_P2 = 2
-        BANK3_P3 = 3
+        comb += self.bank_ports[bank].i.eq(self.out_port.i)
 
-        with m.Switch(bank):
-            with m.Case(BANK0_WB):
-                self.connect_bank_to_io(comb, BANK0_WB)
-            with m.Case(BANK1_P1):
-                self.connect_bank_to_io(comb, BANK1_P1)
-            with m.Case(BANK2_P2):
-                self.connect_bank_to_io(comb, BANK2_P2)
-            with m.Case(BANK3_P3):
-                self.connect_bank_to_io(comb, BANK3_P3)
         return m
 
     def connect_bank_to_io(self, domain, bank_arg):
@@ -80,13 +69,104 @@ class IOMuxBlockSingle(Elaboratable):
         """ Get member signals for Verilog form. """
         for field in self.out_port.fields.values():
             yield field
-        for bank in range(len(self.bank_ports)):
+        for bank in range(self.n_banks):
             for field in self.bank_ports[bank].fields.values():
                 yield field
         yield self.bank
 
     def ports(self):
         return list(self)
+
+# Method to test a particular bank port
+# when rand_order is True, previous and consecutive banks are
+# random (but NOT equal to given bank)
+def test_single_bank(dut, bank, rand_order=True, delay=1e-6):
+    if rand_order:
+        print("Randomising the prev and next banks")
+        prev_bank=bank
+        while(prev_bank == bank):
+            prev_bank = randint(0, dut.n_banks-1)
+        next_bank=bank
+        while(next_bank == bank):
+            next_bank = randint(0, dut.n_banks-1)
+    else:
+        # Set the prev and next banks as consecutive banks
+        if bank == 0:
+            prev_bank = dut.n_banks - 1
+        else:
+            prev_bank = bank - 1
+
+        if bank == dut.n_banks:
+            next_bank = 0
+        else:
+            next_bank = bank + 1
+
+    print("Prev=%d, Given=%d, Next=%d" % (prev_bank, bank, next_bank))
+
+    # Clear o/oe, delay, set port i
+    # Set to previous bank, delay
+    # Assert bank i == 0
+    # Set to desired bank
+    # Assert bank i == 1
+    # Set o/oe, delay
+    # Assert o, oe == 1
+    # Set to next bank, delay
+    # Assert bank i == 0
+    yield dut.bank_ports[bank].o.eq(0)
+    yield Delay(delay)
+    yield dut.bank_ports[bank].oe.eq(0)
+    yield Delay(delay)
+    yield dut.out_port.i.eq(1)
+    yield Delay(delay)
+
+    yield dut.bank.eq(prev_bank)
+    yield Delay(delay)
+
+    test_i = yield dut.bank_ports[bank].i
+    assert(test_i == 0)
+
+    yield dut.bank.eq(bank)
+    yield Delay(delay)
+
+    test_o = yield dut.out_port.o
+    test_oe = yield dut.out_port.oe
+    test_i = yield dut.bank_ports[bank].i
+    assert(test_o == 0)
+    assert(test_oe == 0)
+    assert(test_i == 1)
+
+    yield dut.bank_ports[bank].o.eq(1)
+    yield Delay(delay)
+    yield dut.bank_ports[bank].oe.eq(1)
+    yield Delay(delay)
+
+    test_o = yield dut.out_port.o
+    test_oe = yield dut.out_port.oe
+    assert(test_o == 1)
+    assert(test_oe == 1)
+
+    yield dut.bank.eq(next_bank)
+    yield Delay(delay)
+
+    test_i = yield dut.bank_ports[bank].i
+    assert(test_i == 0)
+
+def test_iomux(dut, rand_order=True):
+    print("------START----------------------")
+    #print(dir(dut.bank_ports[0]))
+    #print(dut.bank_ports[0].fields)
+
+    # Produce a test list of bank values
+    test_bank_vec = list(range(0, dut.n_banks))
+    #print(test_bank_vec)
+    # Randomise for wider testing
+    if rand_order:
+        shuffle(test_bank_vec)
+        #print(test_bank_vec)
+    for i in range(dut.n_banks):
+        yield from test_single_bank(dut, test_bank_vec[i], rand_order)
+
+    print("Finished the 1-bit IO mux block test!")
 
 def gen_gtkw_doc(module_name, n_banks, filename):
     # GTKWave doc generation
@@ -100,15 +180,15 @@ def gen_gtkw_doc(module_name, n_banks, filename):
     # Create a trace list, each block expected to be a tuple()
     traces = []
     for bank in range(0, n_banks):
-        temp_traces = ('Bank{}'.format(bank), [
-                        ('bank{}__i'.format(bank), 'in'),
-                        ('bank{}__o'.format(bank), 'out'),
-                        ('bank{}__oe'.format(bank), 'out')
+        temp_traces = ('Bank%d' % bank, [
+                        ('bank%d__i' % bank, 'in'),
+                        ('bank%d__o' % bank, 'out'),
+                        ('bank%d__oe' % bank, 'out')
                       ])
         traces.append(temp_traces)
 
     temp_traces = ('Misc', [
-                    ('bank[1:0]', 'in')
+                    ('bank[%d:0]' % ((n_banks-1).bit_length()-1), 'in')
                   ])
     traces.append(temp_traces)
     temp_traces = ('IO port to pad', [
@@ -122,9 +202,10 @@ def gen_gtkw_doc(module_name, n_banks, filename):
     write_gtkw(filename+".gtkw", filename+".vcd", traces, style,
                module=module_name)
 
-def sim_iomux():
-    filename = "test_pinmux" # Doesn't include extension
-    dut = IOMuxBlockSingle()
+def sim_iomux(rand_order=True):
+    filename = "test_iomux" # Doesn't include extension
+    n_banks = 8
+    dut = IOMuxBlockSingle(n_banks)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open(filename+".il", "w") as f:
         f.write(vl)
@@ -134,91 +215,15 @@ def sim_iomux():
 
     sim = Simulator(m)
 
-    sim.add_process(wrap(test_iomux(dut)))
+    sim.add_process(wrap(test_iomux(dut, rand_order)))
     sim_writer = sim.write_vcd(filename+".vcd")
     with sim_writer:
         sim.run()
 
     gen_gtkw_doc("top.pinmux", dut.n_banks, filename)
 
-# Method for toggling i/o/oe of a particular bank port,
-# while bank_sel has three different values:
-# value before, given value, value after
-# when rand is True, previous and consecutive values are
-# random (but NOT equal to given bank_sel)
-def test_single_bank(dut, bank, rand=True):
-    if rand:
-        print("Randomising the prev and next banks")
-        prev_bank=bank
-        while(prev_bank == bank):
-            prev_bank = randint(0, dut.n_banks-1)
-        next_bank=bank
-        while(next_bank == bank):
-            next_bank = randint(0, dut.n_banks-1)
-    else:
-        if bank == 0:
-            prev_bank = dut.n_banks
-        else:
-            prev_bank = bank - 1
 
-        if bank == dut.n_banks:
-            next_bank = 0
-        else:
-            next_bank = bank + 1
-
-    print("Prev={}, Given={}, Next={}".format(prev_bank, bank, next_bank))
-
-    yield dut.bank.eq(prev_bank)
-    yield Delay(1e-6)
-    yield dut.bank_ports[bank].o.eq(0)
-    yield dut.bank_ports[bank].oe.eq(0)
-    yield dut.out_port.i.eq(0)
-    yield Delay(1e-6)
-
-    yield dut.bank.eq(bank)
-    yield Delay(1e-6)
-
-    test_o = yield dut.out_port.o
-    test_oe = yield dut.out_port.oe
-    test_i = yield dut.bank_ports[bank].i
-    assert(test_o == 0)
-    assert(test_oe == 0)
-    assert(test_i == 0)
-
-    yield dut.bank_ports[bank].o.eq(1)
-    yield Delay(1e-6)
-    yield dut.bank_ports[bank].oe.eq(1)
-    yield Delay(1e-6)
-    yield dut.out_port.i.eq(1)
-    yield Delay(1e-6)
-
-    test_o = yield dut.out_port.o
-    test_oe = yield dut.out_port.oe
-    test_i = yield dut.bank_ports[bank].i
-    #print(test_o, test_oe, test_i)
-    assert(test_o == 1)
-    assert(test_oe == 1)
-    assert(test_i == 1)
-
-    yield dut.bank.eq(next_bank)
-    yield Delay(1e-6)
-    yield dut.bank_ports[bank].o.eq(0)
-    yield dut.bank_ports[bank].oe.eq(0)
-    yield dut.out_port.i.eq(0)
-    yield Delay(1e-6)
-
-def test_iomux(dut):
-    print("------START----------------------")
-    #print(dir(dut.bank_ports[0]))
-    #print(dut.bank_ports[0].fields)
-
-    yield from test_single_bank(dut, 0)
-    yield from test_single_bank(dut, 1)
-    yield from test_single_bank(dut, 2)
-    yield from test_single_bank(dut, 3)
-
-    print("Finished the 1-bit IO mux block test!")
 
 if __name__ == '__main__':
-    sim_iomux()
+    sim_iomux(rand_order=True)
 
