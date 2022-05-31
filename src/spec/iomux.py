@@ -28,6 +28,11 @@ io_layout = (("i", 1),
              ("o", 1)
             )
 
+# This block produces an N-to-1 mux with N 3-bit bank ports and one pad port.
+# The bank ports are intended to be wired to peripheral functions,
+# while the pad port will connect to the I/O pad.
+# Each port has o/oe/i signals, and the bank signal is used to select
+# between the bank ports.
 class IOMuxBlockSingle(Elaboratable):
 
     def __init__(self, n_banks=4):
