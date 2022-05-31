@@ -48,8 +48,8 @@ class SimpleGPIO(Elaboratable):
         self.wordsize = wordsize
         self.n_gpio = n_gpio
         self.n_rows = ceil(self.n_gpio / self.wordsize)
-        print("SimpleGPIO: WB Data # of bytes: {0}, #GPIOs: {1}, Rows: {2}"
-              .format(self.wordsize, self.n_gpio, self.n_rows))
+        print("SimpleGPIO: WB Data # of bytes: %d, #GPIOs: %d, Rows: %d" %
+              (self.wordsize, self.n_gpio, self.n_rows))
         class Spec: pass
         spec = Spec()
         spec.addr_wid = 30
@@ -59,7 +59,7 @@ class SimpleGPIO(Elaboratable):
 
         temp = []
         for i in range(self.n_gpio):
-            name = "gpio{}".format(i)
+            name = "gpio%d" % i
             temp.append(Record(name=name, layout=gpio_layout))
         self.gpio_ports = Array(temp)
 
@@ -156,7 +156,7 @@ def gpio_test_in_pattern(dut, pattern):
             yield gpio_set_in_pad(dut, gpio, pattern[pat])
             yield
             temp = yield from gpio_rd_input(dut, gpio)
-            print("Pattern: {0}, Reading {1}".format(pattern[pat], temp))
+            print("Pattern: %x, Reading %x" % (pattern[pat], temp))
             assert (temp == pattern[pat])
             pat += 1
             if pat == len(pattern):
@@ -171,7 +171,7 @@ def test_gpio_single(dut, gpio, use_random=True):
     pden = 0
     if use_random:
         bank = randint(0, (2**NUMBANKBITS)-1)
-        print("Random bank select: {0:b}".format(bank))
+        print("Random bank select: %x" % (bank))
     else:
         bank = 3 # not special, chose for testing
 
@@ -264,7 +264,7 @@ class GPIOManager():
 
     def _parse_gpio_arg(self, gpio_str):
         # TODO: No input checking!
-        print("Given GPIO/range string: {}".format(gpio_str))
+        print("Given GPIO/range string: %s" % (gpio_str))
         if gpio_str == "all":
             start = 0
             end = self.n_gpios
@@ -280,7 +280,7 @@ class GPIOManager():
             if start >= self.n_gpios:
                 raise Exception("GPIO must be less/equal to last GPIO.")
             end = start + 1
-        print("Parsed GPIOs {0} until {1}".format(start, end))
+        print("Parsed GPIOs %d until %d" % (start, end))
         return start, end
 
     # Take a combined word and update shadow reg's
@@ -293,8 +293,8 @@ class GPIOManager():
         io   = (csr_byte >> self.shift_dict['io']) & 0x1
         bank = (csr_byte >> self.shift_dict['bank']) & 0x3
 
-        print("csr={0:x} | oe={1}, ie={2}, puen={3}, pden={4}, io={5}, bank={6}"
-              .format(csr_byte, oe, ie, puen, pden, io, bank))
+        print("csr=%02x | oe=%d, ie=%d, puen=%d, pden=%d, io=%d, bank=%x" %
+              (csr_byte, oe, ie, puen, pden, io, bank))
 
         self.shadow_csr[gpio].set(oe, ie, puen, pden, io, bank)
         return oe, ie, puen, pden, io, bank
@@ -393,10 +393,9 @@ class GPIOManager():
             self.shadow_csr[gpio].set_out(outval)
 
         if start == end:
-            print("Setting GPIO{0} output to {1}".format(start, outval))
+            print("Setting GPIO %d output to %d" % (start, outval))
         else:
-            print("Setting GPIOs {0}-{1} output to {2}"
-                  .format(start, end-1, outval))
+            print("Setting GPIOs %d-%d output to %d" % (start, end-1, outval))
 
         yield from self.wr(start, end)
 
@@ -414,7 +413,7 @@ class GPIOManager():
             read_in[i] = self.shadow_csr[curr_gpio].io
             curr_gpio += 1
 
-        print("GPIOs %d until %d, i=%s".format(start, end, read_in))
+        print("GPIOs %d until %d, i=%r" % (start, end, read_in))
         return read_in
 
     # TODO: There's probably a cleaner way to clear the bit...
@@ -423,8 +422,7 @@ class GPIOManager():
         for gpio in range(start, end):
             old_in_val = yield self.dut.gpio_ports[gpio].i
             print(old_in_val)
-            print("GPIO{0} Previous i: {1:b} | New i: {2:b}"
-                  .format(gpio, old_in_val, in_val))
+            print("GPIO %d Prev i: %x | New i: %x" % (gpio, old_in_val, in_val))
             yield self.dut.gpio_ports[gpio].i.eq(in_val)
             yield # Allow one clk cycle to propagate
 

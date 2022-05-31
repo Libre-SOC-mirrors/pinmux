@@ -41,13 +41,13 @@ class PinMuxBlockSingle(Elaboratable):
 
         temp = []
         for i in range(1, self.n_banks):
-            temp_str = "periph{}".format(i)
+            temp_str = "periph%d" % i
             temp.append(Record(name=temp_str, layout=io_layout))
         self.periph_ports = Array(temp)
 
         self.pad_port = Record(name="IOPad", layout=io_layout)
 
-        self.iomux = IOMuxBlockSingle()
+        self.iomux = IOMuxBlockSingle(self.n_banks)
         self.gpio = SimpleGPIO(self.wb_wordsize, self.n_gpios)
         # This is probably easier to extend in future by bringing out WB
         # interface to top-level
@@ -130,22 +130,22 @@ def gen_gtkw_doc(module_name, wordsize, n_banks, filename):
                         ('gpio_wb__stb', 'in'),
                         ('gpio_wb__we', 'in'),
                         ('gpio_wb__adr[27:0]', 'in'),
-                        ('gpio_wb__dat_w[{}:0]'.format(wb_data_width-1), 'in'),
-                        ('gpio_wb__dat_r[{}:0]'.format(wb_data_width-1), 'out'),
+                        ('gpio_wb__dat_w[%d:0]' % (wb_data_width-1), 'in'),
+                        ('gpio_wb__dat_r[%d:0]' % (wb_data_width-1), 'out'),
                         ('gpio_wb__ack', 'out'),
                 ])
     traces.append(wb_traces)
 
     for bank in range(0, n_banks):
-        temp_traces = ('Bank{}'.format(bank), [
-                        ('bank{}__i'.format(bank), 'in'),
-                        ('bank{}__o'.format(bank), 'out'),
-                        ('bank{}__oe'.format(bank), 'out')
+        temp_traces = ('Bank%d' % bank, [
+                        ('bank%d__i' % bank, 'in'),
+                        ('bank%d__o' % bank, 'out'),
+                        ('bank%d__oe' % bank, 'out')
                       ])
         traces.append(temp_traces)
 
     temp_traces = ('Misc', [
-                    ('bank[1:0]', 'in')
+                    ('bank[%d:0]' % ((n_banks-1).bit_length()-1), 'in')
                   ])
     traces.append(temp_traces)
     temp_traces = ('IO port to pad', [
@@ -197,14 +197,25 @@ def test_gpio_pinmux(dut):
     pden = 1
     outval = 0
     bank = 0
+    yield from gpios.config("0", oe=1, ie=0, puen=0, pden=1, outval=0, bank=0)
+
+    yield from gpios.set_out("0", outval=1)
+
     yield from gpios.config("0", oe=1, ie=0, puen=0, pden=1, outval=0, bank=2)
 
+    yield dut.periph_ports[2].o.eq(1)
     yield
-    yield dut.periph_ports[0].o.eq(1)
-    yield dut.periph_ports[0].oe.eq(1)
+    yield dut.periph_ports[2].oe.eq(1)
+    yield
     yield dut.pad_port.i.eq(1)
     yield
-    yield from gpios.config("0", oe=0, ie=0, puen=0, pden=1, outval=0, bank=0)
+    yield dut.pad_port.i.eq(0)
+
+
+
+    yield dut.pad_port.i.eq(1)
+    yield
+    yield from gpios.config("0", oe=0, ie=1, puen=0, pden=1, outval=0, bank=0)
     yield from gpios.rd_input("0")
 
     print("Finished the 1-bit IO mux block test!")
