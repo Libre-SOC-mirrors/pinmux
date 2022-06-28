@@ -59,13 +59,15 @@ def pinspec():
 
     ps = PinSpec(pinbanks, fixedpins, function_names)
 
-    ps.sdram1("", ('W', 0), 0, 15, 6, rev=True) # AD4-9, turned round
+    ps.gpio("", ('W', 0), 0, 0, 6) # GPIO 0-5
+    ps.sdram1("", ('W', 0), 1, 15, 6, rev=True) # AD4-9, turned round
     ps.vdd("E", ('W', 6), 0, 0, 1)
     ps.vss("E", ('W', 7), 0, 0, 1)
     ps.vdd("I", ('W', 8), 0, 0, 1)
     ps.vss("I", ('W', 9), 0, 0, 1)
-    ps.sdram1("", ('W', 10), 0, 0, 15, rev=True) # SDRAM DAM0, D0-7, AD0-3
-    ps.mi2c("", ('W', 26), 0, 0, 2)
+    ps.gpio("", ('W', 10), 0, 6, 18) # GPIO 6-23
+    ps.sdram1("", ('W', 10), 1, 0, 15, rev=True) # SDRAM DAM0, D0-7, AD0-3
+    ps.mi2c("", ('W', 26), 1, 0, 2)
     ps.vss("I", ('W', 28), 0, 1, 1)
     ps.vdd("I", ('W', 29), 0, 1, 1)
     ps.vss("E", ('W', 30), 0, 1, 1)
