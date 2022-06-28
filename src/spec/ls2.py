@@ -103,11 +103,12 @@ def pinspec():
     ps.eint("", ('E', 28), 2, 0, 2)
     ps.sys("", ('E', 31), 0, 5, 1) # analog VCO out in right top
 
-    ps.vss("E", ('N', 1), 0, 6, 1)
-    ps.vdd("E", ('N', 2), 0, 6, 1)
-    ps.vdd("I", ('N', 3), 0, 6, 1)
-    ps.vss("I", ('N', 4), 0, 6, 1)
-    ps.rgmii("0", ('N', 5), 0, 0, 18)
+    ps.rgmii("0", ('N', 0), 0, 0, 4)
+    ps.vss("E", ('N', 4), 0, 6, 1)
+    ps.vdd("E", ('N', 5), 0, 6, 1)
+    ps.vdd("I", ('N', 6), 0, 6, 1)
+    ps.vss("I", ('N', 7), 0, 6, 1)
+    ps.rgmii("0", ('N', 8), 0, 0, 14)
     #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
     #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
