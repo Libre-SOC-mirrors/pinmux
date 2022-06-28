@@ -108,7 +108,7 @@ def pinspec():
     ps.vdd("E", ('N', 5), 0, 6, 1)
     ps.vdd("I", ('N', 6), 0, 6, 1)
     ps.vss("I", ('N', 7), 0, 6, 1)
-    ps.rgmii("0", ('N', 8), 0, 0, 14)
+    ps.rgmii("0", ('N', 8), 0, 4, 14)
     #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
     #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
