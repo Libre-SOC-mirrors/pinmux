@@ -71,19 +71,22 @@ def pinspec():
     ps.vss("E", ('W', 30), 0, 1, 1)
     ps.vdd("E", ('W', 31), 0, 1, 1)
 
-    ps.sdram2("", ('S', 0), 0, 0, 4) # 1st 4, AD10-12,DQM1
+    ps.gpio("", ('S', 0), 0, 0, 4) # GPIO 0-4
+    ps.sdram2("", ('S', 0), 1, 0, 4) # 1st 4, AD10-12,DQM1
     ps.vdd("E", ('S', 4), 0, 2, 1)
     ps.vss("E", ('S', 5), 0, 2, 1)
     ps.vdd("I", ('S', 6), 0, 2, 1)
     ps.vss("I", ('S', 7), 0, 2, 1)
-    ps.sdram2("", ('S', 8), 0, 4, 8) # D8-15
-    ps.sdram1("", ('S', 16), 0, 21, 9) # clk etc.
+    ps.gpio("", ('S', 8), 0, 4, 14) # GPIO 5-17
+    ps.sdram2("", ('S', 8), 1, 4, 8) # D8-15
+    ps.sdram1("", ('S', 16), 1, 21, 9) # clk etc.
     ps.vss("I", ('S', 22), 0, 3, 1)
     ps.vdd("I", ('S', 23), 0, 3, 1)
     ps.vss("E", ('S', 24), 0, 3, 1)
     ps.vdd("E", ('S', 25), 0, 3, 1)
-    ps.uart("0", ('S', 26), 0)
-    ps.mspi("0", ('S', 28), 0)
+    ps.gpio("", ('S', 26), 0, 18, 6) # GPIO 18-23
+    ps.uart("0", ('S', 26), 1)
+    ps.mspi("0", ('S', 28), 1)
 
     ps.gpio("", ('E', 0), 0, 0, 4) # GPIO 0-3
     ps.rgmii("1", ('E', 0), 1, 0, 4) # RXD0-3
