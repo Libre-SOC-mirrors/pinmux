@@ -38,6 +38,7 @@ def pinspec():
         ]}
     fixedpins = {}
     function_names = {
+                      'RG0': 'Gigabit Ethernet 0',
                       'PWM': 'PWM (pulse-width modulation)',
                       'MSPI0': 'SPI Master 1 (general)',
                       'MSPI1': 'SPI Master 2 (SDCard)',
@@ -100,18 +101,19 @@ def pinspec():
     ps.eint("", ('E', 28), 0, 0, 3)
     ps.sys("", ('E', 31), 0, 5, 1) # analog VCO out in right top
 
-    ps.vss("E", ('N', 6), 0, 6, 1)
-    ps.vdd("E", ('N', 7), 0, 6, 1)
-    ps.vdd("I", ('N', 8), 0, 6, 1)
-    ps.vss("I", ('N', 9), 0, 6, 1)
+    ps.vss("E", ('N', 1), 0, 6, 1)
+    ps.vdd("E", ('N', 2), 0, 6, 1)
+    ps.vdd("I", ('N', 3), 0, 6, 1)
+    ps.vss("I", ('N', 4), 0, 6, 1)
+    ps.rgmii("0", ('N', 5), 0, 0, 18)
     #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
     #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
     ps.sys("", ('N', 27), 0, 0, 5) # all but analog out in top right
-    ps.vss("I", ('N', 22), 0, 7, 1)
-    ps.vdd("I", ('N', 23), 0, 7, 1)
-    ps.vss("E", ('N', 24), 0, 7, 1)
-    ps.vdd("E", ('N', 25), 0, 7, 1)
+    ps.vss("I", ('N', 23), 0, 7, 1)
+    ps.vdd("I", ('N', 24), 0, 7, 1)
+    ps.vss("E", ('N', 25), 0, 7, 1)
+    ps.vdd("E", ('N', 26), 0, 7, 1)
 
     #ps.mquadspi("1", ('S', 0), 0)
 

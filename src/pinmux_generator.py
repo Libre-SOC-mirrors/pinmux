@@ -112,6 +112,8 @@ if __name__ == '__main__':
                     temp_create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
                 if pinspec == "ls180":
                     create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
+                if pinspec == "ls2":
+                    create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
     else:
         if output_type == 'bsv':
             from bsv.pinmux_generator import pinmuxgen as gentypes
