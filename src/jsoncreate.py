@@ -13,7 +13,7 @@ def pinparse(psp, pinspec):
     print ("muxed cell banks", p.muxed_cells_bank)
 
     pads = {}
-    for pname, psize in p.bankwidths.items():
+    for pname, psize in p.banksize.items():
         print ("pad name,size", pname, psize)
         pads[pname] = [''] * psize
 
