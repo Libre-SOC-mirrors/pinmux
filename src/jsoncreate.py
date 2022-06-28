@@ -14,6 +14,7 @@ def pinparse(psp, pinspec):
 
     pads = {}
     for pname, psize in p.bankwidths.items():
+        print ("pad name,size", pname, psize)
         pads[pname] = [''] * psize
 
     iopads = []
@@ -214,6 +215,7 @@ def pinparse(psp, pinspec):
             if 'power' not in name and 'ground' not in name:
                 name = 'p_' + name
         if name is not None:
+            print (padbank, banknum, name)
             padbank[banknum] = name
             # create domains
             if domain is not None:
