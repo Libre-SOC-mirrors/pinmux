@@ -138,7 +138,7 @@ def pinspec():
 
     ls180 = [
             # 'SD0', litex problem 25mar2021
-            'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
+            'UART0', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
                 'MTWI', 'MSPI0',
                 'RG0', 'RG1',
