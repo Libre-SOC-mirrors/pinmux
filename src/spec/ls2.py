@@ -103,7 +103,7 @@ def pinspec():
     ps.vdd("I", ('E', 23), 0, 5, 1)
     ps.vss("E", ('E', 24), 0, 5, 1)
     ps.vdd("E", ('E', 25), 0, 5, 1)
-    ps.gpio("", ('E', 26), 0, 14, 5) # GPIO 14-18
+    ps.gpio("", ('E', 26), 0, 16, 5) # GPIO 14-18
     ps.rgmii("1", ('E', 26), 1, 14, 5) # more RGMII-2
     ps.eint("", ('E', 28), 2, 0, 3)
     ps.sys("", ('E', 31), 0, 5, 1) # analog VCO out in right top
