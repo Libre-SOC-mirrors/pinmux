@@ -11,10 +11,10 @@ from collections import OrderedDict
 
 def pinspec():
     pinbanks = OrderedDict((
-        ('N', (32, 2)),
-        ('E', (32, 2)),
-        ('S', (32, 2)),
-        ('W', (32, 2)),
+        ('N', (32, 4)),
+        ('E', (32, 4)),
+        ('S', (32, 4)),
+        ('W', (32, 4)),
     ))
     fixedpins = {
         'CTRL_SYS': [
@@ -86,20 +86,22 @@ def pinspec():
     ps.mspi("0", ('S', 28), 0)
 
     ps.gpio("", ('E', 0), 0, 0, 4) # GPIO 0-3
+    ps.rgmii("1", ('E', 0), 1, 0, 4) # RXD0-3
     ps.vss("E", ('E', 4), 0, 4, 1)
     ps.vdd("E", ('E', 5), 0, 4, 1)
     ps.vdd("I", ('E', 6), 0, 4, 1)
     ps.vss("I", ('E', 7), 0, 4, 1)
     ps.gpio("", ('E', 8), 0, 6, 10) # GPIO 4-13
+    ps.rgmii("1", ('E', 8), 1, 4, 10) # more RGMII-2
     ps.jtag("", ('E', 18), 0, 0, 4)
     ps.vss("I", ('E', 22), 0, 5, 1)
     ps.vdd("I", ('E', 23), 0, 5, 1)
     ps.vss("E", ('E', 24), 0, 5, 1)
     ps.vdd("E", ('E', 25), 0, 5, 1)
-    ps.gpio("", ('E', 26), 0, 14, 2) # GPIO 14-15
-    ps.eint("", ('E', 28), 0, 0, 3)
+    ps.gpio("", ('E', 26), 0, 14, 4) # GPIO 14-17
+    ps.rgmii("1", ('E', 26), 1, 14, 5) # more RGMII-2
+    ps.eint("", ('E', 28), 2, 0, 2)
     ps.sys("", ('E', 31), 0, 5, 1) # analog VCO out in right top
-    #ps.rgmii("1", ('E', 0), 0, 0, 4)
 
     ps.vss("E", ('N', 1), 0, 6, 1)
     ps.vdd("E", ('N', 2), 0, 6, 1)
