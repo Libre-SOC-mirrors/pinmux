@@ -141,6 +141,7 @@ def pinspec():
             'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
                 'MTWI', 'MSPI0',
+                'RG0', 'RG1',
                 # 'MSPI1', litex problem 25mar2021
                 'SDR']
     ls180_eint = []
@@ -153,6 +154,8 @@ def pinspec():
         'MSPI1': '',
         'UART0': '',
         'LPC1': '',
+        'RG0': '',
+        'RG1': '',
         'SYS': '',
         'LPC2': '',
         'SDR': '',
