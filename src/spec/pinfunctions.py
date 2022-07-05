@@ -154,7 +154,7 @@ def rgmii(suffix, bank):
     buspins += ['ERXCK-', 'ERXERR-']
     for i in range(4):
         buspins.append("ETXD%d+" % i)
-    buspins += ['ETXCK-', 'ETXERR-',]
+    buspins += ['ETXCK-', 'ETXERR-',
                 'ETXEN+', 'ERXDV-',
                 'EMDC+', 'EMDIO*',
                 'ECRS-', 'ECOL+']
