@@ -4,7 +4,6 @@ from spec import i_class
 from spec import minitest
 from spec import microtest
 from spec import ls180
-from spec import ls2
 from spec import ngi_router
 from spec.gen import specgen
 from spec.testing import dummytest
@@ -16,5 +15,4 @@ modules = {'m_class': m_class,
            'microtest': microtest,
            'ls180': ls180,
            'ngi_router': ngi_router,
-           'ls2': ls2
            }

@@ -109,10 +109,10 @@ if __name__ == '__main__':
                 # Test with different package size, once working
                 # 'create_sv' will be improved
                 if pinspec == "ngi_router":
-                    temp_create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
-                if pinspec == "ls180":
                     create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
-                if pinspec == "ls2":
+                    # TODO: Need to change the svg package
+                    #temp_create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
+                if pinspec == "ls180":
                     create_sv("%s/%s.svg" % (pinspec, pinspec), chip)
     else:
         if output_type == 'bsv':
