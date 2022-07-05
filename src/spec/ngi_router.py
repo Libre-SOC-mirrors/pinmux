@@ -91,14 +91,14 @@ def pinspec():
     ps.uart("0", ('S', 26), 1)
     ps.mspi("0", ('S', 28), 1)
 
-    ps.gpio("", ('E', 0), 0, 0, 4) # GPIO 0-3
-    ps.rgmii("1", ('E', 0), 1, 0, 4) # RXD0-3
-    ps.vss("E", ('E', 4), 0, 4, 1)
-    ps.vdd("E", ('E', 5), 0, 4, 1)
-    ps.vdd("I", ('E', 6), 0, 4, 1)
-    ps.vss("I", ('E', 7), 0, 4, 1)
-    ps.gpio("", ('E', 8), 0, 6, 10) # GPIO 4-13
-    ps.rgmii("1", ('E', 8), 1, 4, 10) # more RGMII-2
+    ps.gpio("", ('E', 0), 0, 0, 6) # GPIO 0-3
+    ps.rgmii("1", ('E', 0), 1, 0, 6) # RXD0-3+CK/ERR
+    ps.vss("E", ('E', 6), 0, 4, 1)
+    ps.vdd("E", ('E', 7), 0, 4, 1)
+    ps.vdd("I", ('E', 8), 0, 4, 1)
+    ps.vss("I", ('E', 9), 0, 4, 1)
+    ps.gpio("", ('E', 10), 0, 6, 8) # GPIO 4-11
+    ps.rgmii("1", ('E', 10), 1, 6, 8) # more RGMII-2
     ps.jtag("", ('E', 18), 0, 0, 4)
     ps.vss("I", ('E', 22), 0, 5, 1)
     ps.vdd("I", ('E', 23), 0, 5, 1)
@@ -109,14 +109,14 @@ def pinspec():
     ps.eint("", ('E', 28), 2, 0, 3)
     ps.sys("", ('E', 31), 0, 5, 1) # analog VCO out in right top
 
-    ps.gpio("", ('N', 0), 0, 0, 4) # GPIO 0-3
-    ps.rgmii("0", ('N', 0), 1, 0, 4) # RXD0-3
-    ps.vss("E", ('N', 4), 0, 6, 1)
-    ps.vdd("E", ('N', 5), 0, 6, 1)
-    ps.vdd("I", ('N', 6), 0, 6, 1)
-    ps.vss("I", ('N', 7), 0, 6, 1)
-    ps.gpio("", ('N', 8), 0, 4, 14) # GPIO 4-17
-    ps.rgmii("0", ('N', 8), 1, 4, 14) # more RGMII-1
+    ps.gpio("", ('N', 0), 0, 0, 6) # GPIO 0-5
+    ps.rgmii("0", ('N', 0), 1, 0, 6) # RXD0-3+CK/ERR
+    ps.vss("E", ('N', 6), 0, 6, 1)
+    ps.vdd("E", ('N', 7), 0, 6, 1)
+    ps.vdd("I", ('N', 8), 0, 6, 1)
+    ps.vss("I", ('N', 9), 0, 6, 1)
+    ps.gpio("", ('N', 10), 0, 6, 12) # GPIO 4-17
+    ps.rgmii("0", ('N', 10), 1, 6, 12) # more RGMII-1
     #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
     #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
     #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
