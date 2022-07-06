@@ -117,9 +117,6 @@ def pinspec():
     ps.vss("I", ('N', 9), 0, 6, 1)
     ps.gpio("", ('N', 10), 0, 6, 12) # GPIO 4-17
     ps.rgmii("0", ('N', 10), 1, 6, 12) # more RGMII-1
-    #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
-    #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
-    #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
     ps.sys("", ('N', 27), 0, 0, 5) # all but analog out in top right
     ps.vss("I", ('N', 23), 0, 7, 1)
     ps.vdd("I", ('N', 24), 0, 7, 1)
@@ -138,12 +135,10 @@ def pinspec():
     # lists (interfaces, EINTs, PWMs) from available pins.
 
     ls180 = [
-            # 'SD0', litex problem 25mar2021
             'UART0', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
                 'MTWI', 'MSPI0',
                 'RG0', 'RG1',
-                # 'MSPI1', litex problem 25mar2021
                 'SDR']
     ls180_eint = []
     ls180_pwm = []#['B0:PWM_0']

@@ -840,12 +840,12 @@ def python_dict_fns(of, pinmap, pins, function_names):
     print (pinmap)
 
     pd = python_pindict(of, {}, pins, function_names, 'pindict', False)
-    ld = python_pindict(of, pinmap, pins, function_names, 'litexdict', True)
+    ld = python_pindict(of, pinmap, pins, function_names, 'fabricdict', True)
 
     print ("pd", pd)
     print ("ld", ld)
     # process results and create name map
-    litexmap = OrderedDict()
+    fabricmap = OrderedDict()
     for k in pd.keys():
         pl = pd[k]
         ll = ld[k]
@@ -854,13 +854,13 @@ def python_dict_fns(of, pinmap, pins, function_names):
             lname = lname[:-1] # strip direction +/-/*
             if k in ['eint', 'pwm', 'gpio', 'vdd', 'vss']: # sigh
                 lname = "%s_%s" % (k, lname)
-            litexmap[pname] = lname
-    print ("litexmap", litexmap)
-    of.write("litexmap = {\n")
-    for k, v in litexmap.items():
+            fabricmap[pname] = lname
+    print ("fabricmap", fabricmap)
+    of.write("fabricmap = {\n")
+    for k, v in fabricmap.items():
         of.write("\t'%s': '%s',\n" % (k, v))
     of.write("}\n")
-    return litexmap
+    return fabricmap
 
 
 def display_fns(of, bankspec, pins, function_names):

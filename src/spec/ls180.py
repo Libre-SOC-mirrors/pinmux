@@ -104,9 +104,9 @@ def pinspec():
     ps.vdd("E", ('N', 7), 0, 6, 1)
     ps.vdd("I", ('N', 8), 0, 6, 1)
     ps.vss("I", ('N', 9), 0, 6, 1)
-    #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (litex problem 25mar2021)
-    #ps.mspi("1", ('N', 7), 0)       comment out (litex problem 25mar2021)
-    #ps.sdmmc("0", ('N', 11), 0)     # comment out (litex problem 25mar2021)
+    #ps.pwm("", ('N', 2), 0, 0, 2)  comment out (fabric problem 25mar2021)
+    #ps.mspi("1", ('N', 7), 0)       comment out (fabric problem 25mar2021)
+    #ps.sdmmc("0", ('N', 11), 0)     # comment out (fabric problem 25mar2021)
     ps.sys("", ('N', 27), 0, 0, 5) # all but analog out in top right
     ps.vss("I", ('N', 22), 0, 7, 1)
     ps.vdd("I", ('N', 23), 0, 7, 1)
@@ -125,11 +125,11 @@ def pinspec():
     # lists (interfaces, EINTs, PWMs) from available pins.
 
     ls180 = [
-            # 'SD0', litex problem 25mar2021
+            # 'SD0', fabric problem 25mar2021
             'UART0', 'GPIOS', 'GPIOE', 'JTAG', 'PWM', 'EINT',
              'VDD', 'VSS', 'SYS',
                 'MTWI', 'MSPI0',
-                # 'MSPI1', litex problem 25mar2021
+                # 'MSPI1', fabric problem 25mar2021
                 'SDR']
     ls180_eint = []
     ls180_pwm = []#['B0:PWM_0']

@@ -2,12 +2,12 @@ from parse import Parse
 from pprint import pprint
 import json
 
-# map pins to litex name conventions, primarily for use in coriolis2
+# map pins to fabric name conventions, primarily for use in coriolis2
 # yes this is a mess.  it'll do the job though.  improvements later
 def pinparse(psp, pinspec):
     p = Parse(pinspec, verify=False)
     pinmap = {}
-    litexmap = {}
+    fabricmap = {}
 
     print ("muxed cells", p.muxed_cells)
     print ("muxed cell banks", p.muxed_cells_bank)
@@ -29,7 +29,7 @@ def pinparse(psp, pinspec):
         name = clist[1]
         x = clist[2]
         orig_name = name
-        litex_name = None
+        fabric_name = None
         domain = None # TODO, get this from the PinSpec.  sigh
         padnum = int(padnum)
         start = p.bankstart[bank]
@@ -97,7 +97,7 @@ def pinparse(psp, pinspec):
                 prefix = 'spimaster_'
             else:
                 prefix = 'spisdcard_'
-            litex_name = name[:6] + suffix
+            fabric_name = name[:6] + suffix
             name = prefix + suffix
             pad = ['p_' + name, name, name]
         # SD/MMC
@@ -115,7 +115,7 @@ def pinparse(psp, pinspec):
             else:
                 name = 'sdcard_' + name[4:]
                 pad = ['p_' + name, name, name]
-            litex_name = orig_name[:4] + "_".join(name.split("_")[1:])
+            fabric_name = orig_name[:4] + "_".join(name.split("_")[1:])
         # SDRAM
         elif name.startswith('sdr'):
             domain = 'SDR'
@@ -151,7 +151,7 @@ def pinparse(psp, pinspec):
             else:
                 name = 'sdram_' + name[4:]
                 pad = ['p_' + name, name, name]
-            litex_name = orig_name[:4] + "_".join(name.split("_")[1:])
+            fabric_name = orig_name[:4] + "_".join(name.split("_")[1:])
         # UART
         elif name.startswith('uart'):
             domain = 'UART'
@@ -166,12 +166,12 @@ def pinparse(psp, pinspec):
             name2 = 'gpio_%%s(%s)' % i
             pad = ['p_' + name, name, name2 % 'o', name2 % 'i', name2 % 'oe']
             print ("GPIO pad", name, pad)
-            litex_name = "gpio_%s" % gbank + "_".join(name.split("_")[1:])
+            fabric_name = "gpio_%s" % gbank + "_".join(name.split("_")[1:])
         # I2C master-only
         elif name.startswith('mtwi'):
             domain = 'MTWI'
             suffix = name[4:]
-            litex_name = 'mtwi' + suffix
+            fabric_name = 'mtwi' + suffix
             name = 'i2c' + suffix
             if name.startswith('i2c_sda'):
                 name2 = 'i2c_sda_%s'
@@ -204,8 +204,8 @@ def pinparse(psp, pinspec):
             pad = ['p_' + name, name, name]
             print ("GPIO pad", name, pad)
 
-        if litex_name is None:
-            litex_name = name
+        if fabric_name is None:
+            fabric_name = name
 
         # JTAG domain
         if name and name.startswith('jtag'):
@@ -229,7 +229,7 @@ def pinparse(psp, pinspec):
                         clocks[domain] = name
             # record remap
             pinmap[orig_name] = name
-            litexmap[litex_name] = name
+            fabricmap[fabric_name] = name
 
         # add pad to iopads
         if domain and pad is not None:
@@ -297,7 +297,7 @@ def pinparse(psp, pinspec):
               'pads.instances' : iopads,
               'pins.specs' : psp.byspec,
               'pins.map' : pinmap,
-              'litex.map' : litexmap,
+              'fabric.map' : fabricmap,
               'chip.domains' : domains,
               'chip.clocks' : clocks,
               'chip.n_intpower': n_intpower,

@@ -91,7 +91,7 @@ if __name__ == '__main__':
             with open(pyname, "w") as pyf:
                 ps = module.pinspec()
                 pinout, bankspec, pin_spec, fixedpins = ps.write(of)
-                #chip['litex.map'] = litexmap
+                #chip['fabric.map'] = fabricmap
                 if testing:
                     dummytest(ps, output_dir, output_type)
                 else:
@@ -99,9 +99,9 @@ if __name__ == '__main__':
                             bankspec, ps.muxwidths, pin_spec, fixedpins,
                             ps.fastbus)
                 pm, chip = jsoncreate.pinparse(ps, pinspec)
-                litexmap = ps.pywrite(pyf, pm)
+                fabricmap = ps.pywrite(pyf, pm)
                 jchip = json.dumps(chip)
-                with open("%s/litex_pinpads.json" % pinspec, "w") as f:
+                with open("%s/fabric_pinpads.json" % pinspec, "w") as f:
                     f.write(jchip)
                 # octavius: please keep line-lengths to below 80 chars
                 # TODO: fix create_sv to allow different packages
