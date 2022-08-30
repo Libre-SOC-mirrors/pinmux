@@ -2,99 +2,152 @@
 """
 pinmux documented here https://libre-soc.org/docs/pinmux/
 """
-from nmigen.build.dsl import Resource, Subsignal, Pins
-from nmigen.build.plat import TemplatedPlatform
-from nmigen.build.res import ResourceManager, ResourceError
+from nmigen import Elaboratable, Module, Signal, Record, Array, Cat
 from nmigen.hdl.rec import Layout
-from nmigen import Elaboratable, Signal, Module, Instance
-from collections import OrderedDict
-from jtag import JTAG, resiotypes, iotypes, scanlens
-from copy import deepcopy
+from nmigen.utils import log2_int
 from nmigen.cli import rtlil
-import sys
-
-# extra dependencies for jtag testing (?)
-#from soc.bus.sram import SRAM
-
-#from nmigen import Memory
-from nmigen.sim import Simulator, Delay, Settle, Tick, Passive
-
+from soc.minerva.wishbone import make_wb_layout
 from nmutil.util import wrap
+#from soc.bus.test.wb_rw import wb_read, wb_write
 
 from nmutil.gtkw import write_gtkw
 
-# from soc.debug.jtagutils import (jtag_read_write_reg,
-#                                 jtag_srv, jtag_set_reset,
-#                                 jtag_set_ir, jtag_set_get_dr)
+cxxsim = False
+if cxxsim:
+    from nmigen.sim.cxxsim import Simulator, Settle, Delay
+else:
+    from nmigen.sim import Simulator, Settle, Delay
 
-from soc.debug.test.test_jtag_tap import (jtag_read_write_reg,
-                                          jtag_set_reset,
-                                          jtag_set_shift_ir,
-                                          jtag_set_shift_dr,
-                                          jtag_set_run,
-                                          jtag_set_idle,
-                                          tms_data_getset)
+from iomux import IOMuxBlockSingle
 
-def dummy_pinset():
-    # sigh this needs to come from pinmux.
-    gpios = []
-    for i in range(4):
-        gpios.append("%d*0" % i) # gpios to mux 0
-    return {'uart': ['tx+1', 'rx-1'],
-            'gpio': gpios,
-            # 'jtag': ['tms-', 'tdi-', 'tdo+', 'tck+'],
-            'i2c': ['sda*2', 'scl+2']}
+io_layout = (("i", 1),
+             ("oe", 1),
+             ("o", 1)
+            )
 
+uart_layout = (("rx", 1),
+               ("tx", 1),
+               ("oe", 1)
+              )
+
+UART_BANK = 0
+I2C_BANK = 1
 
 """
-a function is needed which turns the results of dummy_pinset()
-into:
-
-[UARTResource("uart", 0, tx=..., rx=..),
- I2CResource("i2c", 0, scl=..., sda=...),
- Resource("gpio", 0, Subsignal("i"...), Subsignal("o"...)
- Resource("gpio", 1, Subsignal("i"...), Subsignal("o"...)
- ...
-]
+Really basic example, uart tx/rx and i2c sda/scl pinmux
 """
-# TODO: move to suitable location
-class Pins:
-    """declare a list of pins, including name and direction.  grouped by fn
-    the pin dictionary needs to be in a reliable order so that the JTAG
-    Boundary Scan is also in a reliable order
-    """
-    def __init__(self, pindict=None):
-        if pindict is None:
-            pindict = {}
-        self.io_names = OrderedDict()
-        if isinstance(pindict, OrderedDict):
-            self.io_names.update(pindict)
-        else:
-            keys = list(pindict.keys())
-            keys.sort()
-            for k in keys:
-                self.io_names[k] = pindict[k]
+class ManPinmux(Elaboratable):
+    def __init__(self):
+        print("Test Manual Pinmux!")
+        self.n_banks = 2
+        self.iomux1 = IOMuxBlockSingle(self.n_banks)
+        self.iomux2 = IOMuxBlockSingle(self.n_banks)
+        self.pad1 = Record(name="Pad1", layout=io_layout)
+        self.pad2 = Record(name="Pad2", layout=io_layout)
+        self.uart = Record(name="uart", layout=uart_layout)
+        self.i2c = {"sda": Record(name="sda", layout=io_layout),
+                    "scl": Record(name="scl", layout=io_layout)
+                   }
+        self.bank = Signal(log2_int(self.n_banks))
+
+    def elaborate(self, platform):
+        m = Module()
+        comb, sync = m.d.comb, m.d.sync
+        iomux1 = self.iomux1
+        iomux2 = self.iomux2
+        m.submodules.iomux1 = iomux1
+        m.submodules.iomux2 = iomux2
+
+        pad1 = self.pad1
+        pad2 = self.pad2
+        uart = self.uart
+        i2c = self.i2c
+        bank = self.bank
+
+        comb += iomux1.bank.eq(bank)
+        comb += iomux2.bank.eq(bank)
+
+        # uart connected to bank 0 - Pad 1 tx, Pad 2 rx
+        comb += iomux1.bank_ports[UART_BANK].o.eq(uart.tx)
+        comb += iomux1.bank_ports[UART_BANK].oe.eq(uart.oe)
+        comb += uart.rx.eq(iomux2.bank_ports[UART_BANK].i)
+        # i2c connected to bank 1 - Pad 1 sda, Pad 2 scl
+        comb += iomux1.bank_ports[I2C_BANK].o.eq(i2c["sda"].o)
+        comb += iomux1.bank_ports[I2C_BANK].oe.eq(i2c["sda"].oe)
+        comb += i2c["sda"].i.eq(iomux1.bank_ports[I2C_BANK].i)
+        comb += iomux2.bank_ports[I2C_BANK].o.eq(i2c["scl"].o)
+        comb += iomux2.bank_ports[I2C_BANK].oe.eq(i2c["scl"].oe)
+        comb += i2c["scl"].i.eq(iomux2.bank_ports[I2C_BANK].i)
+
+        comb += pad1.o.eq(iomux1.out_port.o)
+        comb += pad1.oe.eq(iomux1.out_port.oe)
+        comb += iomux1.out_port.i.eq(pad1.i)
+        comb += pad2.o.eq(iomux2.out_port.o)
+        comb += pad2.oe.eq(iomux2.out_port.oe)
+        comb += iomux2.out_port.i.eq(pad2.i)
+
+        return m
 
     def __iter__(self):
-        # start parsing io_names and enumerate them to return pin specs
-        scan_idx = 0
-        for fn, pins in self.io_names.items():
-            for pin in pins:
-                # decode the pin name and determine the c4m jtag io type
-                name, pin_type, bank = pin[:-2], pin[-2], pin[-1]
-                iotype = iotypes[pin_type]
-                pin_name = "%s_%s" % (fn, name)
-                yield (fn, name, iotype, pin_name, scan_idx, bank)
-                scan_idx += scanlens[iotype] # inc boundary reg scan offset
+        for field in self.pad1.fields.values():
+            yield field
+        for field in self.pad2.fields.values():
+            yield field
+        for field in self.uart.fields.values():
+            yield field
+        for field in self.i2c["sda"].fields.values():
+            yield field
+        for field in self.i2c["scl"].fields.values():
+            yield field
+        yield self.bank
 
+    def ports(self):
+        return list(self)
+
+def set_bank(dut, bank, delay=1e-6):
+    yield dut.bank.eq(bank)
+    yield Delay(delay)
+
+def uart_send(uart, byte, delay=1e-6):
+    yield uart.oe.eq(1)
+    yield uart.tx.eq(1)
+    yield Delay(2*delay)
+    yield uart.tx.eq(0) # start bit
+    yield Delay(delay)
+    # send one byte, lsb first
+    for i in range(0, 8):
+        bit = (byte >> i) & 0x1
+        yield uart.tx.eq(bit)
+        yield Delay(delay)
+    yield uart.tx.eq(1) # stop bit
+    yield Delay(delay)
+
+
+def test_man_pinmux(dut):
+    delay = 1e-6
+    yield from set_bank(dut, UART_BANK)
+    yield from uart_send(dut.uart, 0x42)
+    yield dut.pad1.i.eq(1)
+    yield dut.pad2.i.eq(1)
+
+
+def sim_man_pinmux():
+    filename = "test_man_pinmux"
+    dut = ManPinmux()
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open(filename+".il", "w") as f:
+        f.write(vl)
+
+    m = Module()
+    m.submodules.manpinmux = dut
+
+    sim = Simulator(m)
+
+    sim.add_process(wrap(test_man_pinmux(dut)))
+    sim_writer = sim.write_vcd(filename+".vcd")
+    with sim_writer:
+        sim.run()
+    #gen_gtkw_doc("top.manpinmux", dut.n_banks, filename)
 
 if __name__ == '__main__':
-    #pname = "test"
-    pinset = dummy_pinset()
-    #print()
-    #pin_test = Pins(Pins(pname+"_oe", dir="o", assert_width=1))
-    pin_test = Pins(pinset)
-    print(dir(pin_test))
-    print(pin_test.io_names)
-    for fn, name, iotype, pin_name, scan_idx, bank in pin_test:
-        print(fn, name, iotype, pin_name, scan_idx, "Bank %s" % bank)
+    sim_man_pinmux()    
