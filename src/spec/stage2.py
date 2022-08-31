@@ -86,6 +86,9 @@ class ManPinmux(Elaboratable):
         comb += pad2.oe.eq(iomux2.out_port.oe)
         comb += iomux2.out_port.i.eq(pad2.i)
 
+        #temp for testing - connect pad rx-tx
+        #comb += pad2.i.eq(pad1.o)
+
         return m
 
     def __iter__(self):
@@ -108,27 +111,35 @@ def set_bank(dut, bank, delay=1e-6):
     yield dut.bank.eq(bank)
     yield Delay(delay)
 
-def uart_send(uart, byte, delay=1e-6):
-    yield uart.oe.eq(1)
-    yield uart.tx.eq(1)
+def uart_send(tx, rx, byte, oe=None, delay=1e-6):
+    if oe is not None:
+        yield oe.eq(1)
+    yield tx.eq(1)
     yield Delay(2*delay)
-    yield uart.tx.eq(0) # start bit
+    yield tx.eq(0) # start bit
     yield Delay(delay)
+    result = 0
     # send one byte, lsb first
     for i in range(0, 8):
         bit = (byte >> i) & 0x1
-        yield uart.tx.eq(bit)
+        yield tx.eq(bit)
         yield Delay(delay)
-    yield uart.tx.eq(1) # stop bit
+        test_bit = yield rx
+        result |= (test_bit << i)
+    yield tx.eq(1) # stop bit
     yield Delay(delay)
+    if result == byte:
+        print("Received: %x | Sent: %x" % (byte, result))
+    else:
+        print("Received: %x does NOT match sent: %x" % (byte, result))
 
 
 def test_man_pinmux(dut):
     delay = 1e-6
     yield from set_bank(dut, UART_BANK)
-    yield from uart_send(dut.uart, 0x42)
+    yield from uart_send(dut.uart.tx, dut.pad1.o, 0x42, oe=dut.uart.oe)
     yield dut.pad1.i.eq(1)
-    yield dut.pad2.i.eq(1)
+    yield from uart_send(dut.pad2.i, dut.uart.rx, 0x5A)
 
 
 def sim_man_pinmux():
