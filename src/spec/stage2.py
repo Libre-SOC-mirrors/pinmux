@@ -30,20 +30,25 @@ uart_layout = (("rx", 1),
                ("oe", 1)
               )
 
-UART_BANK = 0
-I2C_BANK = 1
+GPIO_BANK = 0
+UART_BANK = 1
+I2C_BANK = 2
 
 """
 Really basic example, uart tx/rx and i2c sda/scl pinmux
 """
 class ManPinmux(Elaboratable):
-    def __init__(self):
+    def __init__(self, pad_names):
         print("Test Manual Pinmux!")
-        self.n_banks = 2
+        self.n_banks = 4
         self.iomux1 = IOMuxBlockSingle(self.n_banks)
         self.iomux2 = IOMuxBlockSingle(self.n_banks)
-        self.pad1 = Record(name="Pad1", layout=io_layout)
-        self.pad2 = Record(name="Pad2", layout=io_layout)
+        self.pads = {}
+        for pad in pad_names:
+            self.pads[pad] = Record(name=pad, layout=io_layout)
+        self.gpio = {"0": Record(name="gp0", layout=io_layout),
+                     "1": Record(name="gp1", layout=io_layout)
+                    }
         self.uart = Record(name="uart", layout=uart_layout)
         self.i2c = {"sda": Record(name="sda", layout=io_layout),
                     "scl": Record(name="scl", layout=io_layout)
@@ -58,8 +63,8 @@ class ManPinmux(Elaboratable):
         m.submodules.iomux1 = iomux1
         m.submodules.iomux2 = iomux2
 
-        pad1 = self.pad1
-        pad2 = self.pad2
+        pads = self.pads
+        gpio = self.gpio
         uart = self.uart
         i2c = self.i2c
         bank = self.bank
@@ -67,11 +72,21 @@ class ManPinmux(Elaboratable):
         comb += iomux1.bank.eq(bank)
         comb += iomux2.bank.eq(bank)
 
-        # uart connected to bank 0 - Pad 1 tx, Pad 2 rx
+        # ---------------------------
+        # This section is muxing only - doesn'care about pad names
+        # ---------------------------
+        # gpio - gpio0 on Pad1, gpio1 on Pad2
+        comb += iomux1.bank_ports[GPIO_BANK].o.eq(gpio["0"].o)
+        comb += iomux1.bank_ports[GPIO_BANK].oe.eq(gpio["0"].oe)
+        comb += gpio["0"].i.eq(iomux1.bank_ports[GPIO_BANK].i)
+        comb += iomux2.bank_ports[GPIO_BANK].o.eq(gpio["1"].o)
+        comb += iomux2.bank_ports[GPIO_BANK].oe.eq(gpio["1"].oe)
+        comb += gpio["1"].i.eq(iomux2.bank_ports[GPIO_BANK].i)
+        # uart Pad 1 tx, Pad 2 rx
         comb += iomux1.bank_ports[UART_BANK].o.eq(uart.tx)
         comb += iomux1.bank_ports[UART_BANK].oe.eq(uart.oe)
         comb += uart.rx.eq(iomux2.bank_ports[UART_BANK].i)
-        # i2c connected to bank 1 - Pad 1 sda, Pad 2 scl
+        # i2c  Pad 1 sda, Pad 2 scl
         comb += iomux1.bank_ports[I2C_BANK].o.eq(i2c["sda"].o)
         comb += iomux1.bank_ports[I2C_BANK].oe.eq(i2c["sda"].oe)
         comb += i2c["sda"].i.eq(iomux1.bank_ports[I2C_BANK].i)
@@ -79,12 +94,16 @@ class ManPinmux(Elaboratable):
         comb += iomux2.bank_ports[I2C_BANK].oe.eq(i2c["scl"].oe)
         comb += i2c["scl"].i.eq(iomux2.bank_ports[I2C_BANK].i)
 
-        comb += pad1.o.eq(iomux1.out_port.o)
-        comb += pad1.oe.eq(iomux1.out_port.oe)
-        comb += iomux1.out_port.i.eq(pad1.i)
-        comb += pad2.o.eq(iomux2.out_port.o)
-        comb += pad2.oe.eq(iomux2.out_port.oe)
-        comb += iomux2.out_port.i.eq(pad2.i)
+        # ---------------------------
+        # Here is where the muxes are assigned to the actual pads
+        # ---------------------------
+        # TODO: for-loop to autoconnect muxes to pads (n_pads var?)
+        comb += pads['N1'].o.eq(iomux1.out_port.o)
+        comb += pads['N1'].oe.eq(iomux1.out_port.oe)
+        comb += iomux1.out_port.i.eq(pads['N1'].i)
+        comb += pads['N2'].o.eq(iomux2.out_port.o)
+        comb += pads['N2'].oe.eq(iomux2.out_port.oe)
+        comb += iomux2.out_port.i.eq(pads['N2'].i)
 
         #temp for testing - connect pad rx-tx
         #comb += pad2.i.eq(pad1.o)
@@ -92,10 +111,9 @@ class ManPinmux(Elaboratable):
         return m
 
     def __iter__(self):
-        for field in self.pad1.fields.values():
-            yield field
-        for field in self.pad2.fields.values():
-            yield field
+        for pad in list(self.pads.keys()):
+            for field in self.pads[pad].fields.values():
+                yield field
         for field in self.uart.fields.values():
             yield field
         for field in self.i2c["sda"].fields.values():
@@ -110,6 +128,31 @@ class ManPinmux(Elaboratable):
 def set_bank(dut, bank, delay=1e-6):
     yield dut.bank.eq(bank)
     yield Delay(delay)
+
+def gpio(gpio, pad, data, delay=1e-6):
+    # Output test - Control GPIO output
+    yield gpio.oe.eq(1)
+    yield Delay(delay)
+    n_bits = len(bin(data)[2:])
+    read = 0
+    for i in range(0, n_bits):
+        bit = (data >> i) & 0x1
+        yield gpio.o.eq(bit)
+        yield Delay(delay)
+        temp = yield pad.o
+        read |= (temp << i)
+    assert data == read, f"GPIO Sent: %x | Pad Read: %x" % (data, read)
+    # Input test - Control Pad input
+    yield gpio.oe.eq(0)
+    yield Delay(delay)
+    read2 = 0
+    for i in range(0, n_bits):
+        bit = (read >> i) & 0x1
+        yield pad.i.eq(bit)
+        yield Delay(delay)
+        temp = yield gpio.i
+        read2 |= (temp << i)
+    assert read2 == read, f"Pad Sent: %x | GPIO Read: %x" % (data, read)
 
 def uart_send(tx, rx, byte, oe=None, delay=1e-6):
     if oe is not None:
@@ -133,14 +176,14 @@ def uart_send(tx, rx, byte, oe=None, delay=1e-6):
     else:
         print("Received: %x does NOT match sent: %x" % (byte, result))
 
-def i2c_send(sda, scl, rx_sda, byte, delay=1e-6):
+def i2c_send(sda, scl, sda_pad_i, byte, delay=1e-6):
     # No checking yet
     # No pull-up on line implemented, set high instead
     yield sda.oe.eq(1)
     yield sda.o.eq(1)
     yield scl.oe.eq(1)
     yield scl.o.eq(1)
-    yield rx_sda.eq(1)
+    yield sda_pad_i.eq(1)
     yield Delay(delay)
     yield sda.o.eq(0) # start bit
     yield Delay(delay)
@@ -153,29 +196,36 @@ def i2c_send(sda, scl, rx_sda, byte, delay=1e-6):
         yield Delay(delay/2)
     yield sda.o.eq(1) # Master releases SDA line
     yield sda.oe.eq(0)
-    yield rx_sda.eq(0) # ACK
+    yield sda_pad_i.eq(0) # ACK
     yield Delay(delay)
-    yield rx_sda.eq(1)
+    yield sda_pad_i.eq(1)
 
 
 
-def test_man_pinmux(dut):
+def test_man_pinmux(dut, pad_names):
     delay = 1e-6
+    # GPIO test
+    yield from gpio(dut.gpio['0'], dut.pads['N1'], 0x5a5)
+    yield from gpio(dut.gpio['1'], dut.pads['N2'], 0x5a5)
     # UART test
     yield from set_bank(dut, UART_BANK)
-    yield from uart_send(dut.uart.tx, dut.pad1.o, 0x42, oe=dut.uart.oe)
-    #yield dut.pad1.i.eq(1)
-    yield from uart_send(dut.pad2.i, dut.uart.rx, 0x5A)
-    yield dut.pad2.i.eq(0)
+    yield from uart_send(dut.uart.tx, dut.pads['N1'].o, 0x42, oe=dut.uart.oe)
+    yield from uart_send(dut.pads['N2'].i, dut.uart.rx, 0x5a)
+    yield dut.pads['N2'].i.eq(0)
     yield Delay(delay)
     # I2C test
     yield from set_bank(dut, I2C_BANK)
-    yield from i2c_send(dut.i2c['sda'], dut.i2c['scl'], dut.pad1.i, 0x67)
+    yield from i2c_send(dut.i2c['sda'], dut.i2c['scl'], dut.pads['N1'].i, 0x67)
 
+    yield dut.gpio['0'].oe.eq(1)
+    yield Delay(delay)
+    yield dut.gpio['0'].oe.eq(0)
+    yield Delay(delay)
 
 def sim_man_pinmux():
     filename = "test_man_pinmux"
-    dut = ManPinmux()
+    pad_names = ["N1", "N2"]
+    dut = ManPinmux(pad_names)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open(filename+".il", "w") as f:
         f.write(vl)
@@ -185,7 +235,7 @@ def sim_man_pinmux():
 
     sim = Simulator(m)
 
-    sim.add_process(wrap(test_man_pinmux(dut)))
+    sim.add_process(wrap(test_man_pinmux(dut, pad_names)))
     sim_writer = sim.write_vcd(filename+".vcd")
     with sim_writer:
         sim.run()
