@@ -133,13 +133,44 @@ def uart_send(tx, rx, byte, oe=None, delay=1e-6):
     else:
         print("Received: %x does NOT match sent: %x" % (byte, result))
 
+def i2c_send(sda, scl, rx_sda, byte, delay=1e-6):
+    # No checking yet
+    # No pull-up on line implemented, set high instead
+    yield sda.oe.eq(1)
+    yield sda.o.eq(1)
+    yield scl.oe.eq(1)
+    yield scl.o.eq(1)
+    yield rx_sda.eq(1)
+    yield Delay(delay)
+    yield sda.o.eq(0) # start bit
+    yield Delay(delay)
+    for i in range(0, 8):
+        bit = (byte >> i) & 0x1
+        yield sda.o.eq(bit)
+        yield scl.o.eq(0)
+        yield Delay(delay/2)
+        yield scl.o.eq(1)
+        yield Delay(delay/2)
+    yield sda.o.eq(1) # Master releases SDA line
+    yield sda.oe.eq(0)
+    yield rx_sda.eq(0) # ACK
+    yield Delay(delay)
+    yield rx_sda.eq(1)
+
+
 
 def test_man_pinmux(dut):
     delay = 1e-6
+    # UART test
     yield from set_bank(dut, UART_BANK)
     yield from uart_send(dut.uart.tx, dut.pad1.o, 0x42, oe=dut.uart.oe)
-    yield dut.pad1.i.eq(1)
+    #yield dut.pad1.i.eq(1)
     yield from uart_send(dut.pad2.i, dut.uart.rx, 0x5A)
+    yield dut.pad2.i.eq(0)
+    yield Delay(delay)
+    # I2C test
+    yield from set_bank(dut, I2C_BANK)
+    yield from i2c_send(dut.i2c['sda'], dut.i2c['scl'], dut.pad1.i, 0x67)
 
 
 def sim_man_pinmux():
