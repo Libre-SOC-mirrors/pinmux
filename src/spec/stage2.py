@@ -202,16 +202,22 @@ def uart_send(uart, pad_o, pad_i, byte, delay=1e-6):
     yield Delay(delay)
     assert read == read2, f"Pad Sent: %x | UART Read: %x" % (read, read2)
 
-
-def i2c_send(sda, scl, sda_pad_i, byte, delay=1e-6):
+"""
+I2C test function
+Sends a byte via SDA.o (peripheral side), checked at output pad
+Then sends the same byte via input pad to master SDA.i
+This transaction doesn't make the distinction between read/write bit.
+"""
+def i2c_send(sda, scl, sda_pad, byte, delay=1e-6):
     # No checking yet
     # No pull-up on line implemented, set high instead
     yield sda.oe.eq(1)
     yield sda.o.eq(1)
     yield scl.oe.eq(1)
     yield scl.o.eq(1)
-    yield sda_pad_i.eq(1)
+    yield sda_pad.i.eq(1)
     yield Delay(delay)
+    read = 0
     yield sda.o.eq(0) # start bit
     yield Delay(delay)
     for i in range(0, 8):
@@ -220,18 +226,49 @@ def i2c_send(sda, scl, sda_pad_i, byte, delay=1e-6):
         yield scl.o.eq(0)
         yield Delay(delay/2)
         yield scl.o.eq(1)
+        temp = yield sda_pad.o
+        read |= (temp << i)
         yield Delay(delay/2)
     yield sda.o.eq(1) # Master releases SDA line
     yield sda.oe.eq(0)
-    yield sda_pad_i.eq(0) # ACK
-    yield Delay(delay)
-    yield sda_pad_i.eq(1)
+    assert byte == read, f"I2C Sent: %x | Pad Read: %x" % (byte, read)
+    # Slave ACK
+    yield sda_pad.i.eq(0)
+    yield scl.o.eq(0)
+    yield Delay(delay/2)
+    yield scl.o.eq(1)
+    yield Delay(delay/2)
+    # Send byte back to master
+    read2 = 0
+    for i in range(0, 8):
+        bit = (read >> i) & 0x1
+        yield sda_pad.i.eq(bit)
+        yield scl.o.eq(0)
+        yield Delay(delay/2)
+        yield scl.o.eq(1)
+        temp = yield sda.i
+        read2 |= (temp << i)
+        yield Delay(delay/2)
+    assert read == read2, f"Pad Sent: %x | I2C Read: %x" % (read, read2)
+    # Master ACK
+    yield sda.oe.eq(1)
+    yield sda.o.eq(0)
+    yield scl.o.eq(0)
+    yield Delay(delay/2)
+    yield scl.o.eq(1)
+    yield Delay(delay/2)
+    # Stop condition - SDA line high after SCL high
+    yield scl.o.eq(0)
+    yield Delay(delay/2)
+    yield scl.o.eq(1)
+    yield Delay(delay/2)
+    yield sda.o.eq(1) # 'release' the SDA line
 
-
-
+# Test the GPIO/UART/I2C connectivity
 def test_man_pinmux(dut, pad_names):
     delay = 1e-6
     # GPIO test
+    yield from set_bank(dut, GPIO_BANK)
     yield from gpio(dut.gpio['0'], dut.pads['N1'], 0x5a5)
     yield from gpio(dut.gpio['1'], dut.pads['N2'], 0x5a5)
     # UART test
@@ -241,7 +278,7 @@ def test_man_pinmux(dut, pad_names):
     yield Delay(delay)
     # I2C test
     yield from set_bank(dut, I2C_BANK)
-    yield from i2c_send(dut.i2c['sda'], dut.i2c['scl'], dut.pads['N1'].i, 0x67)
+    yield from i2c_send(dut.i2c['sda'], dut.i2c['scl'], dut.pads['N1'], 0x67)
 
     yield dut.gpio['0'].oe.eq(1)
     yield Delay(delay)
