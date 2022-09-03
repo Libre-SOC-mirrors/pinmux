@@ -129,6 +129,11 @@ def set_bank(dut, bank, delay=1e-6):
     yield dut.bank.eq(bank)
     yield Delay(delay)
 
+"""
+GPIO test function
+Set the gpio output based on given data sequence, checked at pad.o
+Then sends the same byte via pad.i to gpio input
+"""
 def gpio(gpio, pad, data, delay=1e-6):
     # Output test - Control GPIO output
     yield gpio.oe.eq(1)
@@ -153,28 +158,50 @@ def gpio(gpio, pad, data, delay=1e-6):
         temp = yield gpio.i
         read2 |= (temp << i)
     assert read2 == read, f"Pad Sent: %x | GPIO Read: %x" % (data, read)
-
-def uart_send(tx, rx, byte, oe=None, delay=1e-6):
-    if oe is not None:
-        yield oe.eq(1)
-    yield tx.eq(1)
-    yield Delay(2*delay)
-    yield tx.eq(0) # start bit
+    # reset input signal
+    yield pad.i.eq(0)
     yield Delay(delay)
-    result = 0
+
+"""
+UART test function
+Sends a byte via uart tx, checked at output pad
+Then sends the same byte via input pad to uart rx
+Input and output pads are different, so must specify both
+"""
+def uart_send(uart, pad_o, pad_i, byte, delay=1e-6):
+    # Drive uart tx - check the word seen at the Pad
+    yield uart.oe.eq(1)
+    yield uart.tx.eq(1)
+    yield Delay(2*delay)
+    yield uart.tx.eq(0) # start bit
+    yield Delay(delay)
+    read = 0
     # send one byte, lsb first
     for i in range(0, 8):
         bit = (byte >> i) & 0x1
-        yield tx.eq(bit)
+        yield uart.tx.eq(bit)
         yield Delay(delay)
-        test_bit = yield rx
-        result |= (test_bit << i)
-    yield tx.eq(1) # stop bit
+        test_bit = yield pad_o
+        read |= (test_bit << i)
+    yield uart.tx.eq(1) # stop bit
     yield Delay(delay)
-    if result == byte:
-        print("Received: %x | Sent: %x" % (byte, result))
-    else:
-        print("Received: %x does NOT match sent: %x" % (byte, result))
+    assert byte == read, f"UART Sent: %x | Pad Read: %x" % (byte, read)
+    # Drive Pad i - check word at uart rx
+    yield pad_i.eq(1)
+    yield Delay(2*delay)
+    yield pad_i.eq(0) # start bit
+    yield Delay(delay)
+    read2 = 0
+    for i in range(0, 8):
+        bit = (read >> i) & 0x1
+        yield pad_i.eq(bit)
+        yield Delay(delay)
+        test_bit = yield uart.rx
+        read2 |= (test_bit << i)
+    yield pad_i.eq(1) # stop bit
+    yield Delay(delay)
+    assert read == read2, f"Pad Sent: %x | UART Read: %x" % (read, read2)
+
 
 def i2c_send(sda, scl, sda_pad_i, byte, delay=1e-6):
     # No checking yet
@@ -209,8 +236,7 @@ def test_man_pinmux(dut, pad_names):
     yield from gpio(dut.gpio['1'], dut.pads['N2'], 0x5a5)
     # UART test
     yield from set_bank(dut, UART_BANK)
-    yield from uart_send(dut.uart.tx, dut.pads['N1'].o, 0x42, oe=dut.uart.oe)
-    yield from uart_send(dut.pads['N2'].i, dut.uart.rx, 0x5a)
+    yield from uart_send(dut.uart, dut.pads['N1'].o, dut.pads['N2'].i, 0x42)
     yield dut.pads['N2'].i.eq(0)
     yield Delay(delay)
     # I2C test
