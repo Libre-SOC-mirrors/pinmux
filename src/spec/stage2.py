@@ -80,7 +80,8 @@ class ManPinmux(Elaboratable):
         pad0 = self.pads["N1"]["pad"]
         gp0 = self.pads["N1"]["mux%d" % GPIO_BANK]
         gp1 = self.pads["N2"]["mux%d" % GPIO_BANK]
-        #uart = self.uart
+        tx = self.pads["N1"]["mux%d" % UART_BANK]
+        rx = self.pads["N2"]["mux%d" % UART_BANK]
         #i2c = self.i2c
         bank = self.bank
 
@@ -98,9 +99,9 @@ class ManPinmux(Elaboratable):
         comb += iomux2.bank_ports[GPIO_BANK].oe.eq(gp1.oe)
         comb += gp1.i.eq(iomux2.bank_ports[GPIO_BANK].i)
         # uart Pad 1 tx, Pad 2 rx
-        #comb += iomux1.bank_ports[UART_BANK].o.eq(uart.tx)
-        #comb += iomux1.bank_ports[UART_BANK].oe.eq(uart.oe)
-        #comb += uart.rx.eq(iomux2.bank_ports[UART_BANK].i)
+        comb += iomux1.bank_ports[UART_BANK].o.eq(tx.o)
+        comb += iomux1.bank_ports[UART_BANK].oe.eq(tx.oe)
+        comb += rx.eq(iomux2.bank_ports[UART_BANK].i)
         # i2c  Pad 1 sda, Pad 2 scl
         #comb += iomux1.bank_ports[I2C_BANK].o.eq(i2c["sda"].o)
         #comb += iomux1.bank_ports[I2C_BANK].oe.eq(i2c["sda"].oe)
@@ -180,37 +181,37 @@ Sends a byte via uart tx, checked at output pad
 Then sends the same byte via input pad to uart rx
 Input and output pads are different, so must specify both
 """
-def uart_send(uart, pad_o, pad_i, byte, delay=1e-6):
+def uart_send(tx, rx, pad_tx, pad_rx, byte, delay=1e-6):
     # Drive uart tx - check the word seen at the Pad
-    yield uart.oe.eq(1)
-    yield uart.tx.eq(1)
+    yield tx.oe.eq(1)
+    yield tx.o.eq(1)
     yield Delay(2*delay)
-    yield uart.tx.eq(0) # start bit
+    yield tx.o.eq(0) # start bit
     yield Delay(delay)
     read = 0
     # send one byte, lsb first
     for i in range(0, 8):
         bit = (byte >> i) & 0x1
-        yield uart.tx.eq(bit)
+        yield tx.o.eq(bit)
         yield Delay(delay)
-        test_bit = yield pad_o
+        test_bit = yield pad_tx.o
         read |= (test_bit << i)
-    yield uart.tx.eq(1) # stop bit
+    yield tx.o.eq(1) # stop bit
     yield Delay(delay)
     assert byte == read, f"UART Sent: %x | Pad Read: %x" % (byte, read)
     # Drive Pad i - check word at uart rx
-    yield pad_i.eq(1)
+    yield pad_rx.i.eq(1)
     yield Delay(2*delay)
-    yield pad_i.eq(0) # start bit
+    yield pad_rx.i.eq(0) # start bit
     yield Delay(delay)
     read2 = 0
     for i in range(0, 8):
         bit = (read >> i) & 0x1
-        yield pad_i.eq(bit)
+        yield pad_rx.i.eq(bit)
         yield Delay(delay)
-        test_bit = yield uart.rx
+        test_bit = yield rx
         read2 |= (test_bit << i)
-    yield pad_i.eq(1) # stop bit
+    yield pad_rx.i.eq(1) # stop bit
     yield Delay(delay)
     assert read == read2, f"Pad Sent: %x | UART Read: %x" % (read, read2)
 
@@ -281,11 +282,15 @@ def test_man_pinmux(dut, pad_names):
     delay = 1e-6
     # GPIO test
     yield from set_bank(dut, GPIO_BANK)
-    yield from gpio(dut.pads["N1"]["mux0"], dut.pads["N1"]["pad"], 0x5a5)
-    yield from gpio(dut.pads["N2"]["mux0"], dut.pads["N2"]["pad"], 0x5a5)
+    yield from gpio(dut.pads["N1"]["mux%d" % GPIO_BANK],
+                    dut.pads["N1"]["pad"], 0x5a5)
+    yield from gpio(dut.pads["N2"]["mux%d" % GPIO_BANK],
+                    dut.pads["N2"]["pad"], 0x5a5)
     # UART test
-    #yield from set_bank(dut, UART_BANK)
-    #yield from uart_send(dut.uart, dut.pads['N1'].o, dut.pads['N2'].i, 0x42)
+    yield from set_bank(dut, UART_BANK)
+    yield from uart_send(dut.pads["N1"]["mux%d" % UART_BANK],
+                         dut.pads["N2"]["mux%d" % UART_BANK],
+                         dut.pads['N1']["pad"], dut.pads['N2']["pad"], 0x42)
     #yield dut.pads['N2'].i.eq(0)
     #yield Delay(delay)
     # I2C test
