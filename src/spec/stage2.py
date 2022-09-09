@@ -60,13 +60,18 @@ class ManPinmux(Elaboratable):
         self.bank = Signal(log2_int(self.n_banks))
         self.pads = {pad_names[0]:{}, pad_names[1]:{}}
         self.pads["N1"]["pad"] = Record(name=pad_names[0], layout=io_layout)
-        self.pads["N1"]["mux%d" % GPIO_BANK] = Record(name="gp0", layout=io_layout)
-        self.pads["N1"]["mux%d" % UART_BANK] = Record(name="tx", layout=uart_tx_layout)
-        self.pads["N1"]["mux%d" % I2C_BANK] = Record(name="sda", layout=io_layout)
+        self.pads["N1"]["mux%d" % GPIO_BANK] = Record(name="gp0",
+                                                      layout=io_layout)
+        self.pads["N1"]["mux%d" % UART_BANK] = Record(name="tx",
+                                                      layout=uart_tx_layout)
+        self.pads["N1"]["mux%d" % I2C_BANK] = Record(name="sda",
+                                                     layout=io_layout)
         self.pads["N2"]["pad"] = Record(name=pad_names[1], layout=io_layout)
-        self.pads["N2"]["mux%d" % GPIO_BANK] = Record(name="gp1", layout=io_layout)
-        self.pads["N2"]["mux%d" % UART_BANK] = Signal(name="rx") # Only one signal
-        self.pads["N2"]["mux%d" % I2C_BANK] = Record(name="scl", layout=io_layout)
+        self.pads["N2"]["mux%d" % GPIO_BANK] = Record(name="gp1",
+                                                      layout=io_layout)
+        self.pads["N2"]["mux%d" % UART_BANK] = Signal(name="rx") # One signal
+        self.pads["N2"]["mux%d" % I2C_BANK] = Record(name="scl",
+                                                     layout=io_layout)
 
     def elaborate(self, platform):
         m = Module()
@@ -82,7 +87,8 @@ class ManPinmux(Elaboratable):
         gp1 = self.pads["N2"]["mux%d" % GPIO_BANK]
         tx = self.pads["N1"]["mux%d" % UART_BANK]
         rx = self.pads["N2"]["mux%d" % UART_BANK]
-        #i2c = self.i2c
+        sda = self.pads["N1"]["mux%d" % I2C_BANK]
+        scl = self.pads["N2"]["mux%d" % I2C_BANK]
         bank = self.bank
 
         comb += iomux1.bank.eq(bank)
@@ -103,12 +109,12 @@ class ManPinmux(Elaboratable):
         comb += iomux1.bank_ports[UART_BANK].oe.eq(tx.oe)
         comb += rx.eq(iomux2.bank_ports[UART_BANK].i)
         # i2c  Pad 1 sda, Pad 2 scl
-        #comb += iomux1.bank_ports[I2C_BANK].o.eq(i2c["sda"].o)
-        #comb += iomux1.bank_ports[I2C_BANK].oe.eq(i2c["sda"].oe)
-        #comb += i2c["sda"].i.eq(iomux1.bank_ports[I2C_BANK].i)
-        #comb += iomux2.bank_ports[I2C_BANK].o.eq(i2c["scl"].o)
-        #comb += iomux2.bank_ports[I2C_BANK].oe.eq(i2c["scl"].oe)
-        #comb += i2c["scl"].i.eq(iomux2.bank_ports[I2C_BANK].i)
+        comb += iomux1.bank_ports[I2C_BANK].o.eq(sda.o)
+        comb += iomux1.bank_ports[I2C_BANK].oe.eq(sda.oe)
+        comb += sda.i.eq(iomux1.bank_ports[I2C_BANK].i)
+        comb += iomux2.bank_ports[I2C_BANK].o.eq(scl.o)
+        comb += iomux2.bank_ports[I2C_BANK].oe.eq(scl.oe)
+        comb += scl.i.eq(iomux2.bank_ports[I2C_BANK].i)
 
         # ---------------------------
         # Here is where the muxes are assigned to the actual pads
@@ -294,8 +300,10 @@ def test_man_pinmux(dut, pad_names):
     #yield dut.pads['N2'].i.eq(0)
     #yield Delay(delay)
     # I2C test
-    #yield from set_bank(dut, I2C_BANK)
-    #yield from i2c_send(dut.i2c['sda'], dut.i2c['scl'], dut.pads['N1'], 0x67)
+    yield from set_bank(dut, I2C_BANK)
+    yield from i2c_send(dut.pads["N1"]["mux%d" % I2C_BANK],
+                        dut.pads["N2"]["mux%d" % I2C_BANK],
+                        dut.pads['N1']["pad"], 0x67)
 
 def sim_man_pinmux():
     filename = "test_man_pinmux"
