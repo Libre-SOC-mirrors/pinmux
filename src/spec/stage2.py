@@ -42,35 +42,44 @@ Really basic example, uart tx/rx and i2c sda/scl pinmux
 class ManPinmux(Elaboratable):
     def __init__(self, pad_names):
         print("Test Manual Pinmux!")
+
+        self.requested = {"N1": {"mux%d" % GPIO_BANK: ["gpio", 0],
+                                 "mux%d" % UART_BANK: ["uart", 0, "tx"],
+                                 "mux%d" % I2C_BANK: ["i2c", 0, "sda"]},
+                          "N2": {"mux%d" % GPIO_BANK: ["gpio", 1],
+                                 "mux%d" % UART_BANK: ["uart", 0, "rx"],
+                                 "mux%d" % I2C_BANK: ["i2c", 0, "scl"]}
+                         }
         self.n_banks = 4
         self.iomux1 = IOMuxBlockSingle(self.n_banks)
         self.iomux2 = IOMuxBlockSingle(self.n_banks)
-        """
-        self.pads = {}
-        for pad in pad_names:
-            self.pads[pad] = Record(name=pad, layout=io_layout)
-        self.gpio = {"0": Record(name="gp0", layout=io_layout),
-                     "1": Record(name="gp1", layout=io_layout)
-                    }
-        self.uart = Record(name="uart", layout=uart_layout)
-        self.i2c = {"sda": Record(name="sda", layout=io_layout),
-                    "scl": Record(name="scl", layout=io_layout)
-                   }
-        """
         self.bank = Signal(log2_int(self.n_banks))
         self.pads = {pad_names[0]:{}, pad_names[1]:{}}
-        self.pads["N1"]["pad"] = Record(name=pad_names[0], layout=io_layout)
-        self.pads["N1"]["mux%d" % GPIO_BANK] = Record(name="gp0",
-                                                      layout=io_layout)
-        self.pads["N1"]["mux%d" % UART_BANK] = Record(name="tx",
-                                                      layout=uart_tx_layout)
-        self.pads["N1"]["mux%d" % I2C_BANK] = Record(name="sda",
+        for pad in self.requested.keys():
+            self.pads[pad]["pad"] = Record(name=pad, layout=io_layout)
+
+            for mux in self.requested[pad].keys():
+                periph = self.requested[pad][mux][0]
+                unit_num = self.requested[pad][mux][1]
+                if len(self.requested[pad][mux]) == 3:
+                    pin = self.requested[pad][mux][2]
+                else:
+                    pin = "io"
+                if periph == "gpio":
+                    self.pads[pad][mux] = Record(name="gp%d" % unit_num,
+                                                 layout=io_layout)
+                elif periph == "uart":
+                    if pin == "tx":
+                        self.pads[pad][mux] = Record(name="tx%d" % unit_num,
+                                                     layout=uart_tx_layout)
+                    elif pin == "rx":
+                        self.pads[pad][mux] = Signal(name="rx%d" % unit_num)
+                elif periph == "i2c":
+                    if pin == "sda":
+                        self.pads[pad][mux] = Record(name="sda%d" % unit_num,
                                                      layout=io_layout)
-        self.pads["N2"]["pad"] = Record(name=pad_names[1], layout=io_layout)
-        self.pads["N2"]["mux%d" % GPIO_BANK] = Record(name="gp1",
-                                                      layout=io_layout)
-        self.pads["N2"]["mux%d" % UART_BANK] = Signal(name="rx") # One signal
-        self.pads["N2"]["mux%d" % I2C_BANK] = Record(name="scl",
+                    elif pin == "scl":
+                        self.pads[pad][mux] = Record(name="scl%d" % unit_num,
                                                      layout=io_layout)
 
     def elaborate(self, platform):
