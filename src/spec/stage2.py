@@ -51,13 +51,13 @@ class ManPinmux(Elaboratable):
                                  "mux%d" % I2C_BANK: ["i2c", 0, "scl"]}
                          }
         self.n_banks = 4
-        self.iomux1 = IOMuxBlockSingle(self.n_banks)
-        self.iomux2 = IOMuxBlockSingle(self.n_banks)
         self.bank = Signal(log2_int(self.n_banks))
-        self.pads = {pad_names[0]:{}, pad_names[1]:{}}
+        self.pads = {}
+        self.muxes = {}
         for pad in self.requested.keys():
+            self.pads[pad] = {}
             self.pads[pad]["pad"] = Record(name=pad, layout=io_layout)
-
+            self.muxes[pad] = IOMuxBlockSingle(self.n_banks)
             for mux in self.requested[pad].keys():
                 periph = self.requested[pad][mux][0]
                 unit_num = self.requested[pad][mux][1]
@@ -85,10 +85,12 @@ class ManPinmux(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         comb, sync = m.d.comb, m.d.sync
-        iomux1 = self.iomux1
-        iomux2 = self.iomux2
-        m.submodules.iomux1 = iomux1
-        m.submodules.iomux2 = iomux2
+        muxes = self.muxes
+        # TODO: replace with pin specific
+        iomux1 = muxes["N1"]
+        iomux2 = muxes["N2"]
+        for pad in self.pads.keys():
+            m.submodules[pad+"_mux"] = muxes[pad]
 
         pads = self.pads
         pad0 = self.pads["N1"]["pad"]
