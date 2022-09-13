@@ -54,6 +54,8 @@ class ManPinmux(Elaboratable):
         self.bank = Signal(log2_int(self.n_banks))
         self.pads = {}
         self.muxes = {}
+        # Automatically create the necessary periph/pad Records/Signals
+        # depending on the given dict specification
         for pad in self.requested.keys():
             self.pads[pad] = {}
             self.pads[pad]["pad"] = Record(name=pad, layout=io_layout)
@@ -87,21 +89,19 @@ class ManPinmux(Elaboratable):
         comb, sync = m.d.comb, m.d.sync
         muxes = self.muxes
         bank = self.bank
-        # TODO: replace with pin specific
-        iomux1 = muxes["N1"]
-        iomux2 = muxes["N2"]
-        for pad in self.pads.keys():
+        pads = self.pads
+        for pad in pads.keys():
             m.submodules[pad+"_mux"] = muxes[pad]
             # all muxes controlled by the same multi-bit signal
             comb += muxes[pad].bank.eq(bank)
-        pads = self.pads
+
         # print(self.requested)
         # print(self.pads)
 
         # ---------------------------
         # This section connects the periphs to the assigned banks
         # ---------------------------
-        for pad in self.pads.keys():
+        for pad in pads.keys():
             for mux in self.requested[pad].keys():
                 periph = self.requested[pad][mux][0]
                 num = int(mux[3])
@@ -125,7 +125,7 @@ class ManPinmux(Elaboratable):
         # ---------------------------
         # Here is where the muxes are assigned to the actual pads
         # ---------------------------
-        for pad in self.pads.keys():
+        for pad in pads.keys():
             comb += pads[pad]["pad"].o.eq(muxes[pad].out_port.o)
             comb += pads[pad]["pad"].oe.eq(muxes[pad].out_port.oe)
             comb += muxes[pad].out_port.i.eq(pads[pad]["pad"].i)
@@ -136,13 +136,12 @@ class ManPinmux(Elaboratable):
         for pad in list(self.pads.keys()):
             for field in self.pads[pad]["pad"].fields.values():
                 yield field
-            
-        #for field in self.uart.fields.values():
-        #    yield field
-        #for field in self.i2c["sda"].fields.values():
-        #    yield field
-        #for field in self.i2c["scl"].fields.values():
-        #    yield field
+            for mux in self.pads[pad].keys():
+                if type(self.pads[pad][mux]) == Signal:
+                    yield self.pads[pad][mux]
+                else:
+                    for field in self.pads[pad][mux].fields.values():
+                        yield field
         yield self.bank
 
     def ports(self):
