@@ -86,57 +86,49 @@ class ManPinmux(Elaboratable):
         m = Module()
         comb, sync = m.d.comb, m.d.sync
         muxes = self.muxes
+        bank = self.bank
         # TODO: replace with pin specific
         iomux1 = muxes["N1"]
         iomux2 = muxes["N2"]
         for pad in self.pads.keys():
             m.submodules[pad+"_mux"] = muxes[pad]
-
+            # all muxes controlled by the same multi-bit signal
+            comb += muxes[pad].bank.eq(bank)
         pads = self.pads
-        pad0 = self.pads["N1"]["pad"]
-        gp0 = self.pads["N1"]["mux%d" % GPIO_BANK]
-        gp1 = self.pads["N2"]["mux%d" % GPIO_BANK]
-        tx = self.pads["N1"]["mux%d" % UART_BANK]
-        rx = self.pads["N2"]["mux%d" % UART_BANK]
-        sda = self.pads["N1"]["mux%d" % I2C_BANK]
-        scl = self.pads["N2"]["mux%d" % I2C_BANK]
-        bank = self.bank
-
-        comb += iomux1.bank.eq(bank)
-        comb += iomux2.bank.eq(bank)
+        # print(self.requested)
+        # print(self.pads)
 
         # ---------------------------
-        # This section is muxing only - doesn'care about pad names
+        # This section connects the periphs to the assigned banks
         # ---------------------------
-        # gpio - gpio0 on Pad1, gpio1 on Pad2
-        comb += iomux1.bank_ports[GPIO_BANK].o.eq(gp0.o)
-        comb += iomux1.bank_ports[GPIO_BANK].oe.eq(gp0.oe)
-        comb += gp0.i.eq(iomux1.bank_ports[GPIO_BANK].i)
-        comb += iomux2.bank_ports[GPIO_BANK].o.eq(gp1.o)
-        comb += iomux2.bank_ports[GPIO_BANK].oe.eq(gp1.oe)
-        comb += gp1.i.eq(iomux2.bank_ports[GPIO_BANK].i)
-        # uart Pad 1 tx, Pad 2 rx
-        comb += iomux1.bank_ports[UART_BANK].o.eq(tx.o)
-        comb += iomux1.bank_ports[UART_BANK].oe.eq(tx.oe)
-        comb += rx.eq(iomux2.bank_ports[UART_BANK].i)
-        # i2c  Pad 1 sda, Pad 2 scl
-        comb += iomux1.bank_ports[I2C_BANK].o.eq(sda.o)
-        comb += iomux1.bank_ports[I2C_BANK].oe.eq(sda.oe)
-        comb += sda.i.eq(iomux1.bank_ports[I2C_BANK].i)
-        comb += iomux2.bank_ports[I2C_BANK].o.eq(scl.o)
-        comb += iomux2.bank_ports[I2C_BANK].oe.eq(scl.oe)
-        comb += scl.i.eq(iomux2.bank_ports[I2C_BANK].i)
+        for pad in self.pads.keys():
+            for mux in self.requested[pad].keys():
+                periph = self.requested[pad][mux][0]
+                num = int(mux[3])
+                if len(self.requested[pad][mux]) == 3:
+                    pin = self.requested[pad][mux][2]
+                else:
+                    pin = "io"
+                if periph == "gpio" or periph == "i2c":
+                    comb += muxes[pad].bank_ports[num].o.eq(pads[pad][mux].o)
+                    comb += muxes[pad].bank_ports[num].oe.eq(pads[pad][mux].oe)
+                    comb += pads[pad][mux].i.eq(muxes[pad].bank_ports[num].i)
+                elif periph == "uart":
+                    if pin == "tx":
+                        comb += muxes[pad].bank_ports[num].o.eq(
+                                                           pads[pad][mux].o)
+                        comb += muxes[pad].bank_ports[num].oe.eq(
+                                                           pads[pad][mux].oe)
+                    elif pin == "rx":
+                        comb += pads[pad][mux].eq(muxes[pad].bank_ports[num].i)
 
         # ---------------------------
         # Here is where the muxes are assigned to the actual pads
         # ---------------------------
-        # TODO: for-loop to autoconnect muxes to pads (n_pads var?)
-        comb += pads['N1']["pad"].o.eq(iomux1.out_port.o)
-        comb += pads['N1']["pad"].oe.eq(iomux1.out_port.oe)
-        comb += iomux1.out_port.i.eq(pads['N1']["pad"].i)
-        comb += pads['N2']["pad"].o.eq(iomux2.out_port.o)
-        comb += pads['N2']["pad"].oe.eq(iomux2.out_port.oe)
-        comb += iomux2.out_port.i.eq(pads['N2']["pad"].i)
+        for pad in self.pads.keys():
+            comb += pads[pad]["pad"].o.eq(muxes[pad].out_port.o)
+            comb += pads[pad]["pad"].oe.eq(muxes[pad].out_port.oe)
+            comb += muxes[pad].out_port.i.eq(pads[pad]["pad"].i)
 
         return m
 
@@ -144,6 +136,7 @@ class ManPinmux(Elaboratable):
         for pad in list(self.pads.keys()):
             for field in self.pads[pad]["pad"].fields.values():
                 yield field
+            
         #for field in self.uart.fields.values():
         #    yield field
         #for field in self.i2c["sda"].fields.values():
