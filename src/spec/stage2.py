@@ -40,16 +40,10 @@ I2C_BANK = 2
 Really basic example, uart tx/rx and i2c sda/scl pinmux
 """
 class ManPinmux(Elaboratable):
-    def __init__(self, pad_names):
+    def __init__(self, requested):
         print("Test Manual Pinmux!")
 
-        self.requested = {"N1": {"mux%d" % GPIO_BANK: ["gpio", 0],
-                                 "mux%d" % UART_BANK: ["uart", 0, "tx"],
-                                 "mux%d" % I2C_BANK: ["i2c", 0, "sda"]},
-                          "N2": {"mux%d" % GPIO_BANK: ["gpio", 1],
-                                 "mux%d" % UART_BANK: ["uart", 0, "rx"],
-                                 "mux%d" % I2C_BANK: ["i2c", 0, "scl"]}
-                         }
+        self.requested = requested
         self.n_banks = 4
         self.bank = Signal(log2_int(self.n_banks))
         self.pads = {}
@@ -287,26 +281,64 @@ def i2c_send(sda, scl, sda_pad, byte, delay=1e-6):
     yield sda.o.eq(1) # 'release' the SDA line
 
 # Test the GPIO/UART/I2C connectivity
-def test_man_pinmux(dut, pad_names):
+def test_man_pinmux(dut, requested):
+    # TODO: Convert to automatic
+    # [{"pad":%s, "bank":%d}, {"pad":%s, "bank":%d},...]
+    #gpios = [{"padname":"N1", "bank":GPIO_BANK},
+    #         {"padname":"N2", "bank":GPIO_BANK}]
+    # [[txPAD, MUXx, rxPAD, MUXx],...] - diff banks not supported yet
+    uarts = [{"txpadname":"N1", "rxpadname":"N2", "bank":UART_BANK}]
+    # [[sdaPAD, MUXx, sclPAD, MUXx],...] - diff banks not supported yet
+    i2cs = [{"sdapadname":"N1", "sclpadname":"N2", "bank":I2C_BANK}]
+
+    gpios = []
     delay = 1e-6
+    for pad in requested.keys():
+        for mux in requested[pad].keys():
+            periph = requested[pad][mux][0]
+
+            if periph == "gpio":
+                # [{"padname":%s, "bank": %d}, ...]
+                gpios.append({"padname":pad, "bank": int(mux[3])})
+            if periph == "uart":
+                # TODO:
+                pass
+            if periph == "i2c":
+                # TODO:
+                pass
+    print(gpios)
     # GPIO test
-    yield from set_bank(dut, GPIO_BANK)
-    yield from gpio(dut.pads["N1"]["mux%d" % GPIO_BANK],
-                    dut.pads["N1"]["pad"], 0x5a5)
-    yield from gpio(dut.pads["N2"]["mux%d" % GPIO_BANK],
-                    dut.pads["N2"]["pad"], 0x5a5)
+    for gpio_periph in gpios:
+        padname = gpio_periph["padname"]
+        gpio_bank = gpio_periph["bank"]
+        gp = dut.pads[padname]["mux%d" % gpio_bank]
+        pad = dut.pads[padname]["pad"]
+        yield from set_bank(dut, gpio_bank)
+        yield from gpio(gp, pad, 0x5a5)
+
     # UART test
-    yield from set_bank(dut, UART_BANK)
-    yield from uart_send(dut.pads["N1"]["mux%d" % UART_BANK],
-                         dut.pads["N2"]["mux%d" % UART_BANK],
-                         dut.pads['N1']["pad"], dut.pads['N2']["pad"], 0x42)
-    #yield dut.pads['N2'].i.eq(0)
-    #yield Delay(delay)
+    for uart_periph in uarts:
+        txpadname = uart_periph["txpadname"]
+        rxpadname = uart_periph["rxpadname"]
+        uart_bank = uart_periph["bank"]
+        tx = dut.pads[txpadname]["mux%d" % uart_bank]
+        rx = dut.pads[rxpadname]["mux%d" % uart_bank]
+        txpad = dut.pads[txpadname]["pad"]
+        rxpad = dut.pads[rxpadname]["pad"]
+        yield from set_bank(dut, UART_BANK)
+        yield from uart_send(tx, rx, txpad, rxpad, 0x42)
+
     # I2C test
+    for i2c_periph in i2cs:
+        sdapadname = i2c_periph["sdapadname"]
+        sclpadname = i2c_periph["sclpadname"]
+        i2c_bank = i2c_periph["bank"]
+        sda = dut.pads[sdapadname]["mux%d" % i2c_bank]
+        scl = dut.pads[sclpadname]["mux%d" % i2c_bank]
+        sdapad = dut.pads[sdapadname]["pad"]
+
     yield from set_bank(dut, I2C_BANK)
-    yield from i2c_send(dut.pads["N1"]["mux%d" % I2C_BANK],
-                        dut.pads["N2"]["mux%d" % I2C_BANK],
-                        dut.pads['N1']["pad"], 0x67)
+    yield from i2c_send(sda, scl, sdapad, 0x67)
 
 def gen_gtkw_doc(module_name, requested, filename):
     # GTKWave doc generation
@@ -369,8 +401,14 @@ def gen_gtkw_doc(module_name, requested, filename):
 
 def sim_man_pinmux():
     filename = "test_man_pinmux"
-    pad_names = ["N1", "N2"]
-    dut = ManPinmux(pad_names)
+    requested = {"N1": {"mux%d" % GPIO_BANK: ["gpio", 0],
+                        "mux%d" % UART_BANK: ["uart", 0, "tx"],
+                        "mux%d" % I2C_BANK: ["i2c", 0, "sda"]},
+                 "N2": {"mux%d" % GPIO_BANK: ["gpio", 1],
+                        "mux%d" % UART_BANK: ["uart", 0, "rx"],
+                        "mux%d" % I2C_BANK: ["i2c", 0, "scl"]}
+                }
+    dut = ManPinmux(requested)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open(filename+".il", "w") as f:
         f.write(vl)
@@ -380,7 +418,7 @@ def sim_man_pinmux():
 
     sim = Simulator(m)
 
-    sim.add_process(wrap(test_man_pinmux(dut, pad_names)))
+    sim.add_process(wrap(test_man_pinmux(dut, requested)))
     sim_writer = sim.write_vcd(filename+".vcd")
     with sim_writer:
         sim.run()
