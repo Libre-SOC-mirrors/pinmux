@@ -308,6 +308,65 @@ def test_man_pinmux(dut, pad_names):
                         dut.pads["N2"]["mux%d" % I2C_BANK],
                         dut.pads['N1']["pad"], 0x67)
 
+def gen_gtkw_doc(module_name, requested, filename):
+    # GTKWave doc generation
+    style = {
+        '': {'base': 'hex'},
+        'in': {'color': 'orange'},
+        'out': {'color': 'yellow'},
+        'debug': {'module': 'top', 'color': 'red'}
+    }
+    # Create a trace list, each block expected to be a tuple()
+    traces = []
+    temp = 0
+    n_banks = 0
+    for pad in requested.keys():
+        temp = len(requested[pad].keys())
+        if n_banks < temp:
+            n_banks = temp
+        temp_traces = ("Pad %s" % pad, [])
+        # Pad signals
+        temp_traces[1].append(('%s__i' % pad, 'in'))
+        temp_traces[1].append(('%s__o' % pad, 'out'))
+        temp_traces[1].append(('%s__oe' % pad, 'out'))
+        for mux in requested[pad].keys():
+            periph = requested[pad][mux][0]
+            unit_num = requested[pad][mux][1]
+            if len(requested[pad][mux]) == 3:
+                pin = requested[pad][mux][2]
+            else:
+                pin = "io"
+
+            if periph == "gpio":
+                temp_traces[1].append(('gp%d__i' % unit_num, 'in'))
+                temp_traces[1].append(('gp%d__o' % unit_num, 'out'))
+                temp_traces[1].append(('gp%d__oe' % unit_num, 'out'))
+            elif periph == "uart":
+                if pin == "tx":
+                    temp_traces[1].append(('tx%d__o' % unit_num, 'out'))
+                    temp_traces[1].append(('tx%d__oe' % unit_num, 'out'))
+                    pass
+                elif pin == "rx":
+                    temp_traces[1].append(('rx%d' % unit_num, 'in'))
+                    pass
+            elif periph == "i2c":
+                temp_traces[1].append(('%s%d__i' % (pin, unit_num), 'in'))
+                temp_traces[1].append(('%s%d__o' % (pin, unit_num), 'out'))
+                temp_traces[1].append(('%s%d__oe' % (pin, unit_num), 'out'))
+        traces.append(temp_traces)
+
+    # master bank signal
+    temp_traces = ('Misc', [
+                    ('bank[%d:0]' % ((n_banks-1).bit_length()-1), 'in')
+                  ])
+    traces.append(temp_traces)
+
+    #print(traces)
+
+    write_gtkw(filename+".gtkw", filename+".vcd", traces, style,
+               module=module_name)
+
+
 def sim_man_pinmux():
     filename = "test_man_pinmux"
     pad_names = ["N1", "N2"]
@@ -325,7 +384,7 @@ def sim_man_pinmux():
     sim_writer = sim.write_vcd(filename+".vcd")
     with sim_writer:
         sim.run()
-    #gen_gtkw_doc("top.manpinmux", dut.n_banks, filename)
+    gen_gtkw_doc("top.manpinmux", dut.requested, filename)
 
 if __name__ == '__main__':
     sim_man_pinmux()    
