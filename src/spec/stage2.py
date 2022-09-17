@@ -406,7 +406,9 @@ def sim_man_pinmux():
                         "mux%d" % I2C_BANK: ["i2c", 0, "sda"]},
                  "N2": {"mux%d" % GPIO_BANK: ["gpio", 1],
                         "mux%d" % UART_BANK: ["uart", 0, "rx"],
-                        "mux%d" % I2C_BANK: ["i2c", 0, "scl"]}
+                        "mux%d" % I2C_BANK: ["i2c", 0, "scl"]},
+                 "N3": {"mux%d" % GPIO_BANK: ["gpio", 2]},
+                 "N4": {"mux%d" % GPIO_BANK: ["gpio", 3]}
                 }
     dut = ManPinmux(requested)
     vl = rtlil.convert(dut, ports=dut.ports())
@@ -425,4 +427,4 @@ def sim_man_pinmux():
     gen_gtkw_doc("top.manpinmux", dut.requested, filename)
 
 if __name__ == '__main__':
-    sim_man_pinmux()    
+    sim_man_pinmux()
