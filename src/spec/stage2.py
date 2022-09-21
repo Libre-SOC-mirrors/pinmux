@@ -19,6 +19,8 @@ else:
     from nmigen.sim import Simulator, Settle, Delay
 
 from iomux import IOMuxBlockSingle
+from base import PinSpec
+from jtag import iotypes
 
 io_layout = (("i", 1),
              ("oe", 1),
@@ -56,27 +58,18 @@ class ManPinmux(Elaboratable):
             self.muxes[pad] = IOMuxBlockSingle(self.n_banks)
             for mux in self.requested[pad].keys():
                 periph = self.requested[pad][mux][0]
-                unit_num = self.requested[pad][mux][1]
-                if len(self.requested[pad][mux]) == 3:
-                    pin = self.requested[pad][mux][2]
-                else:
-                    pin = "io"
-                if periph == "gpio":
-                    self.pads[pad][mux] = Record(name="gp%d" % unit_num,
+                unit = self.requested[pad][mux][1]
+                sig = self.requested[pad][mux][2][:-1]
+                sig_type = iotypes[self.requested[pad][mux][2][-1]]
+                #print(sig, sig_type)
+                if sig_type == iotypes['*']:
+                    self.pads[pad][mux] = Record(name="%s%d" % (sig, unit),
                                                  layout=io_layout)
-                elif periph == "uart":
-                    if pin == "tx":
-                        self.pads[pad][mux] = Record(name="tx%d" % unit_num,
-                                                     layout=uart_tx_layout)
-                    elif pin == "rx":
-                        self.pads[pad][mux] = Signal(name="rx%d" % unit_num)
-                elif periph == "i2c":
-                    if pin == "sda":
-                        self.pads[pad][mux] = Record(name="sda%d" % unit_num,
-                                                     layout=io_layout)
-                    elif pin == "scl":
-                        self.pads[pad][mux] = Record(name="scl%d" % unit_num,
-                                                     layout=io_layout)
+                elif sig_type == iotypes['+']:
+                    self.pads[pad][mux] = Signal(name="%s%d_o" % (sig, unit))
+                elif sig_type == iotypes['-']:
+                    self.pads[pad][mux] = Signal(name="%s%d_i" % (sig, unit))
+        print(self.pads)
 
     def elaborate(self, platform):
         m = Module()
@@ -99,23 +92,16 @@ class ManPinmux(Elaboratable):
             for mux in self.requested[pad].keys():
                 periph = self.requested[pad][mux][0]
                 num = int(mux[3])
-                if len(self.requested[pad][mux]) == 3:
-                    pin = self.requested[pad][mux][2]
-                else:
-                    pin = "io"
-                if periph == "gpio" or periph == "i2c":
+                sig = self.requested[pad][mux][2][:-1]
+                sig_type = iotypes[self.requested[pad][mux][2][-1]]
+                if sig_type == iotypes['*']:
                     comb += muxes[pad].bank_ports[num].o.eq(pads[pad][mux].o)
                     comb += muxes[pad].bank_ports[num].oe.eq(pads[pad][mux].oe)
                     comb += pads[pad][mux].i.eq(muxes[pad].bank_ports[num].i)
-                elif periph == "uart":
-                    if pin == "tx":
-                        comb += muxes[pad].bank_ports[num].o.eq(
-                                                           pads[pad][mux].o)
-                        comb += muxes[pad].bank_ports[num].oe.eq(
-                                                           pads[pad][mux].oe)
-                    elif pin == "rx":
-                        comb += pads[pad][mux].eq(muxes[pad].bank_ports[num].i)
-
+                elif sig_type == iotypes['+']:
+                    comb += muxes[pad].bank_ports[num].o.eq(pads[pad][mux])
+                elif sig_type == iotypes['-']:
+                    comb += pads[pad][mux].eq(muxes[pad].bank_ports[num].i)
         # ---------------------------
         # Here is where the muxes are assigned to the actual pads
         # ---------------------------
@@ -186,20 +172,21 @@ Input and output pads are different, so must specify both
 """
 def uart_send(tx, rx, pad_tx, pad_rx, byte, delay=1e-6):
     # Drive uart tx - check the word seen at the Pad
-    yield tx.oe.eq(1)
-    yield tx.o.eq(1)
+    print(type(tx))
+    #yield tx.oe.eq(1)
+    yield tx.eq(1)
     yield Delay(2*delay)
-    yield tx.o.eq(0) # start bit
+    yield tx.eq(0) # start bit
     yield Delay(delay)
     read = 0
     # send one byte, lsb first
     for i in range(0, 8):
         bit = (byte >> i) & 0x1
-        yield tx.o.eq(bit)
+        yield tx.eq(bit)
         yield Delay(delay)
         test_bit = yield pad_tx.o
         read |= (test_bit << i)
-    yield tx.o.eq(1) # stop bit
+    yield tx.eq(1) # stop bit
     yield Delay(delay)
     assert byte == read, f"UART Sent: %x | Pad Read: %x" % (byte, read)
     # Drive Pad i - check word at uart rx
@@ -401,14 +388,14 @@ def gen_gtkw_doc(module_name, requested, filename):
 
 def sim_man_pinmux():
     filename = "test_man_pinmux"
-    requested = {"N1": {"mux%d" % GPIO_BANK: ["gpio", 0],
-                        "mux%d" % UART_BANK: ["uart", 0, "tx"],
-                        "mux%d" % I2C_BANK: ["i2c", 0, "sda"]},
-                 "N2": {"mux%d" % GPIO_BANK: ["gpio", 1],
-                        "mux%d" % UART_BANK: ["uart", 0, "rx"],
-                        "mux%d" % I2C_BANK: ["i2c", 0, "scl"]},
-                 "N3": {"mux%d" % GPIO_BANK: ["gpio", 2]},
-                 "N4": {"mux%d" % GPIO_BANK: ["gpio", 3]}
+    requested = {"N1": {"mux%d" % GPIO_BANK: ["gpio", 0, '0*'],
+                        "mux%d" % UART_BANK: ["uart", 0, 'tx+'],
+                        "mux%d" % I2C_BANK: ["i2c", 0, 'sda*']},
+                 "N2": {"mux%d" % GPIO_BANK: ["gpio", 1, '*'],
+                        "mux%d" % UART_BANK: ["uart", 0, 'rx-'],
+                        "mux%d" % I2C_BANK: ["i2c", 0, 'scl*']},
+                 "N3": {"mux%d" % GPIO_BANK: ["gpio", 2, '0*']},
+                 "N4": {"mux%d" % GPIO_BANK: ["gpio", 3, '0*']}
                 }
     dut = ManPinmux(requested)
     vl = rtlil.convert(dut, ports=dut.ports())
@@ -428,3 +415,7 @@ def sim_man_pinmux():
 
 if __name__ == '__main__':
     sim_man_pinmux()
+    #pinbanks = []
+    #fixedpins = []
+    #function_names = []
+    #testspec = PinSpec()
