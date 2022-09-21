@@ -419,3 +419,24 @@ if __name__ == '__main__':
     #fixedpins = []
     #function_names = []
     #testspec = PinSpec()
+    pinbanks = {
+        'A': (4, 4), # (num of pads, num of banks)?
+        #'B': (18, 4),
+        #'C': (24, 1),
+        #'D': (93, 1),
+    }
+    fixedpins = {
+        'POWER_GPIO': [
+            'VDD_GPIOB',
+            'GND_GPIOB',
+        ]}
+    function_names = {'TWI0': 'I2C 0',
+                      'UART0': 'UART (TX/RX) 0',
+                     }
+    ps = PinSpec(pinbanks, fixedpins, function_names)
+    ps.gpio("", ('A', 0), 0, 0, 4)
+    ps.uart("0", ('A', 0), 1)
+    ps.i2c("0", ('A', 0), 2)
+
+    print(dir(ps.gpio))
+    print(ps.gpio.pinouts, ps.gpio.bankspec, ps.gpio.pinfn, ps.gpio.fname)
