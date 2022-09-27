@@ -18,9 +18,9 @@ if cxxsim:
 else:
     from nmigen.sim import Simulator, Settle, Delay
 
-from iomux import IOMuxBlockSingle
-from base import PinSpec
-from jtag import iotypes
+from spec.iomux import IOMuxBlockSingle
+from spec.base import PinSpec
+from spec.jtag import iotypes
 
 io_layout = (("i", 1),
              ("oe", 1),
