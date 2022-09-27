@@ -434,9 +434,45 @@ if __name__ == '__main__':
                       'UART0': 'UART (TX/RX) 0',
                      }
     ps = PinSpec(pinbanks, fixedpins, function_names)
+    # Unit number, (Bank, pin #), mux, start, num # pins
     ps.gpio("", ('A', 0), 0, 0, 4)
     ps.uart("0", ('A', 0), 1)
     ps.i2c("0", ('A', 0), 2)
 
     print(dir(ps.gpio))
-    print(ps.gpio.pinouts, ps.gpio.bankspec, ps.gpio.pinfn, ps.gpio.fname)
+    #print(ps.gpio.pinouts, ps.gpio.bankspec, ps.gpio.pinfn, ps.gpio.fname)
+    """
+    desc_dict_keys = ['UART0', 'TWI0', 'GPIOA_A0', 'GPIOA_A1', 'GPIOA_A2', 'GPIOA_A3']
+    eint = []
+    pwm = []
+    desc = {'UART0': 'Basic serial TX/RX serial port',
+            'TWI0': 'I2C interface',
+            'GPIOA_A0': 'Test GPIO0',
+            'GPIOA_A1': 'Test GPIO1',
+            'GPIOA_A2': 'Test GPIO2',
+            'GPIOA_A3': 'Test GPIO3'}
+    ps.add_scenario("Test Manual Pinmux", desc_dict_keys, eint, pwm, desc)
+    """
+    print("---------------------------------")
+    #with open("test.mdwn", "w") as of:
+    #    pinout, bankspec, pin_spec, fixedpins = ps.write(of)
+    #print("---------------------------------")
+
+    bk = ps.pinbanks.keys()
+    for bank in bk:
+        muxwidth = ps.muxwidths[bank]
+        print(bank, muxwidth)
+        pinidx = sorted(ps.keys())
+        for pin in pinidx:
+            print("---------------------------------")
+            print(pin)
+            pdata = ps.get(pin)
+            for mux in range(muxwidth):
+                if mux not in pdata:
+                    print("Mux %d : NC" % mux)
+                else:
+                    name, assigned_bank = pdata[mux]
+                    print("Mux %d : %s" % (mux, name))
+
+
+
