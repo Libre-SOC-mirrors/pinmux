@@ -21,6 +21,9 @@ else:
 from spec.iomux import IOMuxBlockSingle
 from spec.base import PinSpec
 from spec.jtag import iotypes
+from spec.pinfunctions import pinspec
+
+#import code
 
 io_layout = (("i", 1),
              ("oe", 1),
@@ -478,4 +481,42 @@ if __name__ == '__main__':
                     print("Mux %d : %s" % (mux, name))
 
     print(ps.items())
-    print(ps.byspec())
+    print(ps.byspec)
+    print(ps.fnspec)
+    # Create local list of peripheral names defined in pinfunctions.py
+    defined_func = []
+    for pfunc in pinspec:
+        defined_func.append(pfunc[0])
+
+    for pin in ps.items():
+        pin_no = pin[0]
+        #print(pin)
+        for mux in pin[1].keys():
+            bank = pin[1][mux][1]
+            signal_str = pin[1][mux][0]
+            pad = "%s%d" % (bank, pin_no)
+            # Get the signal name prefix
+            index_under = signal_str.find('_')
+            # periph format: [periph+suffix]
+            # GPIO periph format: [periph+bank+suffix]
+            # Problem is that GPIO has a different suffix to UART/TWI.
+            # Assuming that other peripherals may have their own name formats.
+            # keep stripping last chars from string until remainder matches
+            # one of the existing peripheral names
+            # probably very inefficient...
+            # NO ERROR CHECKING
+            periph = signal_str[:index_under]
+            func = signal_str[index_under+1:]
+            while periph != '':
+                if periph in defined_func:
+                    break # Found valid periph
+                periph = periph.rstrip(periph[-1])
+            # key to use in PinSpec.byspec has format: [perith+':'+suffix]
+            # need to get the suffix from Pin object
+            index = len(periph)
+            print(signal_str[index:index_under])
+            # TODO: FIx
+            fnspec_key = periph + bank
+            #suffix = ps.fnspec[fnspec_key][fnspec_key]
+            print(pad, signal_str, signal_str[:index_under], periph, func)
+    #code.interact(local=locals())
