@@ -422,7 +422,7 @@ if __name__ == '__main__':
     #testspec = PinSpec()
     pinbanks = {
         'A': (4, 4), # bankname: (num of pins, muxwidth)
-        #'B': (18, 4),
+        'B': (2, 4),
         #'C': (24, 1),
         #'D': (93, 1),
     }
@@ -437,6 +437,7 @@ if __name__ == '__main__':
     ps = PinSpec(pinbanks, fixedpins, function_names)
     # Unit number, (Bank, pin #), mux, start, num # pins
     ps.gpio("", ('A', 0), 0, 0, 4)
+    ps.gpio("2", ('B', 0), 0, 0, 2)
     ps.uart("0", ('A', 0), 1)
     ps.i2c("0", ('A', 0), 2)
 
@@ -476,5 +477,5 @@ if __name__ == '__main__':
                     name, assigned_bank = pdata[mux]
                     print("Mux %d : %s" % (mux, name))
 
-
-
+    print(ps.items())
+    print(ps.byspec())
