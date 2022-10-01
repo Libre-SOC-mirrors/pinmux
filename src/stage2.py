@@ -34,9 +34,9 @@ uart_layout = (("rx", 1),
 uart_tx_layout = (("o", 1),
                  ("oe", 1)
                  )
-GPIO_BANK = 0
-UART_BANK = 1
-I2C_BANK = 2
+GPIO_MUX = 0
+UART_MUX = 1
+I2C_MUX = 2
 
 """
 Really basic example, uart tx/rx and i2c sda/scl pinmux
@@ -46,8 +46,8 @@ class ManPinmux(Elaboratable):
         print("Test Manual Pinmux!")
 
         self.requested = requested
-        self.n_banks = 4
-        self.bank = Signal(log2_int(self.n_banks))
+        self.n_ports = 4
+        self.port = Signal(log2_int(self.n_ports))
         self.pads = {}
         self.muxes = {}
         # Automatically create the necessary periph/pad Records/Signals
@@ -55,7 +55,7 @@ class ManPinmux(Elaboratable):
         for pad in self.requested.keys():
             self.pads[pad] = {}
             self.pads[pad]["pad"] = Record(name=pad, layout=io_layout)
-            self.muxes[pad] = IOMuxBlockSingle(self.n_banks)
+            self.muxes[pad] = IOMuxBlockSingle(self.n_ports)
             for mux in self.requested[pad].keys():
                 periph = self.requested[pad][mux][0]
                 unit = self.requested[pad][mux][1]
@@ -75,18 +75,18 @@ class ManPinmux(Elaboratable):
         m = Module()
         comb, sync = m.d.comb, m.d.sync
         muxes = self.muxes
-        bank = self.bank
+        port = self.port
         pads = self.pads
         for pad in pads.keys():
             m.submodules[pad+"_mux"] = muxes[pad]
             # all muxes controlled by the same multi-bit signal
-            comb += muxes[pad].bank.eq(bank)
+            comb += muxes[pad].port.eq(port)
 
         # print(self.requested)
         # print(self.pads)
 
         # ---------------------------
-        # This section connects the periphs to the assigned banks
+        # This section connects the periphs to the assigned ports
         # ---------------------------
         for pad in pads.keys():
             for mux in self.requested[pad].keys():
@@ -95,13 +95,14 @@ class ManPinmux(Elaboratable):
                 sig = self.requested[pad][mux][2][:-1]
                 sig_type = iotypes[self.requested[pad][mux][2][-1]]
                 if sig_type == iotypes['*']:
-                    comb += muxes[pad].bank_ports[num].o.eq(pads[pad][mux].o)
-                    comb += muxes[pad].bank_ports[num].oe.eq(pads[pad][mux].oe)
-                    comb += pads[pad][mux].i.eq(muxes[pad].bank_ports[num].i)
+                    comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux].o)
+                    comb += muxes[pad].periph_ports[num].oe.eq(
+                                                         pads[pad][mux].oe)
+                    comb += pads[pad][mux].i.eq(muxes[pad].periph_ports[num].i)
                 elif sig_type == iotypes['+']:
-                    comb += muxes[pad].bank_ports[num].o.eq(pads[pad][mux])
+                    comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux])
                 elif sig_type == iotypes['-']:
-                    comb += pads[pad][mux].eq(muxes[pad].bank_ports[num].i)
+                    comb += pads[pad][mux].eq(muxes[pad].periph_ports[num].i)
         # ---------------------------
         # Here is where the muxes are assigned to the actual pads
         # ---------------------------
@@ -122,13 +123,13 @@ class ManPinmux(Elaboratable):
                 else:
                     for field in self.pads[pad][mux].fields.values():
                         yield field
-        yield self.bank
+        yield self.port
 
     def ports(self):
         return list(self)
 
-def set_bank(dut, bank, delay=1e-6):
-    yield dut.bank.eq(bank)
+def set_port(dut, port, delay=1e-6):
+    yield dut.port.eq(port)
     yield Delay(delay)
 
 """
@@ -270,13 +271,13 @@ def i2c_send(sda, scl, sda_pad, byte, delay=1e-6):
 # Test the GPIO/UART/I2C connectivity
 def test_man_pinmux(dut, requested):
     # TODO: Convert to automatic
-    # [{"pad":%s, "bank":%d}, {"pad":%s, "bank":%d},...]
-    #gpios = [{"padname":"N1", "bank":GPIO_BANK},
-    #         {"padname":"N2", "bank":GPIO_BANK}]
-    # [[txPAD, MUXx, rxPAD, MUXx],...] - diff banks not supported yet
-    uarts = [{"txpadname":"N1", "rxpadname":"N2", "bank":UART_BANK}]
-    # [[sdaPAD, MUXx, sclPAD, MUXx],...] - diff banks not supported yet
-    i2cs = [{"sdapadname":"N1", "sclpadname":"N2", "bank":I2C_BANK}]
+    # [{"pad":%s, "port":%d}, {"pad":%s, "port":%d},...]
+    #gpios = [{"padname":"N1", "port":GPIO_MUX},
+    #         {"padname":"N2", "port":GPIO_MUX}]
+    # [[txPAD, MUXx, rxPAD, MUXx],...] - diff ports not supported yet
+    uarts = [{"txpadname":"N1", "rxpadname":"N2", "mux":UART_MUX}]
+    # [[sdaPAD, MUXx, sclPAD, MUXx],...] - diff ports not supported yet
+    i2cs = [{"sdapadname":"N1", "sclpadname":"N2", "mux":I2C_MUX}]
 
     gpios = []
     delay = 1e-6
@@ -285,8 +286,8 @@ def test_man_pinmux(dut, requested):
             periph = requested[pad][mux][0]
 
             if periph == "gpio":
-                # [{"padname":%s, "bank": %d}, ...]
-                gpios.append({"padname":pad, "bank": int(mux[3])})
+                # [{"padname":%s, "port": %d}, ...]
+                gpios.append({"padname":pad, "mux": int(mux[3])})
             if periph == "uart":
                 # TODO:
                 pass
@@ -297,34 +298,34 @@ def test_man_pinmux(dut, requested):
     # GPIO test
     for gpio_periph in gpios:
         padname = gpio_periph["padname"]
-        gpio_bank = gpio_periph["bank"]
-        gp = dut.pads[padname]["mux%d" % gpio_bank]
+        gpio_port = gpio_periph["mux"]
+        gp = dut.pads[padname]["mux%d" % gpio_port]
         pad = dut.pads[padname]["pad"]
-        yield from set_bank(dut, gpio_bank)
+        yield from set_port(dut, gpio_port)
         yield from gpio(gp, pad, 0x5a5)
 
     # UART test
     for uart_periph in uarts:
         txpadname = uart_periph["txpadname"]
         rxpadname = uart_periph["rxpadname"]
-        uart_bank = uart_periph["bank"]
-        tx = dut.pads[txpadname]["mux%d" % uart_bank]
-        rx = dut.pads[rxpadname]["mux%d" % uart_bank]
+        uart_port = uart_periph["mux"]
+        tx = dut.pads[txpadname]["mux%d" % uart_port]
+        rx = dut.pads[rxpadname]["mux%d" % uart_port]
         txpad = dut.pads[txpadname]["pad"]
         rxpad = dut.pads[rxpadname]["pad"]
-        yield from set_bank(dut, UART_BANK)
+        yield from set_port(dut, UART_MUX)
         yield from uart_send(tx, rx, txpad, rxpad, 0x42)
 
     # I2C test
     for i2c_periph in i2cs:
         sdapadname = i2c_periph["sdapadname"]
         sclpadname = i2c_periph["sclpadname"]
-        i2c_bank = i2c_periph["bank"]
-        sda = dut.pads[sdapadname]["mux%d" % i2c_bank]
-        scl = dut.pads[sclpadname]["mux%d" % i2c_bank]
+        i2c_port = i2c_periph["mux"]
+        sda = dut.pads[sdapadname]["mux%d" % i2c_port]
+        scl = dut.pads[sclpadname]["mux%d" % i2c_port]
         sdapad = dut.pads[sdapadname]["pad"]
 
-    yield from set_bank(dut, I2C_BANK)
+    yield from set_port(dut, I2C_MUX)
     yield from i2c_send(sda, scl, sdapad, 0x67)
 
 def gen_gtkw_doc(module_name, requested, filename):
@@ -338,11 +339,11 @@ def gen_gtkw_doc(module_name, requested, filename):
     # Create a trace list, each block expected to be a tuple()
     traces = []
     temp = 0
-    n_banks = 0
+    n_ports = 0
     for pad in requested.keys():
         temp = len(requested[pad].keys())
-        if n_banks < temp:
-            n_banks = temp
+        if n_ports < temp:
+            n_ports = temp
         temp_traces = ("Pad %s" % pad, [])
         # Pad signals
         temp_traces[1].append(('%s__i' % pad, 'in'))
@@ -374,9 +375,9 @@ def gen_gtkw_doc(module_name, requested, filename):
                 temp_traces[1].append(('%s%d__oe' % (pin, unit_num), 'out'))
         traces.append(temp_traces)
 
-    # master bank signal
+    # master port signal
     temp_traces = ('Misc', [
-                    ('bank[%d:0]' % ((n_banks-1).bit_length()-1), 'in')
+                    ('port[%d:0]' % ((n_ports-1).bit_length()-1), 'in')
                   ])
     traces.append(temp_traces)
 
@@ -388,14 +389,14 @@ def gen_gtkw_doc(module_name, requested, filename):
 
 def sim_man_pinmux():
     filename = "test_man_pinmux"
-    requested = {"N1": {"mux%d" % GPIO_BANK: ["gpio", 0, '0*'],
-                        "mux%d" % UART_BANK: ["uart", 0, 'tx+'],
-                        "mux%d" % I2C_BANK: ["i2c", 0, 'sda*']},
-                 "N2": {"mux%d" % GPIO_BANK: ["gpio", 1, '*'],
-                        "mux%d" % UART_BANK: ["uart", 0, 'rx-'],
-                        "mux%d" % I2C_BANK: ["i2c", 0, 'scl*']},
-                 "N3": {"mux%d" % GPIO_BANK: ["gpio", 2, '0*']},
-                 "N4": {"mux%d" % GPIO_BANK: ["gpio", 3, '0*']}
+    requested = {"N1": {"mux%d" % GPIO_MUX: ["gpio", 0, '0*'],
+                        "mux%d" % UART_MUX: ["uart", 0, 'tx+'],
+                        "mux%d" % I2C_MUX: ["i2c", 0, 'sda*']},
+                 "N2": {"mux%d" % GPIO_MUX: ["gpio", 1, '*'],
+                        "mux%d" % UART_MUX: ["uart", 0, 'rx-'],
+                        "mux%d" % I2C_MUX: ["i2c", 0, 'scl*']},
+                 "N3": {"mux%d" % GPIO_MUX: ["gpio", 2, '0*']},
+                 "N4": {"mux%d" % GPIO_MUX: ["gpio", 3, '0*']}
                 }
     dut = ManPinmux(requested)
     vl = rtlil.convert(dut, ports=dut.ports())
@@ -420,7 +421,7 @@ if __name__ == '__main__':
     #function_names = []
     #testspec = PinSpec()
     pinbanks = {
-        'A': (4, 4), # (num of pads, num of banks)?
+        'A': (4, 4), # bankname: (num of pins, muxwidth)
         #'B': (18, 4),
         #'C': (24, 1),
         #'D': (93, 1),
@@ -442,7 +443,8 @@ if __name__ == '__main__':
     print(dir(ps.gpio))
     #print(ps.gpio.pinouts, ps.gpio.bankspec, ps.gpio.pinfn, ps.gpio.fname)
     """
-    desc_dict_keys = ['UART0', 'TWI0', 'GPIOA_A0', 'GPIOA_A1', 'GPIOA_A2', 'GPIOA_A3']
+    desc_dict_keys = ['UART0', 'TWI0', 'GPIOA_A0', 'GPIOA_A1', 'GPIOA_A2',
+                      'GPIOA_A3']
     eint = []
     pwm = []
     desc = {'UART0': 'Basic serial TX/RX serial port',

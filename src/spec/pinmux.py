@@ -30,7 +30,7 @@ class PinMuxBlockSingle(Elaboratable):
 
     def __init__(self, wb_wordsize, pinspec):
         print("1-bit Pin Mux Block with JTAG")
-        self.n_banks = 4
+        self.n_ports = 4
         self.n_gpios = 1
         self.wb_wordsize = wb_wordsize # 4 Bytes, 32-bits
 
@@ -42,14 +42,14 @@ class PinMuxBlockSingle(Elaboratable):
         spec.reg_wid = self.wb_wordsize*8
 
         temp = []
-        for i in range(1, self.n_banks):
+        for i in range(1, self.n_ports):
             temp_str = "%s" % (pinspec["mux%d" % i])
             temp.append(Record(name=temp_str, layout=io_layout))
         self.periph_ports = Array(temp)
 
         self.pad_port = Record(name=pinspec["name"], layout=io_layout)
 
-        self.iomux = IOMuxBlockSingle(self.n_banks)
+        self.iomux = IOMuxBlockSingle(self.n_ports)
         self.gpio = SimpleGPIO(self.wb_wordsize, self.n_gpios)
         # This is probably easier to extend in future by bringing out WB
         # interface to top-level
@@ -83,18 +83,18 @@ class PinMuxBlockSingle(Elaboratable):
         #             gpio.bus.bte.eq(bus.bte) # Burst Type Extension
         #            ]
 
-        m.d.comb += iomux.bank.eq(gpio.gpio_ports[0].bank)
+        m.d.comb += iomux.port.eq(gpio.gpio_ports[0].bank)
 
-        # WB GPIO always bank0
-        m.d.comb += iomux.bank_ports[0].o.eq(gpio.gpio_ports[0].o)
-        m.d.comb += iomux.bank_ports[0].oe.eq(gpio.gpio_ports[0].oe)
-        m.d.comb += gpio.gpio_ports[0].i.eq(iomux.bank_ports[0].i)
+        # WB GPIO always port0
+        m.d.comb += iomux.periph_ports[0].o.eq(gpio.gpio_ports[0].o)
+        m.d.comb += iomux.periph_ports[0].oe.eq(gpio.gpio_ports[0].oe)
+        m.d.comb += gpio.gpio_ports[0].i.eq(iomux.periph_ports[0].i)
 
-        # banks1-3 external
-        for bank in range(0, self.n_banks-1):
-            m.d.comb += iomux.bank_ports[bank+1].o.eq(periph_ports[bank].o)
-            m.d.comb += iomux.bank_ports[bank+1].oe.eq(periph_ports[bank].oe)
-            m.d.comb += periph_ports[bank].i.eq(iomux.bank_ports[bank+1].i)
+        # ports1-3 external
+        for port in range(0, self.n_ports-1):
+            m.d.comb += iomux.periph_ports[port+1].o.eq(periph_ports[port].o)
+            m.d.comb += iomux.periph_ports[port+1].oe.eq(periph_ports[port].oe)
+            m.d.comb += periph_ports[port].i.eq(iomux.periph_ports[port+1].i)
 
         m.d.comb += pad_port.o.eq(iomux.out_port.o)
         m.d.comb += pad_port.oe.eq(iomux.out_port.oe)
@@ -108,14 +108,14 @@ class PinMuxBlockSingle(Elaboratable):
             yield field
         for field in self.bus.fields.values():
             yield field
-        for bank in range(len(self.periph_ports)):
-            for field in self.periph_ports[bank].fields.values():
+        for port in range(len(self.periph_ports)):
+            for field in self.periph_ports[port].fields.values():
                 yield field
 
     def ports(self):
         return list(self)
 
-def gen_gtkw_doc(module_name, wordsize, n_banks, filename, pinspec):
+def gen_gtkw_doc(module_name, wordsize, n_ports, filename, pinspec):
     # GTKWave doc generation
     style = {
         '': {'base': 'hex'},
@@ -138,16 +138,16 @@ def gen_gtkw_doc(module_name, wordsize, n_banks, filename, pinspec):
                 ])
     traces.append(wb_traces)
 
-    for bank in range(0, n_banks):
-        temp_traces = ('mux%d' % bank, [
-                        ('%s__i' % (pinspec["mux%d" % bank]), 'in'),
-                        ('%s__o' % (pinspec["mux%d" % bank]), 'in'),
-                        ('%s__oe' % (pinspec["mux%d" % bank]), 'in')
+    for port in range(0, n_ports):
+        temp_traces = ('mux%d' % port, [
+                        ('%s__i' % (pinspec["mux%d" % port]), 'in'),
+                        ('%s__o' % (pinspec["mux%d" % port]), 'in'),
+                        ('%s__oe' % (pinspec["mux%d" % port]), 'in')
                       ])
         traces.append(temp_traces)
 
     temp_traces = ('Misc', [
-                    ('bank[%d:0]' % ((n_banks-1).bit_length()-1), 'in')
+                    ('port[%d:0]' % ((n_ports-1).bit_length()-1), 'in')
                   ])
     traces.append(temp_traces)
     temp_traces = ('IO port to pad named: %s' % pinspec["name"], [
@@ -185,13 +185,13 @@ def sim_iomux():
     with sim_writer:
         sim.run()
 
-    gen_gtkw_doc("top.pinmux", wb_wordsize, dut.n_banks, filename,
+    gen_gtkw_doc("top.pinmux", wb_wordsize, dut.n_ports, filename,
                  dummy_pinspec)
 
 def test_gpio_pinmux(dut):
     print("------START----------------------")
-    #print(dir(dut.bank_ports[0]))
-    #print(dut.bank_ports[0].fields)
+    #print(dir(dut.periph_ports[0]))
+    #print(dut.periph_ports[0].fields)
 
     gpios = GPIOManager(dut.gpio, csrbus_layout, dut.bus)
 
@@ -200,7 +200,7 @@ def test_gpio_pinmux(dut):
     puen = 0
     pden = 1
     outval = 0
-    bank = 0
+    port = 0
     yield from gpios.config("0", oe=1, ie=0, puen=0, pden=1, outval=0, bank=0)
 
     yield from gpios.set_out("0", outval=1)
