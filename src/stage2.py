@@ -128,11 +128,10 @@ class ManPinmux(Elaboratable):
     def ports(self):
         return list(self)
 
-    def gen_pinmux_dict(self, ps):
-        #print("---------------------------------")
-        #with open("test.mdwn", "w") as of:
-        #    pinout, bankspec, pin_spec, fixedpins = ps.write(of)
-        #print("---------------------------------")
+    def gen_pinmux_dict(self, ps, write_file=False):
+        if write_file:
+            with open("test.mdwn", "w") as of:
+                pinout, bankspec, pin_spec, fixedpins = ps.write(of)
         #print(ps.items())
         #print(ps.byspec)
         #print(ps.fnspec)
@@ -424,9 +423,8 @@ def test_man_pinmux(dut):
         sda = dut.pads[sdapadname][i2c_port]
         scl = dut.pads[sclpadname][i2c_port]
         sdapad = dut.pads[sdapadname]["pad"]
-
-    yield from set_port(dut, I2C_MUX)
-    yield from i2c_send(sda, scl, sdapad, 0x67)
+        yield from set_port(dut, I2C_MUX)
+        yield from i2c_send(sda, scl, sdapad, 0x67)
 
 def gen_gtkw_doc(module_name, requested, filename):
     # GTKWave doc generation
@@ -455,22 +453,20 @@ def gen_gtkw_doc(module_name, requested, filename):
             # TODO: cleanup
             pin = requested[pad][mux]["signal"][:-1]
 
-            if periph == "gpio":
-                temp_traces[1].append(('gp%d__i' % suffix, 'in'))
-                temp_traces[1].append(('gp%d__o' % suffix, 'out'))
-                temp_traces[1].append(('gp%d__oe' % suffix, 'out'))
-            elif periph == "uart":
-                if pin == "tx":
-                    temp_traces[1].append(('tx%d__o' % suffix, 'out'))
-                    temp_traces[1].append(('tx%d__oe' % suffix, 'out'))
-                    pass
-                elif pin == "rx":
-                    temp_traces[1].append(('rx%d' % suffix, 'in'))
-                    pass
-            elif periph == "i2c":
-                temp_traces[1].append(('%s%d__i' % (pin, suffix), 'in'))
-                temp_traces[1].append(('%s%d__o' % (pin, suffix), 'out'))
-                temp_traces[1].append(('%s%d__oe' % (pin, suffix), 'out'))
+            # TODO: Automate this!
+            if periph == "GPIO":
+                temp_traces[1].append(('GPIO%s__i' % suffix, 'in'))
+                temp_traces[1].append(('GPIO%s__o' % suffix, 'out'))
+                temp_traces[1].append(('GPIO%s__oe' % suffix, 'out'))
+            elif periph == "UART":
+                if pin == "TX":
+                    temp_traces[1].append(('%s%s_o' % (pin, suffix), 'out'))
+                elif pin == "RX":
+                    temp_traces[1].append(('%s%s_i' % (pin, suffix), 'in'))
+            elif periph == "TWI":
+                temp_traces[1].append(('%s%s__i' % (pin, suffix), 'in'))
+                temp_traces[1].append(('%s%s__o' % (pin, suffix), 'out'))
+                temp_traces[1].append(('%s%s__oe' % (pin, suffix), 'out'))
         traces.append(temp_traces)
 
     # master port signal
