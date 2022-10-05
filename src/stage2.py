@@ -23,7 +23,7 @@ from spec.base import PinSpec
 from spec.jtag import iotypes
 from spec.pinfunctions import pinspec
 
-#import code
+import code
 
 io_layout = (("i", 1),
              ("oe", 1),
@@ -45,14 +45,10 @@ I2C_MUX = 2
 Really basic example, uart tx/rx and i2c sda/scl pinmux
 """
 class ManPinmux(Elaboratable):
-    def __init__(self, requested):
+    def __init__(self, ps):
         print("Test Manual Pinmux!")
+        self.gen_pinmux_dict(ps)
 
-        self.requested = requested
-        self.n_ports = 4
-        self.port = Signal(log2_int(self.n_ports))
-        self.pads = {}
-        self.muxes = {}
         # Automatically create the necessary periph/pad Records/Signals
         # depending on the given dict specification
         for pad in self.requested.keys():
@@ -60,18 +56,18 @@ class ManPinmux(Elaboratable):
             self.pads[pad]["pad"] = Record(name=pad, layout=io_layout)
             self.muxes[pad] = IOMuxBlockSingle(self.n_ports)
             for mux in self.requested[pad].keys():
-                periph = self.requested[pad][mux][0]
-                unit = self.requested[pad][mux][1]
-                sig = self.requested[pad][mux][2][:-1]
-                sig_type = iotypes[self.requested[pad][mux][2][-1]]
+                periph = self.requested[pad][mux]["periph"]
+                suffix = self.requested[pad][mux]["suffix"]
+                sig = self.requested[pad][mux]["signal"][:-1]
+                sig_type = iotypes[self.requested[pad][mux]["signal"][-1]]
                 #print(sig, sig_type)
                 if sig_type == iotypes['*']:
-                    self.pads[pad][mux] = Record(name="%s%d" % (sig, unit),
+                    self.pads[pad][mux] = Record(name="%s%s" % (sig, suffix),
                                                  layout=io_layout)
                 elif sig_type == iotypes['+']:
-                    self.pads[pad][mux] = Signal(name="%s%d_o" % (sig, unit))
+                    self.pads[pad][mux] = Signal(name="%s%s_o" % (sig, suffix))
                 elif sig_type == iotypes['-']:
-                    self.pads[pad][mux] = Signal(name="%s%d_i" % (sig, unit))
+                    self.pads[pad][mux] = Signal(name="%s%s_i" % (sig, suffix))
         print(self.pads)
 
     def elaborate(self, platform):
@@ -93,10 +89,11 @@ class ManPinmux(Elaboratable):
         # ---------------------------
         for pad in pads.keys():
             for mux in self.requested[pad].keys():
-                periph = self.requested[pad][mux][0]
-                num = int(mux[3])
-                sig = self.requested[pad][mux][2][:-1]
-                sig_type = iotypes[self.requested[pad][mux][2][-1]]
+                periph = self.requested[pad][mux]["periph"]
+                #suffix = self.requested[pad][mux]["suffix"]
+                sig = self.requested[pad][mux]["signal"][:-1]
+                sig_type = iotypes[self.requested[pad][mux]["signal"][-1]]
+                num = int(mux)
                 if sig_type == iotypes['*']:
                     comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux].o)
                     comb += muxes[pad].periph_ports[num].oe.eq(
@@ -130,6 +127,86 @@ class ManPinmux(Elaboratable):
 
     def ports(self):
         return list(self)
+
+    def gen_pinmux_dict(self, ps):
+        #print("---------------------------------")
+        #with open("test.mdwn", "w") as of:
+        #    pinout, bankspec, pin_spec, fixedpins = ps.write(of)
+        #print("---------------------------------")
+        #print(ps.items())
+        #print(ps.byspec)
+        #print(ps.fnspec)
+        # TODO: get from ps
+        self.requested = {}
+        self.n_ports = 4
+        self.port = Signal(log2_int(self.n_ports))
+        self.pads = {}
+        self.muxes = {}
+
+        # Create local list of peripheral names defined in pinfunctions.py
+        defined_func = []
+        for pfunc in pinspec:
+            defined_func.append(pfunc[0])
+
+        for pin in ps.items():
+            pin_no = pin[0]
+            for mux in pin[1].keys():
+                bank = pin[1][mux][1]
+                signal_str = pin[1][mux][0]
+                pad = "%s%d" % (bank, pin_no)
+                # Get the signal name prefix
+                index_under = signal_str.find('_')
+                """
+                periph format: [periph+suffix]
+                GPIO periph format: [periph+bank+suffix]
+                Problem is that GPIO has a different suffix to UART/TWI.
+                Assuming that other peripherals may have their own name formats.
+                keep stripping last chars from string until remainder matches
+                one of the existing peripheral names
+                probably very inefficient...
+                NO ERROR CHECKING
+                """
+                periph = signal_str[:index_under]
+                func = signal_str[index_under+1:]
+                while periph != '':
+                    if periph in defined_func:
+                        break # Found valid periph
+                    periph = periph.rstrip(periph[-1])
+
+                # flag for peripheral string, needed as GPIO has a diff format
+                # to UART and TWI, TODO: may need to check for other periph
+                if periph == "GPIO":
+                    check_string = periph + bank
+                else:
+                    check_string = periph
+
+                # Find the suffix for the specified periph/pin
+                suffix = ''
+                for a in ps.fnspec.items():
+                    for key in a[1]:
+                        if check_string in key:
+                            print(key, a[1][key])
+                            suffix = a[1][key].suffix
+                        else:
+                            continue
+
+                # key to use in PinSpec.byspec has format: [perith+':'+suffix]
+                # need to get the suffix from Pin object
+                #index = len(periph)
+                #print(signal_str[index:index_under])
+                signal = ''
+                for sig_spec in ps.byspec[periph+':'+suffix]:
+                    if func in sig_spec:
+                        signal = sig_spec
+                #suffix = ps.fnspec[fnspec_key][fnspec_key]
+                print(pad, signal_str, signal_str[:index_under],
+                      periph, func, suffix, signal, mux)
+                print("Now adding to internal pinmux dict")
+                if not (pad in self.requested.keys()):
+                    self.requested[pad] = {}
+                self.requested[pad][mux] = {"periph":periph, "suffix":suffix,
+                                            "signal":signal}
+        print(self.requested)
 
 def set_port(dut, port, delay=1e-6):
     yield dut.port.eq(port)
@@ -272,60 +349,80 @@ def i2c_send(sda, scl, sda_pad, byte, delay=1e-6):
     yield sda.o.eq(1) # 'release' the SDA line
 
 # Test the GPIO/UART/I2C connectivity
-def test_man_pinmux(dut, requested):
+def test_man_pinmux(dut):
+    requested = dut.requested
     # TODO: Convert to automatic
     # [{"pad":%s, "port":%d}, {"pad":%s, "port":%d},...]
     #gpios = [{"padname":"N1", "port":GPIO_MUX},
     #         {"padname":"N2", "port":GPIO_MUX}]
     # [[txPAD, MUXx, rxPAD, MUXx],...] - diff ports not supported yet
-    uarts = [{"txpadname":"N1", "rxpadname":"N2", "mux":UART_MUX}]
+    #uarts = [{"txpadname":"N1", "rxpadname":"N2", "mux":UART_MUX}]
+    uarts = {}
     # [[sdaPAD, MUXx, sclPAD, MUXx],...] - diff ports not supported yet
-    i2cs = [{"sdapadname":"N1", "sclpadname":"N2", "mux":I2C_MUX}]
+    #i2cs = [{"sdapadname":"N1", "sclpadname":"N2", "mux":I2C_MUX}]
+    i2cs = {}
 
     gpios = []
     delay = 1e-6
     for pad in requested.keys():
         for mux in requested[pad].keys():
-            periph = requested[pad][mux][0]
-
-            if periph == "gpio":
+            periph = requested[pad][mux]["periph"]
+            suffix = requested[pad][mux]["suffix"]
+            if periph == "GPIO":
                 # [{"padname":%s, "port": %d}, ...]
-                gpios.append({"padname":pad, "mux": int(mux[3])})
-            if periph == "uart":
-                # TODO:
-                pass
-            if periph == "i2c":
-                # TODO:
-                pass
+                gpios.append({"padname":pad, "mux": mux})
+            if periph == "UART":
+                # Make sure dict exists
+                if not (suffix in uarts.keys()):
+                    uarts[suffix] = {}
+
+                if requested[pad][mux]["signal"][:-1] == "TX":
+                    uarts[suffix]["txpadname"] = pad
+                    uarts[suffix]["txmux"] = mux
+                elif requested[pad][mux]["signal"][:-1] == "RX":
+                    uarts[suffix]["rxpadname"] = pad
+                    uarts[suffix]["rxmux"] = mux
+            if periph == "TWI":
+                if not (suffix in i2cs.keys()):
+                    i2cs[suffix] = {}
+                if requested[pad][mux]["signal"][:-1] == "SDA":
+                    i2cs[suffix]["sdapadname"] = pad
+                    i2cs[suffix]["sdamux"] = mux
+                elif requested[pad][mux]["signal"][:-1] == "SCL":
+                    i2cs[suffix]["sclpadname"] = pad
+                    i2cs[suffix]["sclmux"] = mux
     print(gpios)
+    print(uarts)
+    print(i2cs)
+
     # GPIO test
     for gpio_periph in gpios:
         padname = gpio_periph["padname"]
         gpio_port = gpio_periph["mux"]
-        gp = dut.pads[padname]["mux%d" % gpio_port]
+        gp = dut.pads[padname][gpio_port]
         pad = dut.pads[padname]["pad"]
         yield from set_port(dut, gpio_port)
         yield from gpio(gp, pad, 0x5a5)
 
     # UART test
-    for uart_periph in uarts:
-        txpadname = uart_periph["txpadname"]
-        rxpadname = uart_periph["rxpadname"]
-        uart_port = uart_periph["mux"]
-        tx = dut.pads[txpadname]["mux%d" % uart_port]
-        rx = dut.pads[rxpadname]["mux%d" % uart_port]
+    for suffix in uarts.keys():
+        txpadname = uarts[suffix]["txpadname"]
+        rxpadname = uarts[suffix]["rxpadname"]
+        uart_port = uarts[suffix]["txmux"] # TODO: Assuming same mux setting
+        tx = dut.pads[txpadname][uart_port]
+        rx = dut.pads[rxpadname][uart_port]
         txpad = dut.pads[txpadname]["pad"]
         rxpad = dut.pads[rxpadname]["pad"]
         yield from set_port(dut, UART_MUX)
         yield from uart_send(tx, rx, txpad, rxpad, 0x42)
 
     # I2C test
-    for i2c_periph in i2cs:
-        sdapadname = i2c_periph["sdapadname"]
-        sclpadname = i2c_periph["sclpadname"]
-        i2c_port = i2c_periph["mux"]
-        sda = dut.pads[sdapadname]["mux%d" % i2c_port]
-        scl = dut.pads[sclpadname]["mux%d" % i2c_port]
+    for suffix in i2cs.keys():
+        sdapadname = i2cs[suffix]["sdapadname"]
+        sclpadname = i2cs[suffix]["sclpadname"]
+        i2c_port = i2cs[suffix]["sdamux"] # TODO: Assuming same mux setting
+        sda = dut.pads[sdapadname][i2c_port]
+        scl = dut.pads[sclpadname][i2c_port]
         sdapad = dut.pads[sdapadname]["pad"]
 
     yield from set_port(dut, I2C_MUX)
@@ -353,29 +450,27 @@ def gen_gtkw_doc(module_name, requested, filename):
         temp_traces[1].append(('%s__o' % pad, 'out'))
         temp_traces[1].append(('%s__oe' % pad, 'out'))
         for mux in requested[pad].keys():
-            periph = requested[pad][mux][0]
-            unit_num = requested[pad][mux][1]
-            if len(requested[pad][mux]) == 3:
-                pin = requested[pad][mux][2]
-            else:
-                pin = "io"
+            periph = requested[pad][mux]["periph"]
+            suffix = requested[pad][mux]["suffix"]
+            # TODO: cleanup
+            pin = requested[pad][mux]["signal"][:-1]
 
             if periph == "gpio":
-                temp_traces[1].append(('gp%d__i' % unit_num, 'in'))
-                temp_traces[1].append(('gp%d__o' % unit_num, 'out'))
-                temp_traces[1].append(('gp%d__oe' % unit_num, 'out'))
+                temp_traces[1].append(('gp%d__i' % suffix, 'in'))
+                temp_traces[1].append(('gp%d__o' % suffix, 'out'))
+                temp_traces[1].append(('gp%d__oe' % suffix, 'out'))
             elif periph == "uart":
                 if pin == "tx":
-                    temp_traces[1].append(('tx%d__o' % unit_num, 'out'))
-                    temp_traces[1].append(('tx%d__oe' % unit_num, 'out'))
+                    temp_traces[1].append(('tx%d__o' % suffix, 'out'))
+                    temp_traces[1].append(('tx%d__oe' % suffix, 'out'))
                     pass
                 elif pin == "rx":
-                    temp_traces[1].append(('rx%d' % unit_num, 'in'))
+                    temp_traces[1].append(('rx%d' % suffix, 'in'))
                     pass
             elif periph == "i2c":
-                temp_traces[1].append(('%s%d__i' % (pin, unit_num), 'in'))
-                temp_traces[1].append(('%s%d__o' % (pin, unit_num), 'out'))
-                temp_traces[1].append(('%s%d__oe' % (pin, unit_num), 'out'))
+                temp_traces[1].append(('%s%d__i' % (pin, suffix), 'in'))
+                temp_traces[1].append(('%s%d__o' % (pin, suffix), 'out'))
+                temp_traces[1].append(('%s%d__oe' % (pin, suffix), 'out'))
         traces.append(temp_traces)
 
     # master port signal
@@ -390,8 +485,9 @@ def gen_gtkw_doc(module_name, requested, filename):
                module=module_name)
 
 
-def sim_man_pinmux():
+def sim_man_pinmux(ps):
     filename = "test_man_pinmux"
+    """
     requested = {"N1": {"mux%d" % GPIO_MUX: ["gpio", 0, '0*'],
                         "mux%d" % UART_MUX: ["uart", 0, 'tx+'],
                         "mux%d" % I2C_MUX: ["i2c", 0, 'sda*']},
@@ -401,7 +497,8 @@ def sim_man_pinmux():
                  "N3": {"mux%d" % GPIO_MUX: ["gpio", 2, '0*']},
                  "N4": {"mux%d" % GPIO_MUX: ["gpio", 3, '0*']}
                 }
-    dut = ManPinmux(requested)
+    """
+    dut = ManPinmux(ps)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open(filename+".il", "w") as f:
         f.write(vl)
@@ -411,14 +508,14 @@ def sim_man_pinmux():
 
     sim = Simulator(m)
 
-    sim.add_process(wrap(test_man_pinmux(dut, requested)))
+    sim.add_process(wrap(test_man_pinmux(dut)))
     sim_writer = sim.write_vcd(filename+".vcd")
     with sim_writer:
         sim.run()
     gen_gtkw_doc("top.manpinmux", dut.requested, filename)
 
+
 if __name__ == '__main__':
-    sim_man_pinmux()
     #pinbanks = []
     #fixedpins = []
     #function_names = []
@@ -443,9 +540,8 @@ if __name__ == '__main__':
     ps.gpio("2", ('B', 0), 0, 0, 2)
     ps.uart("0", ('A', 0), 1)
     ps.i2c("0", ('A', 0), 2)
+    sim_man_pinmux(ps)
 
-    print(dir(ps.gpio))
-    #print(ps.gpio.pinouts, ps.gpio.bankspec, ps.gpio.pinfn, ps.gpio.fname)
     """
     desc_dict_keys = ['UART0', 'TWI0', 'GPIOA_A0', 'GPIOA_A1', 'GPIOA_A2',
                       'GPIOA_A3']
@@ -459,64 +555,5 @@ if __name__ == '__main__':
             'GPIOA_A3': 'Test GPIO3'}
     ps.add_scenario("Test Manual Pinmux", desc_dict_keys, eint, pwm, desc)
     """
-    print("---------------------------------")
-    #with open("test.mdwn", "w") as of:
-    #    pinout, bankspec, pin_spec, fixedpins = ps.write(of)
-    #print("---------------------------------")
-
-    bk = ps.pinbanks.keys()
-    for bank in bk:
-        muxwidth = ps.muxwidths[bank]
-        print(bank, muxwidth)
-        pinidx = sorted(ps.keys())
-        for pin in pinidx:
-            print("---------------------------------")
-            print(pin)
-            pdata = ps.get(pin)
-            for mux in range(muxwidth):
-                if mux not in pdata:
-                    print("Mux %d : NC" % mux)
-                else:
-                    name, assigned_bank = pdata[mux]
-                    print("Mux %d : %s" % (mux, name))
-
-    print(ps.items())
-    print(ps.byspec)
-    print(ps.fnspec)
-    # Create local list of peripheral names defined in pinfunctions.py
-    defined_func = []
-    for pfunc in pinspec:
-        defined_func.append(pfunc[0])
-
-    for pin in ps.items():
-        pin_no = pin[0]
-        #print(pin)
-        for mux in pin[1].keys():
-            bank = pin[1][mux][1]
-            signal_str = pin[1][mux][0]
-            pad = "%s%d" % (bank, pin_no)
-            # Get the signal name prefix
-            index_under = signal_str.find('_')
-            # periph format: [periph+suffix]
-            # GPIO periph format: [periph+bank+suffix]
-            # Problem is that GPIO has a different suffix to UART/TWI.
-            # Assuming that other peripherals may have their own name formats.
-            # keep stripping last chars from string until remainder matches
-            # one of the existing peripheral names
-            # probably very inefficient...
-            # NO ERROR CHECKING
-            periph = signal_str[:index_under]
-            func = signal_str[index_under+1:]
-            while periph != '':
-                if periph in defined_func:
-                    break # Found valid periph
-                periph = periph.rstrip(periph[-1])
-            # key to use in PinSpec.byspec has format: [perith+':'+suffix]
-            # need to get the suffix from Pin object
-            index = len(periph)
-            print(signal_str[index:index_under])
-            # TODO: FIx
-            fnspec_key = periph + bank
-            #suffix = ps.fnspec[fnspec_key][fnspec_key]
-            print(pad, signal_str, signal_str[:index_under], periph, func)
+    #gen_pinmux_dict(ps)
     #code.interact(local=locals())
