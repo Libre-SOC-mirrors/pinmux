@@ -49,12 +49,16 @@ class ManPinmux(Elaboratable):
         print("Test Manual Pinmux!")
         self.gen_pinmux_dict(ps)
 
+        print("--------------------")
         # Automatically create the necessary periph/pad Records/Signals
         # depending on the given dict specification
         for pad in self.requested.keys():
             self.pads[pad] = {}
             self.pads[pad]["pad"] = Record(name=pad, layout=io_layout)
-            self.muxes[pad] = IOMuxBlockSingle(self.n_ports)
+            if len(self.requested[pad]) == 1:
+                pass # skip mux creation
+            else:
+                self.muxes[pad] = IOMuxBlockSingle(self.n_ports)
             for mux in self.requested[pad].keys():
                 periph = self.requested[pad][mux]["periph"]
                 suffix = self.requested[pad][mux]["suffix"]
@@ -77,9 +81,12 @@ class ManPinmux(Elaboratable):
         port = self.port
         pads = self.pads
         for pad in pads.keys():
-            m.submodules[pad+"_mux"] = muxes[pad]
-            # all muxes controlled by the same multi-bit signal
-            comb += muxes[pad].port.eq(port)
+            if len(self.requested[pad]) == 1:
+                pass
+            else:
+                m.submodules[pad+"_mux"] = muxes[pad]
+                # TODO: all muxes controlled by the same multi-bit signal
+                comb += muxes[pad].port.eq(port)
 
         # print(self.requested)
         # print(self.pads)
@@ -88,28 +95,48 @@ class ManPinmux(Elaboratable):
         # This section connects the periphs to the assigned ports
         # ---------------------------
         for pad in pads.keys():
-            for mux in self.requested[pad].keys():
+            if len(self.requested[pad]) == 1:
+                # connect directly
+                mux = 0 # assume only port0 has been defined
+                print(self.requested[pad])
                 periph = self.requested[pad][mux]["periph"]
                 #suffix = self.requested[pad][mux]["suffix"]
                 sig = self.requested[pad][mux]["signal"][:-1]
                 sig_type = iotypes[self.requested[pad][mux]["signal"][-1]]
-                num = int(mux)
                 if sig_type == iotypes['*']:
-                    comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux].o)
-                    comb += muxes[pad].periph_ports[num].oe.eq(
-                                                         pads[pad][mux].oe)
-                    comb += pads[pad][mux].i.eq(muxes[pad].periph_ports[num].i)
+                    comb += pads[pad]["pad"].o.eq(pads[pad][mux].o)
+                    comb += pads[pad]["pad"].oe.eq(pads[pad][mux].oe)
+                    comb += pads[pad][mux].i.eq(pads[pad]["pad"].i)
                 elif sig_type == iotypes['+']:
-                    comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux])
+                    comb += pads[pad]["pad"].o.eq(pads[pad][mux].o)
                 elif sig_type == iotypes['-']:
-                    comb += pads[pad][mux].eq(muxes[pad].periph_ports[num].i)
+                    comb += pads[pad][mux].i.eq(pads[pad]["pad"].i)
+            else:
+                for mux in self.requested[pad].keys():
+                    periph = self.requested[pad][mux]["periph"]
+                    #suffix = self.requested[pad][mux]["suffix"]
+                    sig = self.requested[pad][mux]["signal"][:-1]
+                    sig_type = iotypes[self.requested[pad][mux]["signal"][-1]]
+                    num = int(mux)
+                    if sig_type == iotypes['*']:
+                        comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux].o)
+                        comb += muxes[pad].periph_ports[num].oe.eq(
+                                                             pads[pad][mux].oe)
+                        comb += pads[pad][mux].i.eq(muxes[pad].periph_ports[num].i)
+                    elif sig_type == iotypes['+']:
+                        comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux])
+                    elif sig_type == iotypes['-']:
+                        comb += pads[pad][mux].eq(muxes[pad].periph_ports[num].i)
         # ---------------------------
         # Here is where the muxes are assigned to the actual pads
         # ---------------------------
         for pad in pads.keys():
-            comb += pads[pad]["pad"].o.eq(muxes[pad].out_port.o)
-            comb += pads[pad]["pad"].oe.eq(muxes[pad].out_port.oe)
-            comb += muxes[pad].out_port.i.eq(pads[pad]["pad"].i)
+            if len(self.requested[pad]) == 1:
+                pass # if only one periph, no mux present
+            else:
+                comb += pads[pad]["pad"].o.eq(muxes[pad].out_port.o)
+                comb += pads[pad]["pad"].oe.eq(muxes[pad].out_port.oe)
+                comb += muxes[pad].out_port.i.eq(pads[pad]["pad"].i)
 
         return m
 
@@ -453,6 +480,18 @@ def gen_gtkw_doc(module_name, requested, filename):
             # TODO: cleanup
             pin = requested[pad][mux]["signal"][:-1]
 
+            """
+            sig_type = iotypes[self.requested[pad][mux]["signal"][-1]]
+            #print(sig, sig_type)
+            if periph == "GPIO":
+                name_format = "%s%s" % (periph, suffix)
+            else:
+                name_format = "%s%s" % (periph, suffix)
+            if sig_type == iotypes['*']:
+                temp_traces[1].append(('GPIO%s__i' % suffix, 'in'))
+                temp_traces[1].append(('GPIO%s__o' % suffix, 'out'))
+                temp_traces[1].append(('GPIO%s__oe' % suffix, 'out'))
+            """
             # TODO: Automate this!
             if periph == "GPIO":
                 temp_traces[1].append(('GPIO%s__i' % suffix, 'in'))
