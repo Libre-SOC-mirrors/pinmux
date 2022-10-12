@@ -49,16 +49,23 @@ class ManPinmux(Elaboratable):
         print("Test Manual Pinmux!")
         self.gen_pinmux_dict(ps)
 
+        self.pads = {}
+
         print("--------------------")
         # Automatically create the necessary periph/pad Records/Signals
         # depending on the given dict specification
         for pad in self.requested.keys():
             self.pads[pad] = {}
             self.pads[pad]["pad"] = Record(name=pad, layout=io_layout)
-            if len(self.requested[pad]) == 1:
+            self.pads[pad]["n_ports"] = len(self.requested[pad])
+            if self.pads[pad]["n_ports"] == 1:
                 pass # skip mux creation
             else:
-                self.muxes[pad] = IOMuxBlockSingle(self.n_ports)
+                print(self.pads[pad]["n_ports"])
+                # Need to determine num of bits - to make number a pow of 2
+                portsize = self.pads[pad]["n_ports"].bit_length()
+                self.pads[pad]["port"] = Signal(portsize, name="%s_port" % (pad))
+                self.muxes[pad] = IOMuxBlockSingle(self.pads[pad]["n_ports"])
             for mux in self.requested[pad].keys():
                 periph = self.requested[pad][mux]["periph"]
                 suffix = self.requested[pad][mux]["suffix"]
@@ -78,12 +85,12 @@ class ManPinmux(Elaboratable):
         m = Module()
         comb, sync = m.d.comb, m.d.sync
         muxes = self.muxes
-        port = self.port
         pads = self.pads
         for pad in pads.keys():
             if len(self.requested[pad]) == 1:
                 pass
             else:
+                port = self.pads[pad]["port"]
                 m.submodules[pad+"_mux"] = muxes[pad]
                 # TODO: all muxes controlled by the same multi-bit signal
                 comb += muxes[pad].port.eq(port)
@@ -118,15 +125,21 @@ class ManPinmux(Elaboratable):
                     sig = self.requested[pad][mux]["signal"][:-1]
                     sig_type = iotypes[self.requested[pad][mux]["signal"][-1]]
                     num = int(mux)
+                    print(pad, mux, sig, sig_type)
+                    print(len(muxes[pad].periph_ports))
                     if sig_type == iotypes['*']:
-                        comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux].o)
+                        comb += muxes[pad].periph_ports[num].o.eq(
+                                                             pads[pad][mux].o)
                         comb += muxes[pad].periph_ports[num].oe.eq(
                                                              pads[pad][mux].oe)
-                        comb += pads[pad][mux].i.eq(muxes[pad].periph_ports[num].i)
+                        comb += pads[pad][mux].i.eq(
+                                               muxes[pad].periph_ports[num].i)
                     elif sig_type == iotypes['+']:
-                        comb += muxes[pad].periph_ports[num].o.eq(pads[pad][mux])
+                        comb += muxes[pad].periph_ports[num].o.eq(
+                                                             pads[pad][mux])
                     elif sig_type == iotypes['-']:
-                        comb += pads[pad][mux].eq(muxes[pad].periph_ports[num].i)
+                        comb += pads[pad][mux].eq(
+                                               muxes[pad].periph_ports[num].i)
         # ---------------------------
         # Here is where the muxes are assigned to the actual pads
         # ---------------------------
@@ -141,16 +154,22 @@ class ManPinmux(Elaboratable):
         return m
 
     def __iter__(self):
+        print("=============")
+        print(self.pads)
+        print("=============")
         for pad in list(self.pads.keys()):
             for field in self.pads[pad]["pad"].fields.values():
                 yield field
             for mux in self.pads[pad].keys():
+                print(type(self.pads[pad][mux]))
+                print(pad, mux, self.pads[pad][mux])
                 if type(self.pads[pad][mux]) == Signal:
                     yield self.pads[pad][mux]
-                else:
+                elif type(self.pads[pad][mux]) == Record:
                     for field in self.pads[pad][mux].fields.values():
                         yield field
-        yield self.port
+                else:
+                    print("%s is a var, not Sig/Rec, skipping!" % mux)
 
     def ports(self):
         return list(self)
@@ -164,9 +183,6 @@ class ManPinmux(Elaboratable):
         #print(ps.fnspec)
         # TODO: get from ps
         self.requested = {}
-        self.n_ports = 4
-        self.port = Signal(log2_int(self.n_ports))
-        self.pads = {}
         self.muxes = {}
 
         # Create local list of peripheral names defined in pinfunctions.py
@@ -234,9 +250,12 @@ class ManPinmux(Elaboratable):
                                             "signal":signal}
         print(self.requested)
 
-def set_port(dut, port, delay=1e-6):
-    yield dut.port.eq(port)
-    yield Delay(delay)
+def set_port(dut, pad, port, delay=1e-6):
+    if dut.pads[pad]["n_ports"] == 1:
+        print("Pad %s only has one function, skipping setting mux!" % pad)
+    else:
+        yield dut.pads[pad]["port"].eq(port)
+        yield Delay(delay)
 
 """
 GPIO test function
@@ -427,30 +446,34 @@ def test_man_pinmux(dut):
         gpio_port = gpio_periph["mux"]
         gp = dut.pads[padname][gpio_port]
         pad = dut.pads[padname]["pad"]
-        yield from set_port(dut, gpio_port)
+        yield from set_port(dut, padname, gpio_port)
         yield from gpio(gp, pad, 0x5a5)
 
     # UART test
     for suffix in uarts.keys():
         txpadname = uarts[suffix]["txpadname"]
         rxpadname = uarts[suffix]["rxpadname"]
-        uart_port = uarts[suffix]["txmux"] # TODO: Assuming same mux setting
-        tx = dut.pads[txpadname][uart_port]
-        rx = dut.pads[rxpadname][uart_port]
+        txport = uarts[suffix]["txmux"]
+        rxport = uarts[suffix]["rxmux"]
+        tx = dut.pads[txpadname][txport]
+        rx = dut.pads[rxpadname][rxport]
         txpad = dut.pads[txpadname]["pad"]
         rxpad = dut.pads[rxpadname]["pad"]
-        yield from set_port(dut, UART_MUX)
+        yield from set_port(dut, txpadname, txport)
+        yield from set_port(dut, rxpadname, rxport)
         yield from uart_send(tx, rx, txpad, rxpad, 0x42)
 
     # I2C test
     for suffix in i2cs.keys():
         sdapadname = i2cs[suffix]["sdapadname"]
         sclpadname = i2cs[suffix]["sclpadname"]
-        i2c_port = i2cs[suffix]["sdamux"] # TODO: Assuming same mux setting
-        sda = dut.pads[sdapadname][i2c_port]
-        scl = dut.pads[sclpadname][i2c_port]
+        sdaport = i2cs[suffix]["sdamux"]
+        sclport = i2cs[suffix]["sclmux"]
+        sda = dut.pads[sdapadname][sdaport]
+        scl = dut.pads[sclpadname][sclport]
         sdapad = dut.pads[sdapadname]["pad"]
-        yield from set_port(dut, I2C_MUX)
+        yield from set_port(dut, sdapadname, sdaport)
+        yield from set_port(dut, sclpadname, sclport)
         yield from i2c_send(sda, scl, sdapad, 0x67)
 
 def gen_gtkw_doc(module_name, requested, filename):
@@ -474,38 +497,29 @@ def gen_gtkw_doc(module_name, requested, filename):
         temp_traces[1].append(('%s__i' % pad, 'in'))
         temp_traces[1].append(('%s__o' % pad, 'out'))
         temp_traces[1].append(('%s__oe' % pad, 'out'))
+        traces.append(temp_traces)
+        temp_traces = ("Pad %s Peripherals" % pad, [])
         for mux in requested[pad].keys():
             periph = requested[pad][mux]["periph"]
             suffix = requested[pad][mux]["suffix"]
             # TODO: cleanup
             pin = requested[pad][mux]["signal"][:-1]
 
-            """
-            sig_type = iotypes[self.requested[pad][mux]["signal"][-1]]
+            sig_type = iotypes[requested[pad][mux]["signal"][-1]]
             #print(sig, sig_type)
             if periph == "GPIO":
-                name_format = "%s%s" % (periph, suffix)
+                name_format = "%s%s" % (pin, suffix)
             else:
-                name_format = "%s%s" % (periph, suffix)
+                name_format = "%s%s" % (pin, suffix)
             if sig_type == iotypes['*']:
-                temp_traces[1].append(('GPIO%s__i' % suffix, 'in'))
-                temp_traces[1].append(('GPIO%s__o' % suffix, 'out'))
-                temp_traces[1].append(('GPIO%s__oe' % suffix, 'out'))
-            """
-            # TODO: Automate this!
-            if periph == "GPIO":
-                temp_traces[1].append(('GPIO%s__i' % suffix, 'in'))
-                temp_traces[1].append(('GPIO%s__o' % suffix, 'out'))
-                temp_traces[1].append(('GPIO%s__oe' % suffix, 'out'))
-            elif periph == "UART":
-                if pin == "TX":
-                    temp_traces[1].append(('%s%s_o' % (pin, suffix), 'out'))
-                elif pin == "RX":
-                    temp_traces[1].append(('%s%s_i' % (pin, suffix), 'in'))
-            elif periph == "TWI":
-                temp_traces[1].append(('%s%s__i' % (pin, suffix), 'in'))
-                temp_traces[1].append(('%s%s__o' % (pin, suffix), 'out'))
-                temp_traces[1].append(('%s%s__oe' % (pin, suffix), 'out'))
+                temp_traces[1].append(('%s__i' % name_format, 'in'))
+                temp_traces[1].append(('%s__o' % name_format, 'out'))
+                temp_traces[1].append(('%s__oe' % name_format, 'out'))
+            # Single underscore because Signal, not Record
+            if sig_type == iotypes['+']:
+                temp_traces[1].append(('%s_o' % name_format, 'out'))
+            if sig_type == iotypes['-']:
+                temp_traces[1].append(('%s_i' % name_format, 'in'))
         traces.append(temp_traces)
 
     # master port signal
