@@ -497,6 +497,10 @@ def gen_gtkw_doc(module_name, requested, filename):
         temp_traces[1].append(('%s__i' % pad, 'in'))
         temp_traces[1].append(('%s__o' % pad, 'out'))
         temp_traces[1].append(('%s__oe' % pad, 'out'))
+        # Port signal
+        temp_traces[1].append(('%s_port[%d:0]'
+                               % (pad, (n_ports-1).bit_length()-1), 'in'))
+
         traces.append(temp_traces)
         temp_traces = ("Pad %s Peripherals" % pad, [])
         for mux in requested[pad].keys():
@@ -521,12 +525,6 @@ def gen_gtkw_doc(module_name, requested, filename):
             if sig_type == iotypes['-']:
                 temp_traces[1].append(('%s_i' % name_format, 'in'))
         traces.append(temp_traces)
-
-    # master port signal
-    temp_traces = ('Misc', [
-                    ('port[%d:0]' % ((n_ports-1).bit_length()-1), 'in')
-                  ])
-    traces.append(temp_traces)
 
     #print(traces)
 
