@@ -497,9 +497,10 @@ def gen_gtkw_doc(module_name, requested, filename):
         temp_traces[1].append(('%s__i' % pad, 'in'))
         temp_traces[1].append(('%s__o' % pad, 'out'))
         temp_traces[1].append(('%s__oe' % pad, 'out'))
-        # Port signal
-        temp_traces[1].append(('%s_port[%d:0]'
-                               % (pad, (n_ports-1).bit_length()-1), 'in'))
+        # Port signal - only exists if more than one periph per pad
+        if len(requested[pad]) >= 1:
+            temp_traces[1].append(('%s_port[%d:0]'
+                                   % (pad, (n_ports-1).bit_length()-1), 'in'))
 
         traces.append(temp_traces)
         temp_traces = ("Pad %s Peripherals" % pad, [])
