@@ -38,7 +38,8 @@ class IOMuxBlockSingle(Elaboratable):
     def __init__(self, n_ports=4):
         print("1-bit IO Mux Block")
         self.n_ports = n_ports
-        self.port = Signal(log2_int(self.n_ports))
+        portsize = n_ports.bit_length()
+        self.port = Signal(portsize)
 
         temp = []
         for i in range(self.n_ports):
